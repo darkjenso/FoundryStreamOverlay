@@ -4,9 +4,9 @@
  * allowing users to position each HP element for streaming.
  *
  * Fixes & Features:
- * - Restored both "Configure Layout" and "Open Overlay Window" buttons.
- * - Overlay now reliably opens and reopens.
- * - Heart icon settings work correctly in Layout Config.
+ * - Heart icon settings (toggle, image, size) are ONLY in the Layout Config.
+ * - Overlay window opens reliably every time.
+ * - Single-click overlay pop-up using the renderFoundryStreamOverlay hook.
  */
 
 const MODULE_ID = "foundrystreamoverlay";
@@ -15,8 +15,8 @@ const MODULE_ID = "foundrystreamoverlay";
 // 1) Register Settings in Hooks.once("init")
 // -----------------------------------------
 Hooks.once("init", () => {
-  console.log(`${MODULE_ID} | Initializing module settings...`);
 
+  // Standard Module Settings (Visible in Foundry Settings UI)
   game.settings.register(MODULE_ID, "hpPath", {
     name: "HP Path",
     hint: "Path to the current HP value in the actor's system data (e.g. attributes.hp.value).",
@@ -46,16 +46,17 @@ Hooks.once("init", () => {
     config: true
   });
 
+  // Hidden settings (Only in Layout Config)
   game.settings.register(MODULE_ID, "layoutData", {
     name: "Layout Data",
-    hint: "Stores each actor's coordinates, hidden state, and heart icon settings.",
+    hint: "Stores each actor's position, hidden state, and heart settings.",
     scope: "client",
     type: Object,
     default: {},
     config: false
   });
 
-  // ✅ REGISTER MENU BUTTON: CONFIGURE LAYOUT
+  // ✅ Register Layout Config Menu (For Actor Positions & Display Options)
   game.settings.registerMenu(MODULE_ID, "layoutConfigMenu", {
     name: "Configure Layout & Display",
     label: "Configure Layout",
@@ -65,7 +66,7 @@ Hooks.once("init", () => {
     restricted: false
   });
 
-  // ✅ REGISTER MENU BUTTON: OPEN OVERLAY WINDOW
+  // ✅ Register Open Overlay Menu Button
   game.settings.registerMenu(MODULE_ID, "openOverlayWindow", {
     name: "Open Overlay Window",
     label: "Open Overlay",
@@ -74,8 +75,6 @@ Hooks.once("init", () => {
     type: OverlayWindowOpener,
     restricted: false
   });
-
-  console.log(`${MODULE_ID} | Module settings registered successfully.`);
 });
 
 // -----------------------------------------
@@ -102,10 +101,11 @@ class FoundryStreamOverlay extends Application {
     const maxHpPath = game.settings.get(MODULE_ID, "maxHpPath");
     const layoutData = game.settings.get(MODULE_ID, "layoutData") || {};
 
+    // Get all player-owned characters
     const actors = game.actors.contents.filter(a => a.hasPlayerOwner && a.type === "character");
 
     const hpData = actors.map(actor => {
-      const coords = layoutData[actor.id] || { top: 0, left: 0, hide: false };
+      const coords = layoutData[actor.id] || { top: 0, left: 0, hide: false, showHeart: true, heartImage: "modules/foundrystreamoverlay/heart.webp", heartSize: 32 };
       if (coords.hide) return null;
 
       return {
@@ -114,7 +114,10 @@ class FoundryStreamOverlay extends Application {
         current: foundry.utils.getProperty(actor.system, hpPath) ?? "N/A",
         max: foundry.utils.getProperty(actor.system, maxHpPath) ?? "N/A",
         top: coords.top,
-        left: coords.left
+        left: coords.left,
+        showHeart: coords.showHeart,
+        heartImage: coords.heartImage,
+        heartSize: coords.heartSize
       };
     }).filter(a => a !== null);
 
@@ -130,8 +133,6 @@ class FoundryStreamOverlay extends Application {
 // 3) Open Overlay Window Function (Fixed)
 // -----------------------------------------
 function openOverlayWindow() {
-  console.log(`${MODULE_ID} | Opening Overlay Window...`);
-
   if (!window.foundryStreamOverlayApp) {
     window.foundryStreamOverlayApp = new FoundryStreamOverlay();
   }
