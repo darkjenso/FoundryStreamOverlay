@@ -45,10 +45,63 @@
     <input type="checkbox" name="boldAll" id="boldAll" {{#if boldAll}}checked{{/if}} />
   </div>
 
-  <div class="form-group">
-    <label for="fontFamily">Font Family</label>
-    <input type="text" name="fontFamily" id="fontFamily" value="{{fontFamily}}" />
-  </div>
+<div class="form-group">
+  <label for="fontFamily">Font Family</label>
+  <select name="fontFamily" id="fontFamily">
+    <!-- Common Sans-Serif -->
+    <option value="Arial, sans-serif"
+      {{#ifEquals fontFamily "Arial, sans-serif"}}selected{{/ifEquals}}>
+      Arial
+    </option>
+    <option value="Verdana, sans-serif"
+      {{#ifEquals fontFamily "Verdana, sans-serif"}}selected{{/ifEquals}}>
+      Verdana
+    </option>
+    <option value="Trebuchet MS, sans-serif"
+      {{#ifEquals fontFamily "Trebuchet MS, sans-serif"}}selected{{/ifEquals}}>
+      Trebuchet MS
+    </option>
+    <option value="Impact, sans-serif"
+      {{#ifEquals fontFamily "Impact, sans-serif"}}selected{{/ifEquals}}>
+      Impact
+    </option>
+
+    <!-- Serif Options -->
+    <option value="Georgia, serif"
+      {{#ifEquals fontFamily "Georgia, serif"}}selected{{/ifEquals}}>
+      Georgia
+    </option>
+    <option value="Times New Roman, serif"
+      {{#ifEquals fontFamily "Times New Roman, serif"}}selected{{/ifEquals}}>
+      Times New Roman
+    </option>
+
+    <!-- Monospace Options -->
+    <option value="Courier New, monospace"
+      {{#ifEquals fontFamily "Courier New, monospace"}}selected{{/ifEquals}}>
+      Courier New
+    </option>
+    <option value="Monaco, monospace"
+      {{#ifEquals fontFamily "Monaco, monospace"}}selected{{/ifEquals}}>
+      Monaco
+    </option>
+
+    <!-- Fun / Decorative -->
+    <option value="Comic Sans MS, cursive"
+      {{#ifEquals fontFamily "Comic Sans MS, cursive"}}selected{{/ifEquals}}>
+      Comic Sans MS
+    </option>
+    <option value="Brush Script MT, cursive"
+      {{#ifEquals fontFamily "Brush Script MT, cursive"}}selected{{/ifEquals}}>
+      Brush Script MT
+    </option>
+    <option value="Papyrus, fantasy"
+      {{#ifEquals fontFamily "Papyrus, fantasy"}}selected{{/ifEquals}}>
+      Papyrus
+    </option>
+  </select>
+  <p class="notes">Choose a font for the overlay text.</p>
+</div>
 
   <div class="form-group">
     <label for="fontColor">Font Colour</label>
