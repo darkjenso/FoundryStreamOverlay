@@ -6,10 +6,10 @@
            top: {{top}}px;
            left: {{left}}px;
            position: absolute;
-           width: {{../heartSize}}px; /* container matches heart icon width */
+           width: {{../heartSize}}px;
          ">
-      {{#if ../showHeart}}
-        <img src="{{../heartImage}}"
+      {{#if ../layoutData.showHeart}}
+        <img src="{{../layoutData.heartImage}}"
              alt="Heart Icon"
              style="
                position: absolute;
@@ -17,17 +17,16 @@
                left: 0;
                width: 100%;
                height: auto;
-               z-index: 1; /* behind the text */
+               z-index: 1;
              " />
       {{/if}}
 
-      <!-- The HP text is placed 'on top' via z-index:2 -->
       <div class="hp-text"
            style="
              position: relative;
              z-index: 2;
              text-align: center;
-             margin-top: 0.2em; /* small spacing from top of container */
+             margin-top: 0.2em;
            ">
         {{#if ../boldAll}}
           <strong>
