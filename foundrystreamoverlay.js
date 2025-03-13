@@ -3,15 +3,15 @@
  * Displays a green‐screen overlay of player characters' HP,
  * allowing users to position each HP element for streaming.
  * 
- * New features:
- * - Option to show/hide player names.
- * - Option to choose a custom font family and font colour.
- * - A manual button (via the settings menu) to open the overlay
- *   in a separate window (user-initiated to avoid popup blockers).
+ * New features in this revision:
+ * - "Show Player Names" toggle works.
+ * - Font Family, Font Colour, and Font Size are now managed via the Layout Config form.
+ * - The Layout Config window remains open after saving.
+ * - The green background is preserved in the external overlay window.
  */
 
 Hooks.once("init", () => {
-  // 1) Register basic settings for HP paths & styling.
+  // 1) Register basic settings for HP paths & background.
   game.settings.register("foundrystreamoverlay", "hpPath", {
     name: "HP Path",
     hint: "Path to the current HP value in the actor's system data (e.g. attributes.hp.value).",
@@ -41,23 +41,24 @@ Hooks.once("init", () => {
     config: true
   });
 
+  // Remove fontSize from main settings by setting config:false; it will now be managed in Layout Config.
   game.settings.register("foundrystreamoverlay", "fontSize", {
     name: "Font Size",
-    hint: "Font size for the overlay text (e.g. '16px').",
+    hint: "Font size for the overlay text (in pixels).",
     scope: "client",
-    type: String,
-    default: "16px",
-    config: true
+    type: Number,
+    default: 16,
+    config: false
   });
   
-  // New settings: show names, font family, and font colour.
+  // New settings to be managed via Layout Config.
   game.settings.register("foundrystreamoverlay", "showNames", {
     name: "Show Player Names",
     hint: "If enabled, the overlay displays the player's name along with their HP.",
     scope: "client",
     type: Boolean,
     default: false,
-    config: false  // We'll manage this in the layout config.
+    config: false
   });
   
   game.settings.register("foundrystreamoverlay", "fontFamily", {
@@ -66,7 +67,7 @@ Hooks.once("init", () => {
     scope: "client",
     type: String,
     default: "Arial, sans-serif",
-    config: false  // Managed via layout config.
+    config: false
   });
   
   game.settings.register("foundrystreamoverlay", "fontColor", {
@@ -75,13 +76,13 @@ Hooks.once("init", () => {
     scope: "client",
     type: String,
     default: "#000000",
-    config: false  // Managed via layout config.
+    config: false
   });
 
   // 2) Register a JSON setting for storing layout data (actor positions).
   game.settings.register("foundrystreamoverlay", "layoutData", {
     name: "Layout Data",
-    hint: "Stores each actor's top/left coordinates in JSON. Managed via 'Configure Layout' button.",
+    hint: "Stores each actor's top/left coordinates in JSON. Managed via the Layout Config form.",
     scope: "client",
     type: Object,
     default: {},
@@ -92,7 +93,7 @@ Hooks.once("init", () => {
   game.settings.registerMenu("foundrystreamoverlay", "layoutConfigMenu", {
     name: "Configure Layout & Display",
     label: "Configure Layout",
-    hint: "Position each actor's HP element on the overlay, and set display options.",
+    hint: "Position each actor's HP element on the overlay and set display options.",
     icon: "fas fa-map-pin",
     type: LayoutConfig,
     restricted: false
@@ -112,26 +113,26 @@ Hooks.once("init", () => {
 /**
  * The main overlay application.
  * Renders the green-screen overlay with HP entries.
- * Note: We add the "no-header" class to hide the default header.
  */
 class FoundryStreamOverlay extends Application {
   static get defaultOptions() {
     return mergeObject(super.defaultOptions, {
       id: "foundry-stream-overlay",
-      title: "Foundry Stream Overlay", // Not shown if header is hidden.
+      title: "Foundry Stream Overlay",
       template: "modules/foundrystreamoverlay/templates/foundrystreamoverlay.html",
       width: 800,
       height: 600,
       resizable: true,
       minimisable: false,
       popOut: true,
-      classes: ["foundry-stream-overlay", "no-header"]
+      classes: ["foundry-stream-overlay", "no-header"] // no-header can be used to hide the default window chrome
     });
   }
 
   getData() {
     const backgroundColour = game.settings.get("foundrystreamoverlay", "backgroundColour");
-    const fontSize = game.settings.get("foundrystreamoverlay", "fontSize");
+    // Get fontSize as a number and then add "px" for inline style.
+    const fontSize = game.settings.get("foundrystreamoverlay", "fontSize") + "px";
     const fontFamily = game.settings.get("foundrystreamoverlay", "fontFamily");
     const fontColor = game.settings.get("foundrystreamoverlay", "fontColor");
     const showNames = game.settings.get("foundrystreamoverlay", "showNames");
@@ -160,17 +161,19 @@ class FoundryStreamOverlay extends Application {
 
   activateListeners(html) {
     super.activateListeners(html);
-    // No extra listeners needed.
+    // No additional listeners needed.
   }
 }
 
 /**
- * A FormApplication that lets users configure each actor's position and display options.
- * This form now includes inputs for:
+ * A FormApplication that lets users configure actor positions and display options.
+ * This form now includes fields for:
  * - Actor positions (top/left)
  * - Show/hide player names (checkbox)
  * - Font Family (text)
  * - Font Colour (text)
+ * - Font Size (number, in pixels)
+ * The window will remain open after saving so you can continue tweaking.
  */
 class LayoutConfig extends FormApplication {
   static get defaultOptions() {
@@ -180,12 +183,11 @@ class LayoutConfig extends FormApplication {
       template: "modules/foundrystreamoverlay/templates/foundrystreamoverlay-config.html",
       width: 400,
       height: "auto",
-      closeOnSubmit: true
+      closeOnSubmit: false // Do not close automatically so you can continue fiddling.
     });
   }
 
   getData() {
-    // Retrieve current layout data.
     const layoutData = game.settings.get("foundrystreamoverlay", "layoutData") || {};
     const actors = game.actors.contents.filter(a => a.hasPlayerOwner && a.type === "character");
     const actorPositions = actors.map(actor => {
@@ -197,16 +199,16 @@ class LayoutConfig extends FormApplication {
         left: coords.left
       };
     });
-    // Also fetch display options.
+    // Fetch display options.
     const showNames = game.settings.get("foundrystreamoverlay", "showNames");
     const fontFamily = game.settings.get("foundrystreamoverlay", "fontFamily");
     const fontColor = game.settings.get("foundrystreamoverlay", "fontColor");
-
-    return { actorPositions, showNames, fontFamily, fontColor };
+    const fontSize = game.settings.get("foundrystreamoverlay", "fontSize");
+    return { actorPositions, showNames, fontFamily, fontColor, fontSize };
   }
 
   async _updateObject(event, formData) {
-    // Reconstruct layout data.
+    // Reconstruct layoutData for actor positions.
     const layoutData = {};
     for (const key in formData) {
       if (key.startsWith("top-") || key.startsWith("left-")) {
@@ -217,18 +219,21 @@ class LayoutConfig extends FormApplication {
     }
     await game.settings.set("foundrystreamoverlay", "layoutData", layoutData);
     // Update display options.
-    await game.settings.set("foundrystreamoverlay", "showNames", formData.showNames === "on");
+    await game.settings.set("foundrystreamoverlay", "showNames", formData.showNames ? true : false);
     await game.settings.set("foundrystreamoverlay", "fontFamily", formData.fontFamily);
     await game.settings.set("foundrystreamoverlay", "fontColor", formData.fontColor);
-    // Re-render overlay if open.
+    await game.settings.set("foundrystreamoverlay", "fontSize", Number(formData.fontSize) || 16);
+    // Re-render the overlay if it is open.
     if (window.foundryStreamOverlayApp) {
       foundryStreamOverlayApp.render();
     }
+    // Remain open (do not call this.close()).
   }
 }
 
 /**
  * A FormApplication that provides a button to manually open the overlay window.
+ * Because this is a direct user action, popup blockers should allow it.
  */
 class OverlayWindowOpener extends FormApplication {
   static get defaultOptions() {
@@ -261,7 +266,7 @@ class OverlayWindowOpener extends FormApplication {
 
 /**
  * Opens a new window and moves the overlay content into it.
- * This is triggered by the user clicking the button in the OverlayWindowOpener form.
+ * This is triggered by the user clicking the button in OverlayWindowOpener.
  */
 function openOverlayWindow() {
   if (!window.foundryStreamOverlayApp) {
@@ -271,6 +276,7 @@ function openOverlayWindow() {
   const overlayWindow = window.open("", "FoundryStreamOverlayWindow", "width=800,height=600,resizable=yes");
   if (overlayWindow) {
     // Write an HTML shell with the correct green background.
+    const bg = game.settings.get("foundrystreamoverlay", "backgroundColour");
     overlayWindow.document.write(`
       <!DOCTYPE html>
       <html lang="en">
@@ -279,7 +285,7 @@ function openOverlayWindow() {
         <title></title>
         <link rel="stylesheet" type="text/css" href="modules/foundrystreamoverlay/foundrystreamoverlay.css">
       </head>
-      <body style="background-color: ${game.settings.get("foundrystreamoverlay", "backgroundColour")}; margin: 0;">
+      <body style="background-color: ${bg}; margin: 0;">
         <div id="overlay-container"></div>
       </body>
       </html>
