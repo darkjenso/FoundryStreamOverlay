@@ -7,6 +7,7 @@
            left: {{left}}px;
            position: absolute;
            width: {{../heartSize}}px;
+           height: {{../heartSize}}px;
          ">
       {{#if ../showHeart}}
         <img src="{{../heartImage}}"
@@ -16,17 +17,19 @@
                top: 0;
                left: 0;
                width: 100%;
-               height: auto;
+               height: 100%;
                z-index: 1;
              " />
       {{/if}}
 
       <div class="hp-text"
            style="
-             position: relative;
-             z-index: 2;
+             position: absolute;
+             top: {{../heartTextOffset}}px;
+             left: 0;
+             width: 100%;
              text-align: center;
-             margin-top: 0.2em;
+             z-index: 2;
            ">
         {{#if ../boldAll}}
           <strong>
