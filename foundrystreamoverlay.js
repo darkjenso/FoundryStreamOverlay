@@ -70,7 +70,7 @@ Hooks.once("init", () => {
     hint: "How many pixels from the top of the heart icon the HP text should be placed.",
     scope: "client",
     type: Number,
-    default: 8,       // you can tweak the default
+    default: 30,       // you can tweak the default
     config: false
   });
 
