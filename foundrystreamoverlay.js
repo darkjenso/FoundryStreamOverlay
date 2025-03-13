@@ -5,6 +5,10 @@ const MODULE_ID = "foundrystreamoverlay";
 // -----------------------------------------
 Hooks.once("init", () => {
 
+
+  Handlebars.registerHelper('ifEquals', function(a, b, options) {
+  return (a === b) ? options.fn(this) : "";
+});
   // Visible in the standard Foundry Module Settings panel:
   game.settings.register(MODULE_ID, "hpPath", {
     name: "HP Path",
