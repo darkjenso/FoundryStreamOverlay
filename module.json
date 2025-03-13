@@ -1,0 +1,14 @@
+{
+  "name": "FoundryStreamOverlay",
+  "title": "Foundry Stream Overlay",
+  "description": "Creates a green‐screen overlay with live HP values for player characters, perfect for streaming. Customisable for Foundry V12.",
+  "version": "1.0.0",
+  "author": "Your Name",
+  "minimumCoreVersion": "12",
+  "compatibleCoreVersion": "12",
+  "scripts": ["foundrystreamoverlay.js"],
+  "styles": ["foundrystreamoverlay.css"],
+  "esmodules": [],
+  "packs": [],
+  "dependencies": []
+}
