@@ -3,7 +3,7 @@
  * Displays a green‐screen overlay of player characters' HP for streaming,
  * with options to position elements and adjust styling.
  *
- * New enhancements:
+ * Enhancements:
  * - Option to hide max HP.
  * - Option to hide individual players.
  * - Separate styling options for player names and HP numbers (font size, bold, colour).
@@ -61,7 +61,7 @@ Hooks.once("init", () => {
     default: false,
     config: false
   });
-  
+
   game.settings.register("foundrystreamoverlay", "hideMaxHP", {
     name: "Hide Max HP",
     hint: "If enabled, only current HP is shown.",
@@ -70,7 +70,7 @@ Hooks.once("init", () => {
     default: false,
     config: false
   });
-  
+
   game.settings.register("foundrystreamoverlay", "hiddenActors", {
     name: "Hidden Actors",
     hint: "Stores an object mapping actor IDs to hidden (true/false).",
@@ -79,7 +79,7 @@ Hooks.once("init", () => {
     default: {},
     config: false
   });
-  
+
   // Styling for player names.
   game.settings.register("foundrystreamoverlay", "nameFontSize", {
     name: "Name Font Size",
@@ -105,7 +105,7 @@ Hooks.once("init", () => {
     default: "#000000",
     config: false
   });
-  
+
   // Styling for HP numbers.
   game.settings.register("foundrystreamoverlay", "numberFontSize", {
     name: "Number Font Size",
@@ -184,53 +184,57 @@ class FoundryStreamOverlay extends Application {
   }
 
   getData() {
-  const backgroundColour = game.settings.get("foundrystreamoverlay", "backgroundColour");
-  const nameFontSize = game.settings.get("foundrystreamoverlay", "nameFontSize") + "px";
-  const nameFontColor = game.settings.get("foundrystreamoverlay", "nameFontColor");
-  // Convert the boolean to a valid CSS font-weight string.
-  const nameBold = game.settings.get("foundrystreamoverlay", "nameBold") ? "bold" : "normal";
-  const numberFontSize = game.settings.get("foundrystreamoverlay", "numberFontSize") + "px";
-  const numberFontColor = game.settings.get("foundrystreamoverlay", "numberFontColor");
-  const numberBold = game.settings.get("foundrystreamoverlay", "numberBold") ? "bold" : "normal";
-  const showNames = game.settings.get("foundrystreamoverlay", "showNames");
-  const hideMaxHP = game.settings.get("foundrystreamoverlay", "hideMaxHP");
-  const hpPath = game.settings.get("foundrystreamoverlay", "hpPath");
-  const maxHpPath = game.settings.get("foundrystreamoverlay", "maxHpPath");
-  const layoutData = game.settings.get("foundrystreamoverlay", "layoutData") || {};
-  const hiddenActors = game.settings.get("foundrystreamoverlay", "hiddenActors") || {};
+    const backgroundColour = game.settings.get("foundrystreamoverlay", "backgroundColour");
+    const nameFontSize = game.settings.get("foundrystreamoverlay", "nameFontSize") + "px";
+    const nameFontColor = game.settings.get("foundrystreamoverlay", "nameFontColor");
+    // Convert bold booleans to CSS valid values.
+    const nameBold = game.settings.get("foundrystreamoverlay", "nameBold") ? "bold" : "normal";
+    const numberFontSize = game.settings.get("foundrystreamoverlay", "numberFontSize") + "px";
+    const numberFontColor = game.settings.get("foundrystreamoverlay", "numberFontColor");
+    const numberBold = game.settings.get("foundrystreamoverlay", "numberBold") ? "bold" : "normal";
+    const showNames = game.settings.get("foundrystreamoverlay", "showNames");
+    const hideMaxHP = game.settings.get("foundrystreamoverlay", "hideMaxHP");
+    const hpPath = game.settings.get("foundrystreamoverlay", "hpPath");
+    const maxHpPath = game.settings.get("foundrystreamoverlay", "maxHpPath");
+    const layoutData = game.settings.get("foundrystreamoverlay", "layoutData") || {};
+    const hiddenActors = game.settings.get("foundrystreamoverlay", "hiddenActors") || {};
 
-  // Get all player-owned characters.
-  const actors = game.actors.contents.filter(a => a.hasPlayerOwner && a.type === "character");
-  const hpData = actors.map(actor => {
-    const isHidden = hiddenActors[actor.id] || false;
-    const current = foundry.utils.getProperty(actor.system, hpPath) ?? "N/A";
-    const max = foundry.utils.getProperty(actor.system, maxHpPath) ?? "N/A";
-    const coords = layoutData[actor.id] || { top: 0, left: 0 };
+    // Get all player-owned characters.
+    const actors = game.actors.contents.filter(a => a.hasPlayerOwner && a.type === "character");
+    const hpData = actors.map(actor => {
+      const isHidden = hiddenActors[actor.id] || false;
+      const current = foundry.utils.getProperty(actor.system, hpPath) ?? "N/A";
+      const max = foundry.utils.getProperty(actor.system, maxHpPath) ?? "N/A";
+      const coords = layoutData[actor.id] || { top: 0, left: 0 };
+      return {
+        id: actor.id,
+        name: actor.name,
+        current,
+        max,
+        top: coords.top,
+        left: coords.left,
+        hidden: isHidden
+      };
+    });
+
     return {
-      id: actor.id,
-      name: actor.name,
-      current,
-      max,
-      top: coords.top,
-      left: coords.left,
-      hidden: isHidden
+      hpData,
+      backgroundColour,
+      nameFontSize,
+      nameFontColor,
+      nameBold,
+      numberFontSize,
+      numberFontColor,
+      numberBold,
+      showNames,
+      hideMaxHP
     };
-  });
+  }
 
-  return {
-    hpData,
-    backgroundColour,
-    nameFontSize,
-    nameFontColor,
-    nameBold,
-    numberFontSize,
-    numberFontColor,
-    numberBold,
-    showNames,
-    hideMaxHP
-  };
+  activateListeners(html) {
+    super.activateListeners(html);
+  }
 }
-
 
 /**
  * LayoutConfig form: Allows configuration of:
@@ -256,7 +260,6 @@ class LayoutConfig extends FormApplication {
     const actors = game.actors.contents.filter(a => a.hasPlayerOwner && a.type === "character");
     const actorPositions = actors.map(actor => {
       const coords = layoutData[actor.id] || { top: 0, left: 0 };
-      // If the checkbox is not sent for unchecked items, default to false.
       const isHidden = hiddenActors[actor.id] || false;
       return {
         id: actor.id,
@@ -280,23 +283,21 @@ class LayoutConfig extends FormApplication {
   }
 
   async _updateObject(event, formData) {
-    // Process actor positions and hidden flags.
+    // Initialize with defaults (false for hidden)
+    const actors = game.actors.contents.filter(a => a.hasPlayerOwner && a.type === "character");
     const layoutData = {};
     const hiddenActors = {};
-    // First, iterate over actorPositions from getData() so that every actor gets an entry.
-    const actors = game.actors.contents.filter(a => a.hasPlayerOwner && a.type === "character");
     for (const actor of actors) {
       layoutData[actor.id] = { top: 0, left: 0 };
       hiddenActors[actor.id] = false;
     }
-    // Now update from formData.
+    // Process formData keys.
     for (const key in formData) {
       if (key.startsWith("top-") || key.startsWith("left-") || key.startsWith("hidden-")) {
         const [type, actorId] = key.split("-");
         if (type === "top" || type === "left") {
           layoutData[actorId][type] = Number(formData[key]) || 0;
         } else if (type === "hidden") {
-          // For checkboxes, if key is present, it's "on".
           hiddenActors[actorId] = true;
         }
       }
