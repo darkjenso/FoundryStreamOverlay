@@ -1,1 +1,57 @@
-# FoundryStreamOverlay
+# Foundry Stream Overlay
+
+**Foundry Stream Overlay** is a module for [Foundry VTT](https://foundryvtt.com/) that provides a green-screen pop-up showing your players’ hit points (HP), names, and more, ready to be captured in a streaming setup. Ideal for broadcasting active character stats in a neat overlay on Twitch, YouTube, etc.
+
+## Purpose
+
+- Displays each player-owned character’s current HP (and optionally max HP) in a separate pop-up window.  
+- Offers a background colour (chroma key) so you can layer it over your stream.  
+- Lets you arrange each character’s display **and** tweak style options (fonts, bold text, heart icons).  
+- Works with a single click or a “Manual Open” button.  
+- Helps you keep your audience informed about the party’s status without exposing the entire Foundry screen.
+
+## Features
+
+1. **Configurable HP paths** – supports systems that store HP differently (e.g. `attributes.hp.value`).
+2. **Per-actor layout** – easily position each actor’s stats or hide them.
+3. **Visual customisation** – change font sizes, colours, and select from a range of built-in font families.
+4. **Heart icon** – optional heart image with adjustable size and offset for a fun, thematic touch.
+5. **Green-screen background** – set any colour, but default is `#00ff00` for easy chroma keying.
+
+## Installation
+
+1. **Manifest Link (Recommended)**  
+   - Copy and paste the following link into Foundry’s **Install Module** prompt:  
+     ```
+     https://raw.githubusercontent.com/darkjenso/FoundryStreamOverlay/refs/heads/main/module.json
+     ```
+   - Then click **Install**.  
+   
+2. **Manual**  
+   - Download or clone the **foundrystreamoverlay** module and copy it into your Foundry `modules/` directory.  
+   - In Foundry, go to **Configuration and Setup** → **Add-on Modules** → **Install Module** (or “Browse Packages” if you’re hosting it online).  
+   - Enable **Foundry Stream Overlay** in **Manage Modules** for your world.
+
+## Setup
+
+1. Open **Game Settings** (the cog icon in Foundry).
+2. Go to **Module Settings** → **Configure Layout**.
+3. In “Actor Positions,” set each character’s `Top` and `Left` to position them. Check “Hide?” if you want to hide them entirely.
+4. In “Display Options,” choose whether to show names, max HP, and so on.
+5. In “Heart Icon Options,” toggle `Show Heart Icon`, select an image, adjust its `Size`, and use the `Heart Text Offset` slider to move the text up or down over the icon.
+
+## Usage
+
+1. **Open Overlay**  
+   - Under **Module Settings**, there’s an “Open Overlay Window” option. Click that to pop up the overlay in a new window.  
+   - Or call the `openOverlayWindow()` function from the console.
+2. **Stream Setup**  
+   - Capture that pop-up in OBS (or similar) as a browser/window source.  
+   - Apply a **chroma key** filter matching the background colour (default green).
+3. **Live Updates**  
+   - Whenever HP changes or you move the layout, the overlay refreshes automatically.
+   - You can close and reopen if needed.
+
+## Screenshots
+
+1. **Place them in a folder** (commonly called `screenshots` or `img`) at the root of your repository:
