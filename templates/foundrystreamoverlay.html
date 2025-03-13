@@ -2,13 +2,13 @@
   {{#each hpData}}
     {{#unless this.hidden}}
       <div class="hp-line" style="top: {{top}}px; left: {{left}}px;">
-        {{#if ../showNames}}
-          <span class="player-name" style="font-size: {{textFontSize}}; color: {{textFontColor}}; font-weight: {{textBold}};">
+        {{#if showNamesFlag}}
+          <span class="player-name" style="font-size: {{nameFontSize}}; color: {{nameFontColor}}; {{#if nameBold}}font-weight:bold;{{else}}font-weight:normal;{{/if}}">
             {{name}}
           </span>
         {{/if}}
-        <span class="hp-number" style="font-size: {{textFontSize}}; color: {{textFontColor}}; font-weight: {{textBold}};">
-          {{current}}{{#unless ../hideMaxHP}} / {{max}}{{/unless}}
+        <span class="hp-number" style="font-size: {{numberFontSize}}; color: {{numberFontColor}}; {{#if numberBold}}font-weight:bold;{{else}}font-weight:normal;{{/if}}">
+          {{current}}{{#unless hideMaxHPFlag}} / {{max}}{{/unless}}
         </span>
       </div>
     {{/unless}}
