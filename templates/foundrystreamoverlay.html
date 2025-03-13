@@ -3,11 +3,11 @@
     {{#unless this.hidden}}
       <div class="hp-line" style="top: {{top}}px; left: {{left}}px;">
         {{#if ../showNames}}
-          <span class="player-name" style="font-size: {{nameFontSize}}; color: {{nameFontColor}}; font-weight: {{nameBold}};">
+          <span class="player-name" style="font-size: {{textFontSize}}; color: {{textFontColor}}; font-weight: {{textBold}};">
             {{name}}
           </span>
         {{/if}}
-        <span class="hp-number" style="font-size: {{numberFontSize}}; color: {{numberFontColor}}; font-weight: {{numberBold}};">
+        <span class="hp-number" style="font-size: {{textFontSize}}; color: {{textFontColor}}; font-weight: {{textBold}};">
           {{current}}{{#unless ../hideMaxHP}} / {{max}}{{/unless}}
         </span>
       </div>
