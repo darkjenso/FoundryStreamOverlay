@@ -52,6 +52,3 @@
 
    - You can close and reopen if needed.
 
-## Screenshots
-
-1. **Place them in a folder** (commonly called `screenshots` or `img`) at the root of your repository:
