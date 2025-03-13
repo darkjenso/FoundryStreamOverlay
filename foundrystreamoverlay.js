@@ -51,34 +51,7 @@ Hooks.once("init", () => {
     config: true
   });
 
-  // NEW heart icon settings, also shown in standard Module Settings:
-  game.settings.register(MODULE_ID, "showHeart", {
-    name: "Show Heart Icon",
-    hint: "If enabled, a heart icon will appear under the HP text.",
-    scope: "client",
-    type: Boolean,
-    default: true,
-    config: true
-  });
 
-  game.settings.register(MODULE_ID, "heartImage", {
-    name: "Heart Icon Image",
-    hint: "Path to the heart icon image (e.g., modules/foundrystreamoverlay/heart.webp).",
-    scope: "client",
-    type: String,
-    default: "modules/foundrystreamoverlay/heart.webp",
-    config: true,
-    filePicker: true
-  });
-
-  game.settings.register(MODULE_ID, "heartSize", {
-    name: "Heart Icon Size (px)",
-    hint: "Width in pixels for the heart icon. Height auto scales to preserve aspect ratio.",
-    scope: "client",
-    type: Number,
-    default: 32,
-    config: true
-  });
 
   // These are not shown by default in the standard module settings panel (config: false),
   // but are settable in your Layout Config menu:
