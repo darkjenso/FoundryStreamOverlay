@@ -1,11 +1,9 @@
 const MODULE_ID = "foundrystreamoverlay";
 
-// -----------------------------------------
-// 1) Register Settings in Hooks.once("init")
-// -----------------------------------------
 Hooks.once("init", () => {
-
-  // Visible in the standard Foundry Module Settings panel:
+  // ============================
+  // (1) Register Settings
+  // ============================
   game.settings.register(MODULE_ID, "hpPath", {
     name: "HP Path",
     hint: "Path to the current HP value in the actor's system data (e.g. attributes.hp.value).",
@@ -35,7 +33,7 @@ Hooks.once("init", () => {
     config: true
   });
 
-  // Place heart icon settings in config: false to avoid showing in main module settings
+  // Heart icon settings with config: false so they're not in main module settings
   game.settings.register(MODULE_ID, "showHeart", {
     name: "Show Heart Icon",
     hint: "If enabled, a heart icon will appear under the HP text.",
@@ -57,14 +55,14 @@ Hooks.once("init", () => {
 
   game.settings.register(MODULE_ID, "heartSize", {
     name: "Heart Icon Size (px)",
-    hint: "Width in pixels for the heart icon. Height auto scales.",
+    hint: "Width in pixels for the heart icon. Height auto-scales.",
     scope: "client",
     type: Number,
     default: 32,
     config: false
   });
 
-  // Additional display-only settings in custom Layout Config
+  // Additional display-related settings in Layout Config
   game.settings.register(MODULE_ID, "fontSize", {
     name: "Font Size",
     hint: "Font size for the overlay text (in pixels).",
@@ -119,7 +117,7 @@ Hooks.once("init", () => {
     config: false
   });
 
-  // Layout Data (positions & hidden flags) stored in a single object
+  // Layout data (positions & hidden flags) stored in a single object
   game.settings.register(MODULE_ID, "layoutData", {
     name: "Layout Data",
     hint: "Stores each actor's coordinates & hidden state.",
@@ -129,7 +127,9 @@ Hooks.once("init", () => {
     config: false
   });
 
-  // Submenu for Layout Config
+  // ============================
+  // (2) Register Submenus
+  // ============================
   game.settings.registerMenu(MODULE_ID, "layoutConfigMenu", {
     name: "Configure Layout & Display",
     label: "Configure Layout",
@@ -139,7 +139,6 @@ Hooks.once("init", () => {
     restricted: false
   });
 
-  // Submenu for Opening the Overlay Window
   game.settings.registerMenu(MODULE_ID, "openOverlayWindow", {
     name: "Open Overlay Window",
     label: "Open Overlay",
@@ -151,11 +150,11 @@ Hooks.once("init", () => {
 });
 
 // -----------------------------------------
-// 2) Main Overlay Application
+// 3) Main Overlay Application
 // -----------------------------------------
 class FoundryStreamOverlay extends Application {
   static get defaultOptions() {
-    return mergeObject(super.defaultOptions, {
+    return foundry.utils.mergeObject(super.defaultOptions, {
       id: "foundry-stream-overlay",
       title: "Foundry Stream Overlay",
       template: `modules/${MODULE_ID}/templates/foundrystreamoverlay.html`,
@@ -224,16 +223,16 @@ class FoundryStreamOverlay extends Application {
 
   activateListeners(html) {
     super.activateListeners(html);
-    // Typically no extra listeners needed unless you add dragging or click events
+    // If you add drag or click events, do it here
   }
 }
 
 // -----------------------------------------
-// 3) Layout Config Form
+// 4) Layout Config Form
 // -----------------------------------------
 class LayoutConfig extends FormApplication {
   static get defaultOptions() {
-    return mergeObject(super.defaultOptions, {
+    return foundry.utils.mergeObject(super.defaultOptions, {
       id: "foundrystreamoverlay-layout-config",
       title: "Stream Overlay Layout & Display Options",
       template: `modules/${MODULE_ID}/templates/foundrystreamoverlay-config.html`,
@@ -296,8 +295,8 @@ class LayoutConfig extends FormApplication {
         if (!layoutData[actorId]) layoutData[actorId] = { top: 0, left: 0, hide: false };
         layoutData[actorId][type] = Number(formData[key]) || 0;
       }
-      if (key.startsWith("hide-")) {
-        const actorId = key.split("hide-")[1];
+      else if (key.startsWith("hide-")) {
+        const actorId = key.replace("hide-", "");
         if (!layoutData[actorId]) layoutData[actorId] = { top: 0, left: 0, hide: false };
         layoutData[actorId].hide = formData[key] ? true : false;
       }
@@ -318,7 +317,7 @@ class LayoutConfig extends FormApplication {
     await game.settings.set(MODULE_ID, "heartImage", formData.heartImage);
     await game.settings.set(MODULE_ID, "heartSize",  Number(formData.heartSize) || 32);
 
-    // Re-render if overlay is open
+    // Re-render overlay if open
     if (window.foundryStreamOverlayApp) {
       foundryStreamOverlayApp.render();
     }
@@ -326,11 +325,11 @@ class LayoutConfig extends FormApplication {
 }
 
 // -----------------------------------------
-// 4) "Open Overlay" Button Form
+// 5) "Open Overlay Window" Form
 // -----------------------------------------
 class OverlayWindowOpener extends FormApplication {
   static get defaultOptions() {
-    return mergeObject(super.defaultOptions, {
+    return foundry.utils.mergeObject(super.defaultOptions, {
       title: "Open Overlay Window",
       id: "foundrystreamoverlay-open-overlay",
       template: `modules/${MODULE_ID}/templates/open-overlay-window.html`,
@@ -353,12 +352,12 @@ class OverlayWindowOpener extends FormApplication {
   }
 
   async _updateObject(event, formData) {
-    // Not used
+    // not used
   }
 }
 
 // -----------------------------------------
-// 5) openOverlayWindow() - Single-Click w/ Hook
+// 6) openOverlayWindow() helper
 // -----------------------------------------
 function openOverlayWindow() {
   const overlayWindow = window.open(
@@ -372,7 +371,7 @@ function openOverlayWindow() {
     return;
   }
 
-  // Create new instance each time
+  // Create a new instance each time
   const overlayApp = new FoundryStreamOverlay();
 
   // Wait for the overlay's HTML to render
@@ -391,7 +390,7 @@ function openOverlayWindow() {
 </html>`);
     overlayWindow.document.close();
 
-    // Move the newly rendered overlay HTML into #overlay-container in the popup
+    // Move newly rendered overlay HTML into #overlay-container
     const container = overlayWindow.document.getElementById("overlay-container");
     if (container) container.appendChild(html[0]);
   });
@@ -405,7 +404,7 @@ function openOverlayWindow() {
 }
 
 // -----------------------------------------
-// 6) Update overlay on actor changes
+// 7) Hook to update overlay on actor changes
 // -----------------------------------------
 Hooks.on("updateActor", (actor, update, options, userId) => {
   if (actor.hasPlayerOwner && actor.type === "character" && window.foundryStreamOverlayApp) {
