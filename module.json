@@ -25,7 +25,7 @@
   ],
   "url": "https://github.com/darkjenso/FoundryStreamOverlay/",
   "manifest": "https://raw.githubusercontent.com/darkjenso/FoundryStreamOverlay/main/module.json",
-  "download": "https://github.com/darkjenso/FoundryStreamOverlay/releases/download/release/FoundryStreamOverlay.zip",
+  "download": "https://github.com/darkjenso/FoundryStreamOverlay/releases/download/release3/FoundryStreamOverlay.zip",
   "socket": false,
   "library": false,
   "relationships": {
