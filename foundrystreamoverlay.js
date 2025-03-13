@@ -62,7 +62,7 @@ Hooks.once("init", () => {
   game.settings.register(MODULE_ID, "heartSize", {
     name: "Heart Icon Size (px)",
     hint: "Width in pixels for the heart icon. Height auto-scales to preserve aspect ratio.",
-    scope: "client",
+    scope: "world",
     type: Number,
     default: 92,
     config: false
@@ -72,7 +72,7 @@ Hooks.once("init", () => {
   game.settings.register(MODULE_ID, "heartTextOffset", {
     name: "Heart Icon Text Offset (px)",
     hint: "How many pixels from the top of the heart icon the HP text should be placed.",
-    scope: "client",
+    scope: "world",
     type: Number,
     default: 30,       // you can tweak the default
     config: false
