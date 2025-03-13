@@ -1,0 +1,28 @@
+<form>
+  <p>Use this form to position each player character’s HP entry on the overlay. Enter values for <em>top</em> and <em>left</em> (in pixels).</p>
+  <table style="width:100%; text-align:left;">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Top (px)</th>
+        <th>Left (px)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each actorPositions}}
+      <tr>
+        <td>{{this.name}}</td>
+        <td>
+          <input type="number" name="top-{{this.id}}" value="{{this.top}}" />
+        </td>
+        <td>
+          <input type="number" name="left-{{this.id}}" value="{{this.left}}" />
+        </td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  <div class="form-group" style="margin-top:1em; text-align:right;">
+    <button type="submit" class="dialog-button">Save</button>
+  </div>
+</form>
