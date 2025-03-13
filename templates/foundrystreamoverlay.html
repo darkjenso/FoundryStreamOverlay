@@ -22,23 +22,41 @@
              " />
       {{/if}}
 
+      <!-- Text Container -->
       <div class="hp-text"
            style="
              position: absolute;
              top: {{../heartTextOffset}}px;
              left: 0;
              width: 100%;
-             text-align: center;
              z-index: 2;
+             display: flex;
+             flex-flow: row nowrap;
+             justify-content: space-between;
+             align-items: center;
+             padding: 0 4px; /* optional horizontal spacing */
            ">
+
         {{#if ../boldAll}}
           <strong>
-            {{#if ../showNames}}{{name}}: {{/if}}
-            {{current}}{{#if ../showMaxHP}} / {{max}}{{/if}}
+            <span class="hp-name">
+              {{#if ../showNames}}
+                {{name}}
+              {{/if}}
+            </span>
+            <span class="hp-values">
+              {{current}}{{#if ../showMaxHP}} / {{max}}{{/if}}
+            </span>
           </strong>
         {{else}}
-          {{#if ../showNames}}{{name}}: {{/if}}
-          {{current}}{{#if ../showMaxHP}} / {{max}}{{/if}}
+          <span class="hp-name">
+            {{#if ../showNames}}
+              {{name}}
+            {{/if}}
+          </span>
+          <span class="hp-values">
+            {{current}}{{#if ../showMaxHP}} / {{max}}{{/if}}
+          </span>
         {{/if}}
       </div>
     </div>
