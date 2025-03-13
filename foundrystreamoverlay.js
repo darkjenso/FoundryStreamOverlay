@@ -3,10 +3,11 @@
  * Displays a green-screen overlay of player characters' HP,
  * allowing users to position each HP element for streaming.
  *
- * New additions:
- * - Heart icon layered under HP text (managed in Layout Config only).
+ * New Features:
+ * - Heart icon layered behind HP text (adjustable in Layout Config).
  * - Custom heart image and size (stored in layoutData).
- * - Cleaner code & rendering logic fixes.
+ * - File Picker for choosing a heart image.
+ * - "Open Overlay" button restored to Module Settings.
  */
 
 const MODULE_ID = "foundrystreamoverlay";
@@ -15,7 +16,7 @@ const MODULE_ID = "foundrystreamoverlay";
 // 1) Register Settings in Hooks.once("init")
 // -----------------------------------------
 Hooks.once("init", () => {
-  // Standard settings in Foundry's Module Settings (config: true)
+  // Standard settings in Foundry's Module Settings
   game.settings.register(MODULE_ID, "hpPath", {
     name: "HP Path",
     hint: "Path to the current HP value in the actor's system data (e.g. attributes.hp.value).",
@@ -45,7 +46,7 @@ Hooks.once("init", () => {
     config: true
   });
 
-  // Layout Data (positions & hidden flags) stored in a single object
+  // Layout Data (positions, hidden flags, and heart settings)
   game.settings.register(MODULE_ID, "layoutData", {
     name: "Layout Data",
     hint: "Stores each actor's coordinates, hidden state, and heart icon settings.",
@@ -203,9 +204,28 @@ class LayoutConfig extends FormApplication {
 }
 
 // -----------------------------------------
-// 4) Update overlay on actor changes
+// 4) Open Overlay Window Form
 // -----------------------------------------
-Hooks.on("updateActor", (actor, update, options, userId) => {
+class OverlayWindowOpener extends FormApplication {
+  static get defaultOptions() {
+    return mergeObject(super.defaultOptions, {
+      title: "Open Overlay Window",
+      id: "foundrystreamoverlay-open-overlay",
+      template: `modules/${MODULE_ID}/templates/open-overlay-window.html`,
+      width: 400
+    });
+  }
+
+  activateListeners(html) {
+    super.activateListeners(html);
+    html.find("button[name='open-overlay']").click(() => openOverlayWindow());
+  }
+}
+
+// -----------------------------------------
+// 5) Update overlay on actor changes
+// -----------------------------------------
+Hooks.on("updateActor", (actor) => {
   if (actor.hasPlayerOwner && actor.type === "character" && window.foundryStreamOverlayApp) {
     foundryStreamOverlayApp.render();
   }
