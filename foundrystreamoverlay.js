@@ -60,7 +60,7 @@ Hooks.once("init", () => {
     hint: "Width in pixels for the heart icon. Height auto-scales to preserve aspect ratio.",
     scope: "client",
     type: Number,
-    default: 32,
+    default: 92,
     config: false
   });
 
