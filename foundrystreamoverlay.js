@@ -3,20 +3,19 @@
  * Displays a green‐screen overlay of player characters' HP for streaming,
  * with options to position elements and adjust styling.
  *
- * New enhancements in this version:
+ * New enhancements:
  * - Option to hide max HP.
  * - Option to hide individual players.
- * - Separate styling options for player names and HP numbers:
- *   (font size, bold, and colour for each).
- * - The Layout Config form remains open after saving for further tweaking.
- * - The external overlay window is stripped of any default close buttons.
+ * - Separate styling options for player names and HP numbers (font size, bold, colour).
+ * - Layout Config form remains open after saving.
+ * - External overlay window removes default close controls.
  */
 
 Hooks.once("init", () => {
   // 1) Register settings for HP paths and background.
   game.settings.register("foundrystreamoverlay", "hpPath", {
     name: "HP Path",
-    hint: "Path to the current HP value in the actor's system data (e.g. attributes.hp.value).",
+    hint: "Path to the current HP value (e.g. attributes.hp.value).",
     scope: "world",
     type: String,
     default: "attributes.hp.value",
@@ -26,7 +25,7 @@ Hooks.once("init", () => {
 
   game.settings.register("foundrystreamoverlay", "maxHpPath", {
     name: "Max HP Path",
-    hint: "Path to the maximum HP value in the actor's system data (e.g. attributes.hp.max).",
+    hint: "Path to the maximum HP value (e.g. attributes.hp.max).",
     scope: "world",
     type: String,
     default: "attributes.hp.max",
@@ -52,8 +51,8 @@ Hooks.once("init", () => {
     default: 16,
     config: false
   });
-  
-  // 2) New display options (managed via the Layout Config form)
+
+  // 2) Display options (managed via Layout Config).
   game.settings.register("foundrystreamoverlay", "showNames", {
     name: "Show Player Names",
     hint: "Display player names along with their HP.",
@@ -133,7 +132,7 @@ Hooks.once("init", () => {
     config: false
   });
 
-  // 3) Register a JSON setting for storing actor positions.
+  // 3) Register JSON setting for actor positions.
   game.settings.register("foundrystreamoverlay", "layoutData", {
     name: "Layout Data",
     hint: "Stores each actor's top/left coordinates.",
@@ -143,7 +142,7 @@ Hooks.once("init", () => {
     config: false
   });
 
-  // 4) Register the Layout Configuration form.
+  // 4) Register Layout Config form.
   game.settings.registerMenu("foundrystreamoverlay", "layoutConfigMenu", {
     name: "Configure Layout & Display",
     label: "Configure Layout",
@@ -153,7 +152,7 @@ Hooks.once("init", () => {
     restricted: false
   });
 
-  // 5) Register the Overlay Window Opener form.
+  // 5) Register Overlay Window Opener form.
   game.settings.registerMenu("foundrystreamoverlay", "openOverlayWindow", {
     name: "Open Overlay Window",
     label: "Open Overlay",
@@ -166,7 +165,7 @@ Hooks.once("init", () => {
 
 /**
  * The main overlay application.
- * Renders the overlay using your template.
+ * Renders the overlay using the template.
  * The "no-header" class hides Foundry's default window chrome.
  */
 class FoundryStreamOverlay extends Application {
@@ -184,57 +183,55 @@ class FoundryStreamOverlay extends Application {
     });
   }
 
-getData() {
-  const backgroundColour = game.settings.get("foundrystreamoverlay", "backgroundColour");
-  const nameFontSize = game.settings.get("foundrystreamoverlay", "nameFontSize") + "px";
-  const nameFontColor = game.settings.get("foundrystreamoverlay", "nameFontColor");
-  const nameBold = game.settings.get("foundrystreamoverlay", "nameBold");
-  const numberFontSize = game.settings.get("foundrystreamoverlay", "numberFontSize") + "px";
-  const numberFontColor = game.settings.get("foundrystreamoverlay", "numberFontColor");
-  const numberBold = game.settings.get("foundrystreamoverlay", "numberBold");
-  const showNames = game.settings.get("foundrystreamoverlay", "showNames");
-  const hideMaxHP = game.settings.get("foundrystreamoverlay", "hideMaxHP");
-  const hpPath = game.settings.get("foundrystreamoverlay", "hpPath");
-  const maxHpPath = game.settings.get("foundrystreamoverlay", "maxHpPath");
-  const layoutData = game.settings.get("foundrystreamoverlay", "layoutData") || {};
-  const hiddenActors = game.settings.get("foundrystreamoverlay", "hiddenActors") || {};
+  getData() {
+    const backgroundColour = game.settings.get("foundrystreamoverlay", "backgroundColour");
+    const nameFontSize = game.settings.get("foundrystreamoverlay", "nameFontSize") + "px";
+    const nameFontColor = game.settings.get("foundrystreamoverlay", "nameFontColor");
+    const nameBold = game.settings.get("foundrystreamoverlay", "nameBold");
+    const numberFontSize = game.settings.get("foundrystreamoverlay", "numberFontSize") + "px";
+    const numberFontColor = game.settings.get("foundrystreamoverlay", "numberFontColor");
+    const numberBold = game.settings.get("foundrystreamoverlay", "numberBold");
+    const showNames = game.settings.get("foundrystreamoverlay", "showNames");
+    const hideMaxHP = game.settings.get("foundrystreamoverlay", "hideMaxHP");
+    const hpPath = game.settings.get("foundrystreamoverlay", "hpPath");
+    const maxHpPath = game.settings.get("foundrystreamoverlay", "maxHpPath");
+    const layoutData = game.settings.get("foundrystreamoverlay", "layoutData") || {};
+    const hiddenActors = game.settings.get("foundrystreamoverlay", "hiddenActors") || {};
 
-  // Get all player-owned characters.
-  const actors = game.actors.contents.filter(a => a.hasPlayerOwner && a.type === "character");
-  const hpData = actors.map(actor => {
-    const isHidden = hiddenActors[actor.id] || false;
-    const current = foundry.utils.getProperty(actor.system, hpPath) ?? "N/A";
-    const max = foundry.utils.getProperty(actor.system, maxHpPath) ?? "N/A";
-    const coords = layoutData[actor.id] || { top: 0, left: 0 };
+    // Get all player-owned characters.
+    const actors = game.actors.contents.filter(a => a.hasPlayerOwner && a.type === "character");
+    const hpData = actors.map(actor => {
+      const isHidden = hiddenActors[actor.id] || false;
+      const current = foundry.utils.getProperty(actor.system, hpPath) ?? "N/A";
+      const max = foundry.utils.getProperty(actor.system, maxHpPath) ?? "N/A";
+      const coords = layoutData[actor.id] || { top: 0, left: 0 };
+      return {
+        id: actor.id,
+        name: actor.name,
+        current,
+        max,
+        top: coords.top,
+        left: coords.left,
+        hidden: isHidden
+      };
+    });
+
     return {
-      id: actor.id,
-      name: actor.name,
-      current,
-      max,
-      top: coords.top,
-      left: coords.left,
-      hidden: isHidden
+      hpData,
+      backgroundColour,
+      nameFontSize,
+      nameFontColor,
+      nameBold,
+      numberFontSize,
+      numberFontColor,
+      numberBold,
+      showNames,
+      hideMaxHP
     };
-  });
-
-  return {
-    hpData,
-    backgroundColour,
-    nameFontSize,
-    nameFontColor,
-    nameBold,
-    numberFontSize,
-    numberFontColor,
-    numberBold,
-    showNames,
-    hideMaxHP
-  };
-}
-
+  }
 
   activateListeners(html) {
     super.activateListeners(html);
-    // No additional listeners are needed.
   }
 }
 
@@ -262,6 +259,7 @@ class LayoutConfig extends FormApplication {
     const actors = game.actors.contents.filter(a => a.hasPlayerOwner && a.type === "character");
     const actorPositions = actors.map(actor => {
       const coords = layoutData[actor.id] || { top: 0, left: 0 };
+      // If the checkbox is not sent for unchecked items, default to false.
       const isHidden = hiddenActors[actor.id] || false;
       return {
         id: actor.id,
@@ -285,17 +283,24 @@ class LayoutConfig extends FormApplication {
   }
 
   async _updateObject(event, formData) {
-    // Update actor positions and hidden states.
+    // Process actor positions and hidden flags.
     const layoutData = {};
     const hiddenActors = {};
+    // First, iterate over actorPositions from getData() so that every actor gets an entry.
+    const actors = game.actors.contents.filter(a => a.hasPlayerOwner && a.type === "character");
+    for (const actor of actors) {
+      layoutData[actor.id] = { top: 0, left: 0 };
+      hiddenActors[actor.id] = false;
+    }
+    // Now update from formData.
     for (const key in formData) {
       if (key.startsWith("top-") || key.startsWith("left-") || key.startsWith("hidden-")) {
         const [type, actorId] = key.split("-");
         if (type === "top" || type === "left") {
-          if (!layoutData[actorId]) layoutData[actorId] = { top: 0, left: 0 };
           layoutData[actorId][type] = Number(formData[key]) || 0;
         } else if (type === "hidden") {
-          hiddenActors[actorId] = (formData[key] === "on");
+          // For checkboxes, if key is present, it's "on".
+          hiddenActors[actorId] = true;
         }
       }
     }
@@ -315,7 +320,7 @@ class LayoutConfig extends FormApplication {
     if (window.foundryStreamOverlayApp) {
       foundryStreamOverlayApp.render();
     }
-    // Do not close the form so further adjustments can be made.
+    // Remain open for further adjustments.
   }
 }
 
@@ -354,7 +359,7 @@ class OverlayWindowOpener extends FormApplication {
 
 /**
  * Opens a new window and moves the overlay content into it.
- * This window's HTML shell omits default title/close buttons.
+ * This window's HTML shell is minimal and strips built-in controls.
  */
 function openOverlayWindow() {
   if (!window.foundryStreamOverlayApp) {
@@ -372,7 +377,6 @@ function openOverlayWindow() {
         <title></title>
         <link rel="stylesheet" type="text/css" href="modules/foundrystreamoverlay/foundrystreamoverlay.css">
         <style>
-          /* Hide any built-in header/controls in this external window */
           .window-title, .window-controls { display: none !important; }
           body { margin: 0; }
         </style>
@@ -387,7 +391,11 @@ function openOverlayWindow() {
     if (overlayContent) {
       overlayContent.parentNode.removeChild(overlayContent);
       const container = overlayWindow.document.getElementById("overlay-container");
-      if (container) container.appendChild(overlayContent);
+      if (container) {
+        container.appendChild(overlayContent);
+        // Extra removal of any potential close controls:
+        overlayWindow.document.querySelectorAll(".window-controls").forEach(el => el.remove());
+      }
     }
   } else {
     ui.notifications.warn("Popup blocked! Please allow popups for Foundry.");
