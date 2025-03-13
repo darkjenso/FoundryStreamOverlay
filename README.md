@@ -17,6 +17,24 @@
 3. **Visual customisation** – change font sizes, colours, and select from a range of built-in font families.
 4. **Heart icon** – optional heart image with adjustable size and offset for a fun, thematic touch.
 5. **Green-screen background** – set any colour, but default is `#00ff00` for easy chroma keying.
+## Usage
+
+1. **Open Overlay**  
+   - Under **Module Settings**, there’s an “Open Overlay Window” option. Click that to pop up the overlay in a new window.  
+   - Or call the `openOverlayWindow()` function from the console.
+2. **Stream Setup**  
+   - Capture that pop-up in OBS (or similar) as a browser/window source.  
+   - Apply a **chroma key** filter matching the background colour (default green).
+3. **Live Updates**  
+   - Whenever HP changes or you move the layout, the overlay refreshes automatically.
+
+## Setup
+
+1. Open **Game Settings** (the cog icon in Foundry).
+2. Go to **Module Settings** → **Configure Layout**.
+3. In “Actor Positions,” set each character’s `Top` and `Left` to position them. Check “Hide?” if you want to hide them entirely.
+4. In “Display Options,” choose whether to show names, max HP, and so on.
+5. In “Heart Icon Options,” toggle `Show Heart Icon`, select an image, adjust its `Size`, and use the `Heart Text Offset` slider to move the text up or down over the icon.
 
 ## Installation
 
@@ -32,24 +50,7 @@
    - In Foundry, go to **Configuration and Setup** → **Add-on Modules** → **Install Module** (or “Browse Packages” if you’re hosting it online).  
    - Enable **Foundry Stream Overlay** in **Manage Modules** for your world.
 
-## Setup
 
-1. Open **Game Settings** (the cog icon in Foundry).
-2. Go to **Module Settings** → **Configure Layout**.
-3. In “Actor Positions,” set each character’s `Top` and `Left` to position them. Check “Hide?” if you want to hide them entirely.
-4. In “Display Options,” choose whether to show names, max HP, and so on.
-5. In “Heart Icon Options,” toggle `Show Heart Icon`, select an image, adjust its `Size`, and use the `Heart Text Offset` slider to move the text up or down over the icon.
-
-## Usage
-
-1. **Open Overlay**  
-   - Under **Module Settings**, there’s an “Open Overlay Window” option. Click that to pop up the overlay in a new window.  
-   - Or call the `openOverlayWindow()` function from the console.
-2. **Stream Setup**  
-   - Capture that pop-up in OBS (or similar) as a browser/window source.  
-   - Apply a **chroma key** filter matching the background colour (default green).
-3. **Live Updates**  
-   - Whenever HP changes or you move the layout, the overlay refreshes automatically.
    - You can close and reopen if needed.
 
 ## Screenshots
