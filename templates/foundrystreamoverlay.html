@@ -1,5 +1,7 @@
+<!-- Main overlay container -->
 <div id="foundry-stream-overlay" class="stream-overlay-container"
      style="background-color: {{backgroundColour}}; font-size: {{fontSize}}; font-family: {{fontFamily}}; color: {{fontColor}};">
+
   {{#each hpData}}
     <div class="hp-line"
          style="
@@ -17,13 +19,12 @@
                top: 0;
                left: 0;
                width: 100%;
-               text-align: center;
                height: 100%;
                z-index: 1;
              " />
       {{/if}}
 
-      <!-- Text container, centered in the box -->
+      <!-- Text container, centred by flex, then shifted with translateY(heartTextOffset) -->
       <div class="hp-text"
            style="
              display: flex;
@@ -37,7 +38,9 @@
              width: 100%;
              height: 100%;
              z-index: 2;
+             transform: translateY({{../heartTextOffset}}px);
            ">
+
         {{#if ../boldAll}}
           <strong>
             {{#if ../showNames}}
@@ -58,4 +61,17 @@
       </div>
     </div>
   {{/each}}
+</div>
+
+<!-- Optional small footer in the overlay -->
+<div class="overlay-footer"
+     style="
+       position: absolute;
+       bottom: 5px;
+       right: 5px;
+       font-size: 0.8em;
+       opacity: 0.8;
+     ">
+  Made by jenzelta.
+  <a href="https://www.patreon.com/c/jenzelta" target="_blank">Support on Patreon</a>
 </div>
