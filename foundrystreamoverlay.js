@@ -328,21 +328,32 @@ class OverlayWindowOpener extends FormApplication {
  * This is triggered by the user clicking the button in OverlayWindowOpener.
  */
 function openOverlayWindow() {
-  if (!window.foundryStreamOverlayApp) {
-    window.foundryStreamOverlayApp = new FoundryStreamOverlay();
-    foundryStreamOverlayApp.render(true);
+  // 1) Open the new popup window immediately.
+  const overlayWindow = window.open(
+    "",
+    "FoundryStreamOverlayWindow",
+    "width=800,height=600,resizable=yes"
+  );
+
+  if (!overlayWindow) {
+    ui.notifications.warn("Popup blocked! Please allow popups for Foundry.");
+    return;
   }
-  const overlayWindow = window.open("", "FoundryStreamOverlayWindow", "width=800,height=600,resizable=yes");
-  if (overlayWindow) {
-    // Write an HTML shell with the correct green background.
+
+  // 2) Create a new overlay application each time you call this.
+  const overlayApp = new FoundryStreamOverlay();
+
+  // 3) Wait for the "renderFoundryStreamOverlay" hook, which fires once the app's HTML is ready.
+  Hooks.once("renderFoundryStreamOverlay", (app, html) => {
+    // Insert a basic HTML skeleton into the new window:
     const bg = game.settings.get("foundrystreamoverlay", "backgroundColour");
     overlayWindow.document.write(`
       <!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
-        <title></title>
-        <link rel="stylesheet" type="text/css" href="modules/foundrystreamoverlay/foundrystreamoverlay.css">
+        <title>Foundry Stream Overlay</title>
+        <link rel="stylesheet" href="modules/foundrystreamoverlay/foundrystreamoverlay.css">
       </head>
       <body style="background-color: ${bg}; margin: 0;">
         <div id="overlay-container"></div>
@@ -350,23 +361,18 @@ function openOverlayWindow() {
       </html>
     `);
     overlayWindow.document.close();
-    // Move the overlay's HTML into the new window.
-    const overlayContent = document.getElementById("foundry-stream-overlay");
-    if (overlayContent) {
-      overlayContent.parentNode.removeChild(overlayContent);
-      const container = overlayWindow.document.getElementById("overlay-container");
-      if (container) container.appendChild(overlayContent);
-    }
-  } else {
-    ui.notifications.warn("Popup blocked! Please allow popups for Foundry.");
-  }
+
+    // Move the newly rendered overlay HTML into #overlay-container in the popup.
+    const container = overlayWindow.document.getElementById("overlay-container");
+    container.appendChild(html[0]);
+  });
+
+  // 4) Actually render the app. As soon as it's done, the "renderFoundryStreamOverlay" hook will fire.
+  overlayApp.render(true);
+
+  // Optional: store references globally if you like
+  window.overlayWindow = overlayWindow;
+  window.foundryStreamOverlayApp = overlayApp;
 }
 
-/**
- * Re-render the overlay whenever actor data is updated.
- */
-Hooks.on("updateActor", (actor, update, options, userId) => {
-  if (actor.hasPlayerOwner && actor.type === "character" && window.foundryStreamOverlayApp) {
-    foundryStreamOverlayApp.render();
-  }
 });
