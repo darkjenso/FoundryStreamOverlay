@@ -1,7 +1,7 @@
-<div class="stream-overlay-container" style="background-color: {{backgroundColour}}; font-size: {{fontSize}}; font-family: {{fontFamily}};">
+<div id="foundry-stream-overlay" class="stream-overlay-container" style="background-color: {{backgroundColour}}; font-size: {{fontSize}}; font-family: {{fontFamily}}; color: {{fontColor}};">
   {{#each hpData}}
     <div class="hp-line" style="top: {{top}}px; left: {{left}}px;">
-      {{#if ../showNames}}<strong>{{name}}</strong>: {{/if}} {{current}} / {{max}}
+      {{#if ../showNames}}<strong>{{name}}</strong>: {{/if}}{{current}} / {{max}}
     </div>
   {{/each}}
 </div>
