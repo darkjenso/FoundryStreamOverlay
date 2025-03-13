@@ -35,10 +35,7 @@ Hooks.once("init", () => {
     config: true
   });
 
-  // -----------------------------------------
-  // Place the heart icon settings in config: false
-  // so they do NOT show in the main module settings
-  // -----------------------------------------
+  // Place heart icon settings in config: false to avoid showing in main module settings
   game.settings.register(MODULE_ID, "showHeart", {
     name: "Show Heart Icon",
     hint: "If enabled, a heart icon will appear under the HP text.",
@@ -60,14 +57,14 @@ Hooks.once("init", () => {
 
   game.settings.register(MODULE_ID, "heartSize", {
     name: "Heart Icon Size (px)",
-    hint: "Width in pixels for the heart icon. Height auto scales to preserve aspect ratio.",
+    hint: "Width in pixels for the heart icon. Height auto scales.",
     scope: "client",
     type: Number,
     default: 32,
     config: false
   });
 
-  // Additional settings only in your custom Layout Config
+  // Additional display-only settings in custom Layout Config
   game.settings.register(MODULE_ID, "fontSize", {
     name: "Font Size",
     hint: "Font size for the overlay text (in pixels).",
@@ -356,7 +353,7 @@ class OverlayWindowOpener extends FormApplication {
   }
 
   async _updateObject(event, formData) {
-    // not used
+    // Not used
   }
 }
 
