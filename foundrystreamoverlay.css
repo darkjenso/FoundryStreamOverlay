@@ -1,4 +1,4 @@
-/* Overlay container: no override on background, so inline green shows */
+/* Overlay container: the background is applied inline */
 .foundry-stream-overlay {
   color: #000;
   padding: 10px;
@@ -6,12 +6,12 @@
   border: none;
 }
 
-/* Hide the default window header (if any) */
+/* Hide default window header if present */
 .no-header .window-title {
   display: none;
 }
 
-/* HP elements: transparent background to avoid a white box */
+/* HP elements: transparent background so no white box appears */
 .hp-line {
   position: absolute;
   background-color: transparent;
