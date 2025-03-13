@@ -4,10 +4,9 @@
  * allowing users to position each HP element for streaming.
  *
  * Fixes & Features:
- * - Restored the "Open Overlay Window" button functionality.
- * - Overlay properly opens and reopens without reloading.
+ * - Restored both "Configure Layout" and "Open Overlay Window" buttons.
+ * - Overlay now reliably opens and reopens.
  * - Heart icon settings work correctly in Layout Config.
- * - File Picker allows selecting a custom heart image.
  */
 
 const MODULE_ID = "foundrystreamoverlay";
@@ -16,6 +15,8 @@ const MODULE_ID = "foundrystreamoverlay";
 // 1) Register Settings in Hooks.once("init")
 // -----------------------------------------
 Hooks.once("init", () => {
+  console.log(`${MODULE_ID} | Initializing module settings...`);
+
   game.settings.register(MODULE_ID, "hpPath", {
     name: "HP Path",
     hint: "Path to the current HP value in the actor's system data (e.g. attributes.hp.value).",
@@ -54,7 +55,7 @@ Hooks.once("init", () => {
     config: false
   });
 
-  // Submenu for Layout Config
+  // ✅ REGISTER MENU BUTTON: CONFIGURE LAYOUT
   game.settings.registerMenu(MODULE_ID, "layoutConfigMenu", {
     name: "Configure Layout & Display",
     label: "Configure Layout",
@@ -64,7 +65,7 @@ Hooks.once("init", () => {
     restricted: false
   });
 
-  // Submenu for Opening the Overlay Window
+  // ✅ REGISTER MENU BUTTON: OPEN OVERLAY WINDOW
   game.settings.registerMenu(MODULE_ID, "openOverlayWindow", {
     name: "Open Overlay Window",
     label: "Open Overlay",
@@ -73,6 +74,8 @@ Hooks.once("init", () => {
     type: OverlayWindowOpener,
     restricted: false
   });
+
+  console.log(`${MODULE_ID} | Module settings registered successfully.`);
 });
 
 // -----------------------------------------
@@ -124,9 +127,11 @@ class FoundryStreamOverlay extends Application {
 }
 
 // -----------------------------------------
-// 3) Open Overlay Window Function (Restored)
+// 3) Open Overlay Window Function (Fixed)
 // -----------------------------------------
 function openOverlayWindow() {
+  console.log(`${MODULE_ID} | Opening Overlay Window...`);
+
   if (!window.foundryStreamOverlayApp) {
     window.foundryStreamOverlayApp = new FoundryStreamOverlay();
   }
