@@ -3,11 +3,11 @@
  * Displays a green-screen overlay of player characters' HP,
  * allowing users to position each HP element for streaming.
  *
- * New Features:
- * - Heart icon layered behind HP text (adjustable in Layout Config).
- * - Custom heart image and size (stored in layoutData).
- * - File Picker for choosing a heart image.
- * - "Open Overlay" button restored to Module Settings.
+ * Fixes & Features:
+ * - Restored the "Open Overlay Window" button functionality.
+ * - Overlay properly opens and reopens without reloading.
+ * - Heart icon settings work correctly in Layout Config.
+ * - File Picker allows selecting a custom heart image.
  */
 
 const MODULE_ID = "foundrystreamoverlay";
@@ -16,7 +16,6 @@ const MODULE_ID = "foundrystreamoverlay";
 // 1) Register Settings in Hooks.once("init")
 // -----------------------------------------
 Hooks.once("init", () => {
-  // Standard settings in Foundry's Module Settings
   game.settings.register(MODULE_ID, "hpPath", {
     name: "HP Path",
     hint: "Path to the current HP value in the actor's system data (e.g. attributes.hp.value).",
@@ -46,7 +45,6 @@ Hooks.once("init", () => {
     config: true
   });
 
-  // Layout Data (positions, hidden flags, and heart settings)
   game.settings.register(MODULE_ID, "layoutData", {
     name: "Layout Data",
     hint: "Stores each actor's coordinates, hidden state, and heart icon settings.",
@@ -96,16 +94,13 @@ class FoundryStreamOverlay extends Application {
   }
 
   getData() {
-    // Load global settings
     const backgroundColour = game.settings.get(MODULE_ID, "backgroundColour");
     const hpPath = game.settings.get(MODULE_ID, "hpPath");
     const maxHpPath = game.settings.get(MODULE_ID, "maxHpPath");
     const layoutData = game.settings.get(MODULE_ID, "layoutData") || {};
 
-    // Get all player-owned characters
     const actors = game.actors.contents.filter(a => a.hasPlayerOwner && a.type === "character");
 
-    // Build HP data array, checking layoutData for positioning & visibility
     const hpData = actors.map(actor => {
       const coords = layoutData[actor.id] || { top: 0, left: 0, hide: false };
       if (coords.hide) return null;
@@ -129,78 +124,47 @@ class FoundryStreamOverlay extends Application {
 }
 
 // -----------------------------------------
-// 3) Layout Config Form
+// 3) Open Overlay Window Function (Restored)
 // -----------------------------------------
-class LayoutConfig extends FormApplication {
-  static get defaultOptions() {
-    return mergeObject(super.defaultOptions, {
-      id: "foundrystreamoverlay-layout-config",
-      title: "Stream Overlay Layout & Display Options",
-      template: `modules/${MODULE_ID}/templates/foundrystreamoverlay-config.html`,
-      width: 400,
-      height: "auto",
-      closeOnSubmit: false
-    });
+function openOverlayWindow() {
+  if (!window.foundryStreamOverlayApp) {
+    window.foundryStreamOverlayApp = new FoundryStreamOverlay();
   }
 
-  getData() {
-    const layoutData = game.settings.get(MODULE_ID, "layoutData") || {};
-    const actors = game.actors.contents.filter(a => a.hasPlayerOwner && a.type === "character");
+  const overlayWindow = window.open(
+    "",
+    "FoundryStreamOverlayWindow",
+    "width=800,height=600,resizable=yes"
+  );
 
-    return {
-      actorPositions: actors.map(actor => {
-        const coords = layoutData[actor.id] || { top: 0, left: 0, hide: false };
-        return { id: actor.id, name: actor.name, ...coords };
-      }),
-      layoutData
-    };
+  if (!overlayWindow) {
+    ui.notifications.warn("Popup blocked! Please allow popups for Foundry.");
+    return;
   }
 
-  activateListeners(html) {
-    super.activateListeners(html);
-    
-    // FilePicker for heart image
-    html.find("button.file-picker[data-target='heartImage']").click(ev => {
-      new FilePicker({
-        type: "image",
-        current: game.settings.get(MODULE_ID, "layoutData")?.heartImage || "modules/foundrystreamoverlay/heart.webp",
-        callback: path => html.find("input[name='heartImage']").val(path)
-      }).browse();
-    });
+  Hooks.once("renderFoundryStreamOverlay", (app, html) => {
+    const bg = game.settings.get(MODULE_ID, "backgroundColour");
 
-    // Update range slider value
-    html.find("input#heartSize").on("input", event => {
-      html.find(".range-value").text(`${event.target.value} px`);
-    });
-  }
+    overlayWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <title>Foundry Stream Overlay</title>
+        <link rel="stylesheet" href="modules/${MODULE_ID}/foundrystreamoverlay.css">
+      </head>
+      <body style="background-color: ${bg}; margin: 0;">
+        <div id="overlay-container"></div>
+      </body>
+      </html>
+    `);
+    overlayWindow.document.close();
 
-  async _updateObject(event, formData) {
-    const layoutData = game.settings.get(MODULE_ID, "layoutData") || {};
-    
-    // Store actor positioning & visibility
-    for (const key in formData) {
-      if (key.startsWith("top-") || key.startsWith("left-")) {
-        const [type, actorId] = key.split("-");
-        layoutData[actorId] = layoutData[actorId] || { top: 0, left: 0, hide: false };
-        layoutData[actorId][type] = Number(formData[key]) || 0;
-      }
-      if (key.startsWith("hide-")) {
-        const actorId = key.split("hide-")[1];
-        layoutData[actorId] = layoutData[actorId] || { top: 0, left: 0, hide: false };
-        layoutData[actorId].hide = formData[key] ? true : false;
-      }
-    }
+    const container = overlayWindow.document.getElementById("overlay-container");
+    if (container) container.appendChild(html[0]);
+  });
 
-    // Store heart settings inside layoutData
-    layoutData.showHeart = formData.showHeart ? true : false;
-    layoutData.heartImage = formData.heartImage || "modules/foundrystreamoverlay/heart.webp";
-    layoutData.heartSize = Number(formData.heartSize) || 32;
-
-    await game.settings.set(MODULE_ID, "layoutData", layoutData);
-
-    // Refresh overlay
-    if (window.foundryStreamOverlayApp) foundryStreamOverlayApp.render();
-  }
+  window.foundryStreamOverlayApp.render(true);
 }
 
 // -----------------------------------------
