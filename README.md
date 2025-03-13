@@ -10,6 +10,8 @@
 - Works with a single click or a “Manual Open” button.  
 - Helps you keep your audience informed about the party’s status without exposing the entire Foundry screen.
 
+![Overlay Example](greensh.png)
+
 ## Features
 
 1. **Configurable HP paths** – supports systems that store HP differently (e.g. `attributes.hp.value`).
@@ -18,15 +20,18 @@
 4. **Heart icon** – optional heart image with adjustable size and offset for a fun, thematic touch.
 5. **Green-screen background** – set any colour, but default is `#00ff00` for easy chroma keying.
 ## Usage
-
-1. **Open Overlay**  
+1. **Assign Players Actors**
+   - Players will need to have actors assigned to them to appear in the list
+2. **Open Overlay**  
    - Under **Module Settings**, there’s an “Open Overlay Window” option. Click that to pop up the overlay in a new window.  
    - Or call the `openOverlayWindow()` function from the console.
-2. **Stream Setup**  
+3. **Stream Setup**  
    - Capture that pop-up in OBS (or similar) as a browser/window source.  
    - Apply a **chroma key** filter matching the background colour (default green).
-3. **Live Updates**  
+4. **Live Updates**  
    - Whenever HP changes or you move the layout, the overlay refreshes automatically.
+
+![Overlay Example](layoutsh.png)
 
 ## Setup
 
@@ -38,17 +43,11 @@
 
 ## Installation
 
-1. **Manifest Link (Recommended)**  
    - Copy and paste the following link into Foundry’s **Install Module** prompt:  
      ```
      https://raw.githubusercontent.com/darkjenso/FoundryStreamOverlay/refs/heads/main/module.json
      ```
-   - Then click **Install**.  
-   
-2. **Manual**  
-   - Download or clone the **foundrystreamoverlay** module and copy it into your Foundry `modules/` directory.  
-   - In Foundry, go to **Configuration and Setup** → **Add-on Modules** → **Install Module** (or “Browse Packages” if you’re hosting it online).  
-   - Enable **Foundry Stream Overlay** in **Manage Modules** for your world.
+   - Then click **Install**. 
 
 
    - You can close and reopen if needed.
