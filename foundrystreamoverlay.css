@@ -1,11 +1,11 @@
-/* Overlay container uses the inline green background */
+/* Overlay container uses inline green background */
 .foundry-stream-overlay {
   color: #000;
   padding: 10px;
   border: none;
 }
 
-/* Hide any default header in pop-out windows */
+/* Hide default header/controls in pop-out windows */
 .no-header .window-title, .no-header .window-controls {
   display: none !important;
 }
@@ -20,5 +20,3 @@
   cursor: default;
   user-select: none;
 }
-
-/* Additional styling for text elements can be applied inline via the template */
