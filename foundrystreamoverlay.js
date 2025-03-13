@@ -1,9 +1,11 @@
 const MODULE_ID = "foundrystreamoverlay";
 
+// -----------------------------------------
+// 1) Register Settings in Hooks.once("init")
+// -----------------------------------------
 Hooks.once("init", () => {
-  // ============================
-  // (1) Register Settings
-  // ============================
+
+  // Visible in the standard Foundry Module Settings panel:
   game.settings.register(MODULE_ID, "hpPath", {
     name: "HP Path",
     hint: "Path to the current HP value in the actor's system data (e.g. attributes.hp.value).",
@@ -33,7 +35,7 @@ Hooks.once("init", () => {
     config: true
   });
 
-  // Heart icon settings with config: false so they're not in main module settings
+  // Heart icon settings (config: false so they appear in Layout Config only):
   game.settings.register(MODULE_ID, "showHeart", {
     name: "Show Heart Icon",
     hint: "If enabled, a heart icon will appear under the HP text.",
@@ -55,14 +57,24 @@ Hooks.once("init", () => {
 
   game.settings.register(MODULE_ID, "heartSize", {
     name: "Heart Icon Size (px)",
-    hint: "Width in pixels for the heart icon. Height auto-scales.",
+    hint: "Width in pixels for the heart icon. Height auto-scales to preserve aspect ratio.",
     scope: "client",
     type: Number,
     default: 32,
     config: false
   });
 
-  // Additional display-related settings in Layout Config
+  // NEW setting for text offset above the heart:
+  game.settings.register(MODULE_ID, "heartTextOffset", {
+    name: "Heart Icon Text Offset (px)",
+    hint: "How many pixels from the top of the heart icon the HP text should be placed.",
+    scope: "client",
+    type: Number,
+    default: 8,       // you can tweak the default
+    config: false
+  });
+
+  // Additional Layout Config settings:
   game.settings.register(MODULE_ID, "fontSize", {
     name: "Font Size",
     hint: "Font size for the overlay text (in pixels).",
@@ -117,7 +129,7 @@ Hooks.once("init", () => {
     config: false
   });
 
-  // Layout data (positions & hidden flags) stored in a single object
+  // Layout Data (positions & hidden flags) stored in a single object
   game.settings.register(MODULE_ID, "layoutData", {
     name: "Layout Data",
     hint: "Stores each actor's coordinates & hidden state.",
@@ -127,9 +139,7 @@ Hooks.once("init", () => {
     config: false
   });
 
-  // ============================
-  // (2) Register Submenus
-  // ============================
+  // Submenu for Layout Config
   game.settings.registerMenu(MODULE_ID, "layoutConfigMenu", {
     name: "Configure Layout & Display",
     label: "Configure Layout",
@@ -139,6 +149,7 @@ Hooks.once("init", () => {
     restricted: false
   });
 
+  // Submenu for Opening the Overlay Window
   game.settings.registerMenu(MODULE_ID, "openOverlayWindow", {
     name: "Open Overlay Window",
     label: "Open Overlay",
@@ -150,7 +161,7 @@ Hooks.once("init", () => {
 });
 
 // -----------------------------------------
-// 3) Main Overlay Application
+// 2) Main Overlay Application
 // -----------------------------------------
 class FoundryStreamOverlay extends Application {
   static get defaultOptions() {
@@ -181,9 +192,10 @@ class FoundryStreamOverlay extends Application {
     const layoutData = game.settings.get(MODULE_ID, "layoutData") || {};
 
     // Heart icon settings
-    const showHeart  = game.settings.get(MODULE_ID, "showHeart");
-    const heartImage = game.settings.get(MODULE_ID, "heartImage") || "modules/foundrystreamoverlay/heart.webp";
-    const heartSize  = game.settings.get(MODULE_ID, "heartSize") || 32;
+    const showHeart       = game.settings.get(MODULE_ID, "showHeart");
+    const heartImage      = game.settings.get(MODULE_ID, "heartImage") || "modules/foundrystreamoverlay/heart.webp";
+    const heartSize       = game.settings.get(MODULE_ID, "heartSize") || 32;
+    const heartTextOffset = game.settings.get(MODULE_ID, "heartTextOffset") || 8;
 
     // Grab all player-owned characters
     const actors = game.actors.contents.filter(a => a.hasPlayerOwner && a.type === "character");
@@ -217,18 +229,19 @@ class FoundryStreamOverlay extends Application {
       showMaxHP,
       showHeart,
       heartImage,
-      heartSize
+      heartSize,
+      heartTextOffset
     };
   }
 
   activateListeners(html) {
     super.activateListeners(html);
-    // If you add drag or click events, do it here
+    // Typically no extra listeners unless you add drag/click events
   }
 }
 
 // -----------------------------------------
-// 4) Layout Config Form
+// 3) Layout Config Form
 // -----------------------------------------
 class LayoutConfig extends FormApplication {
   static get defaultOptions() {
@@ -259,17 +272,18 @@ class LayoutConfig extends FormApplication {
     });
 
     // Display options
-    const showNames  = game.settings.get(MODULE_ID, "showNames");
-    const fontFamily = game.settings.get(MODULE_ID, "fontFamily");
-    const fontColor  = game.settings.get(MODULE_ID, "fontColor");
-    const fontSize   = game.settings.get(MODULE_ID, "fontSize");
-    const showMaxHP  = game.settings.get(MODULE_ID, "showMaxHP");
-    const boldAll    = game.settings.get(MODULE_ID, "boldAll");
+    const showNames      = game.settings.get(MODULE_ID, "showNames");
+    const fontFamily     = game.settings.get(MODULE_ID, "fontFamily");
+    const fontColor      = game.settings.get(MODULE_ID, "fontColor");
+    const fontSize       = game.settings.get(MODULE_ID, "fontSize");
+    const showMaxHP      = game.settings.get(MODULE_ID, "showMaxHP");
+    const boldAll        = game.settings.get(MODULE_ID, "boldAll");
 
     // Heart icon options
-    const showHeart  = game.settings.get(MODULE_ID, "showHeart");
-    const heartImage = game.settings.get(MODULE_ID, "heartImage");
-    const heartSize  = game.settings.get(MODULE_ID, "heartSize");
+    const showHeart      = game.settings.get(MODULE_ID, "showHeart");
+    const heartImage     = game.settings.get(MODULE_ID, "heartImage");
+    const heartSize      = game.settings.get(MODULE_ID, "heartSize");
+    const heartTextOffset = game.settings.get(MODULE_ID, "heartTextOffset");
 
     return {
       actorPositions,
@@ -281,20 +295,23 @@ class LayoutConfig extends FormApplication {
       boldAll,
       showHeart,
       heartImage,
-      heartSize
+      heartSize,
+      heartTextOffset
     };
   }
 
   async _updateObject(event, formData) {
-    // Reconstruct layoutData
+    // Reconstruct layoutData for actor positions
     const layoutData = {};
 
     for (const key in formData) {
+      // top-<actorId> / left-<actorId>
       if (key.startsWith("top-") || key.startsWith("left-")) {
         const [type, actorId] = key.split("-");
         if (!layoutData[actorId]) layoutData[actorId] = { top: 0, left: 0, hide: false };
         layoutData[actorId][type] = Number(formData[key]) || 0;
       }
+      // hide-<actorId>
       else if (key.startsWith("hide-")) {
         const actorId = key.replace("hide-", "");
         if (!layoutData[actorId]) layoutData[actorId] = { top: 0, left: 0, hide: false };
@@ -305,19 +322,22 @@ class LayoutConfig extends FormApplication {
     await game.settings.set(MODULE_ID, "layoutData", layoutData);
 
     // Save display settings
-    await game.settings.set(MODULE_ID, "showNames",  !!formData.showNames);
-    await game.settings.set(MODULE_ID, "fontFamily", formData.fontFamily);
-    await game.settings.set(MODULE_ID, "fontColor",  formData.fontColor);
-    await game.settings.set(MODULE_ID, "fontSize",   Number(formData.fontSize) || 16);
-    await game.settings.set(MODULE_ID, "showMaxHP",  !!formData.showMaxHP);
-    await game.settings.set(MODULE_ID, "boldAll",    !!formData.boldAll);
+    await game.settings.set(MODULE_ID, "showNames",      !!formData.showNames);
+    await game.settings.set(MODULE_ID, "fontFamily",     formData.fontFamily);
+    await game.settings.set(MODULE_ID, "fontColor",      formData.fontColor);
+    await game.settings.set(MODULE_ID, "fontSize",       Number(formData.fontSize) || 16);
+    await game.settings.set(MODULE_ID, "showMaxHP",      !!formData.showMaxHP);
+    await game.settings.set(MODULE_ID, "boldAll",        !!formData.boldAll);
 
     // Save heart icon settings
-    await game.settings.set(MODULE_ID, "showHeart",  !!formData.showHeart);
-    await game.settings.set(MODULE_ID, "heartImage", formData.heartImage);
-    await game.settings.set(MODULE_ID, "heartSize",  Number(formData.heartSize) || 32);
+    await game.settings.set(MODULE_ID, "showHeart",      !!formData.showHeart);
+    await game.settings.set(MODULE_ID, "heartImage",     formData.heartImage);
+    await game.settings.set(MODULE_ID, "heartSize",      Number(formData.heartSize) || 32);
 
-    // Re-render overlay if open
+    // Save the new offset from the form
+    await game.settings.set(MODULE_ID, "heartTextOffset", Number(formData.heartTextOffset) || 8);
+
+    // Re-render if overlay is open
     if (window.foundryStreamOverlayApp) {
       foundryStreamOverlayApp.render();
     }
@@ -325,7 +345,7 @@ class LayoutConfig extends FormApplication {
 }
 
 // -----------------------------------------
-// 5) "Open Overlay Window" Form
+// 4) "Open Overlay" Button Form
 // -----------------------------------------
 class OverlayWindowOpener extends FormApplication {
   static get defaultOptions() {
@@ -357,7 +377,7 @@ class OverlayWindowOpener extends FormApplication {
 }
 
 // -----------------------------------------
-// 6) openOverlayWindow() helper
+// 5) openOverlayWindow() - Single-Click w/ Hook
 // -----------------------------------------
 function openOverlayWindow() {
   const overlayWindow = window.open(
@@ -371,7 +391,7 @@ function openOverlayWindow() {
     return;
   }
 
-  // Create a new instance each time
+  // Create new instance each time
   const overlayApp = new FoundryStreamOverlay();
 
   // Wait for the overlay's HTML to render
@@ -390,7 +410,7 @@ function openOverlayWindow() {
 </html>`);
     overlayWindow.document.close();
 
-    // Move newly rendered overlay HTML into #overlay-container
+    // Move the newly rendered overlay HTML into #overlay-container
     const container = overlayWindow.document.getElementById("overlay-container");
     if (container) container.appendChild(html[0]);
   });
@@ -404,7 +424,7 @@ function openOverlayWindow() {
 }
 
 // -----------------------------------------
-// 7) Hook to update overlay on actor changes
+// 6) Update overlay on actor changes
 // -----------------------------------------
 Hooks.on("updateActor", (actor, update, options, userId) => {
   if (actor.hasPlayerOwner && actor.type === "character" && window.foundryStreamOverlayApp) {
