@@ -1,19 +1,21 @@
-/* Overlay container uses the inline background */
+/* Overlay container: the background is applied inline */
 .foundry-stream-overlay {
   color: #000;
   padding: 10px;
+  font-family: inherit;
   border: none;
 }
 
-/* Hide default header/controls in pop-out windows */
-.no-header .window-title, .no-header .window-controls {
-  display: none !important;
+/* Hide default window header if present */
+.no-header .window-title {
+  display: none;
 }
 
-/* HP element styling */
+/* HP elements: transparent background so no white box appears */
 .hp-line {
   position: absolute;
   background-color: transparent;
+  color: inherit;
   padding: 4px 8px;
   border-radius: 4px;
   margin: 0;
