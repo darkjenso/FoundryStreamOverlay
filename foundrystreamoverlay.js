@@ -184,54 +184,53 @@ class FoundryStreamOverlay extends Application {
     });
   }
 
-  getData() {
-    const backgroundColour = game.settings.get("foundrystreamoverlay", "backgroundColour");
-    // Font options are now taken from the separate settings.
-    const nameFontSize = game.settings.get("foundrystreamoverlay", "nameFontSize") + "px";
-    const nameFontColor = game.settings.get("foundrystreamoverlay", "nameFontColor");
-    const nameBold = game.settings.get("foundrystreamoverlay", "nameBold");
-    const numberFontSize = game.settings.get("foundrystreamoverlay", "numberFontSize") + "px";
-    const numberFontColor = game.settings.get("foundrystreamoverlay", "numberFontColor");
-    const numberBold = game.settings.get("foundrystreamoverlay", "numberBold");
-    const showNames = game.settings.get("foundrystreamoverlay", "showNames");
-    const hideMaxHP = game.settings.get("foundrystreamoverlay", "hideMaxHP");
-    const hpPath = game.settings.get("foundrystreamoverlay", "hpPath");
-    const maxHpPath = game.settings.get("foundrystreamoverlay", "maxHpPath");
-    const layoutData = game.settings.get("foundrystreamoverlay", "layoutData") || {};
-    const hiddenActors = game.settings.get("foundrystreamoverlay", "hiddenActors") || {};
+getData() {
+  const backgroundColour = game.settings.get("foundrystreamoverlay", "backgroundColour");
+  const nameFontSize = game.settings.get("foundrystreamoverlay", "nameFontSize") + "px";
+  const nameFontColor = game.settings.get("foundrystreamoverlay", "nameFontColor");
+  const nameBold = game.settings.get("foundrystreamoverlay", "nameBold");
+  const numberFontSize = game.settings.get("foundrystreamoverlay", "numberFontSize") + "px";
+  const numberFontColor = game.settings.get("foundrystreamoverlay", "numberFontColor");
+  const numberBold = game.settings.get("foundrystreamoverlay", "numberBold");
+  const showNames = game.settings.get("foundrystreamoverlay", "showNames");
+  const hideMaxHP = game.settings.get("foundrystreamoverlay", "hideMaxHP");
+  const hpPath = game.settings.get("foundrystreamoverlay", "hpPath");
+  const maxHpPath = game.settings.get("foundrystreamoverlay", "maxHpPath");
+  const layoutData = game.settings.get("foundrystreamoverlay", "layoutData") || {};
+  const hiddenActors = game.settings.get("foundrystreamoverlay", "hiddenActors") || {};
 
-    // Get all player-owned characters.
-    const actors = game.actors.contents.filter(a => a.hasPlayerOwner && a.type === "character");
-    const hpData = actors.map(actor => {
-      // Check if this actor is hidden.
-      const isHidden = hiddenActors[actor.id] || false;
-      const current = foundry.utils.getProperty(actor.system, hpPath) ?? "N/A";
-      const max = foundry.utils.getProperty(actor.system, maxHpPath) ?? "N/A";
-      const coords = layoutData[actor.id] || { top: 0, left: 0 };
-      return {
-        id: actor.id,
-        name: actor.name,
-        current,
-        max,
-        top: coords.top,
-        left: coords.left,
-        hidden: isHidden
-      };
-    });
-
+  // Get all player-owned characters.
+  const actors = game.actors.contents.filter(a => a.hasPlayerOwner && a.type === "character");
+  const hpData = actors.map(actor => {
+    const isHidden = hiddenActors[actor.id] || false;
+    const current = foundry.utils.getProperty(actor.system, hpPath) ?? "N/A";
+    const max = foundry.utils.getProperty(actor.system, maxHpPath) ?? "N/A";
+    const coords = layoutData[actor.id] || { top: 0, left: 0 };
     return {
-      hpData,
-      backgroundColour,
-      showNames,
-      hideMaxHP,
-      nameFontSize,
-      nameFontColor,
-      nameBold,
-      numberFontSize,
-      numberFontColor,
-      numberBold
+      id: actor.id,
+      name: actor.name,
+      current,
+      max,
+      top: coords.top,
+      left: coords.left,
+      hidden: isHidden
     };
-  }
+  });
+
+  return {
+    hpData,
+    backgroundColour,
+    nameFontSize,
+    nameFontColor,
+    nameBold,
+    numberFontSize,
+    numberFontColor,
+    numberBold,
+    showNames,
+    hideMaxHP
+  };
+}
+
 
   activateListeners(html) {
     super.activateListeners(html);
