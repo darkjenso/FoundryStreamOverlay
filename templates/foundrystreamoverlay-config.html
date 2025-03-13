@@ -1,5 +1,5 @@
 <form>
-  <p>Use this form to position each player character’s HP entry on the overlay. Enter values for <em>top</em> and <em>left</em> (in pixels).</p>
+  <h3>Actor Positions</h3>
   <table style="width:100%; text-align:left;">
     <thead>
       <tr>
@@ -12,16 +12,26 @@
       {{#each actorPositions}}
       <tr>
         <td>{{this.name}}</td>
-        <td>
-          <input type="number" name="top-{{this.id}}" value="{{this.top}}" />
-        </td>
-        <td>
-          <input type="number" name="left-{{this.id}}" value="{{this.left}}" />
-        </td>
+        <td><input type="number" name="top-{{this.id}}" value="{{this.top}}" /></td>
+        <td><input type="number" name="left-{{this.id}}" value="{{this.left}}" /></td>
       </tr>
       {{/each}}
     </tbody>
   </table>
+  <hr/>
+  <h3>Display Options</h3>
+  <div class="form-group">
+    <label for="showNames">Show Player Names</label>
+    <input type="checkbox" name="showNames" id="showNames" {{#if showNames}}checked{{/if}} />
+  </div>
+  <div class="form-group">
+    <label for="fontFamily">Font Family</label>
+    <input type="text" name="fontFamily" id="fontFamily" value="{{fontFamily}}" />
+  </div>
+  <div class="form-group">
+    <label for="fontColor">Font Colour</label>
+    <input type="text" name="fontColor" id="fontColor" value="{{fontColor}}" />
+  </div>
   <div class="form-group" style="margin-top:1em; text-align:right;">
     <button type="submit" class="dialog-button">Save</button>
   </div>
