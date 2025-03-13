@@ -60,37 +60,33 @@
     <input type="number" name="fontSize" id="fontSize" value="{{fontSize}}" />
   </div>
 
-  <!-- Optionally you can also place these heart settings in the standard Foundry module config 
-       (like hpPath, etc.), but if you prefer them in this custom layout config, here they are: -->
-
   <hr/>
   <h3>Heart Icon Options</h3>
 
   <!-- Show Heart -->
   <div class="form-group">
     <label for="showHeart">Show Heart Icon</label>
-    <input type="checkbox" name="showHeart" id="showHeart" {{#if ../showHeart}}checked{{/if}} />
-    <p class="notes">If enabled, a heart icon will appear under each HP entry.</p>
+    <input type="checkbox" name="showHeart" id="showHeart" {{#if showHeart}}checked{{/if}} />
+    <p class="notes">If enabled, a heart icon will appear behind each HP entry.</p>
   </div>
 
   <!-- Heart Image Path + File Picker Button -->
   <div class="form-group">
-    <label for="heartImage">Heart Image Path</label>
+    <label for="heartImage">Heart Image</label>
     <div class="form-fields">
-      <input type="text" name="heartImage" id="heartImage" value="{{../heartImage}}" placeholder="Path to heart image" />
+      <input type="text" name="heartImage" id="heartImage" value="{{heartImage}}" placeholder="Path to heart image..." />
       <button type="button" class="file-picker" data-target="heartImage" data-type="image">
         Browse
       </button>
     </div>
-    <p class="notes">Select or enter the path to your preferred heart icon (webp/png/jpg).</p>
+    <p class="notes">Choose or upload an image for the heart icon.</p>
   </div>
 
   <!-- Heart Size -->
   <div class="form-group">
     <label for="heartSize">Heart Icon Size (px)</label>
-    <input type="range" name="heartSize" id="heartSize" value="{{../heartSize}}" min="8" max="128" step="1" />
-    <span class="range-value">{{../heartSize}} px</span>
-    <p class="notes">Adjust the width of the heart icon. Height auto-adjusts to maintain aspect ratio.</p>
+    <input type="range" name="heartSize" id="heartSize" value="{{heartSize}}" min="8" max="128" step="1" />
+    <span class="range-value">{{heartSize}} px</span>
   </div>
 
   <div class="form-group" style="margin-top:1em; text-align:right;">
