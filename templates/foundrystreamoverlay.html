@@ -17,46 +17,43 @@
                top: 0;
                left: 0;
                width: 100%;
+               text-align: center;
                height: 100%;
                z-index: 1;
              " />
       {{/if}}
 
-      <!-- Text Container -->
+      <!-- Text container, centered in the box -->
       <div class="hp-text"
            style="
+             display: flex;
+             flex-direction: column;
+             justify-content: center;
+             align-items: center;
+             text-align: center;
              position: absolute;
-             top: {{../heartTextOffset}}px;
+             top: 0;
              left: 0;
              width: 100%;
+             height: 100%;
              z-index: 2;
-             display: flex;
-             flex-flow: row nowrap;
-             justify-content: space-between;
-             align-items: center;
-             padding: 0 4px; /* optional horizontal spacing */
            ">
-
         {{#if ../boldAll}}
           <strong>
-            <span class="hp-name">
-              {{#if ../showNames}}
-                {{name}}
-              {{/if}}
-            </span>
-            <span class="hp-values">
+            {{#if ../showNames}}
+              <div>{{name}}</div>
+            {{/if}}
+            <div>
               {{current}}{{#if ../showMaxHP}} / {{max}}{{/if}}
-            </span>
+            </div>
           </strong>
         {{else}}
-          <span class="hp-name">
-            {{#if ../showNames}}
-              {{name}}
-            {{/if}}
-          </span>
-          <span class="hp-values">
+          {{#if ../showNames}}
+            <div>{{name}}</div>
+          {{/if}}
+          <div>
             {{current}}{{#if ../showMaxHP}} / {{max}}{{/if}}
-          </span>
+          </div>
         {{/if}}
       </div>
     </div>
