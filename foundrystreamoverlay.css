@@ -1,20 +1,21 @@
-/* This is the overlay container.
-   The green background is applied via the inline style in your template,
-   so we don't override it here. */
+/* Overlay container: no override on background, so inline green shows */
 .foundry-stream-overlay {
-  /* Do not specify a background here—let the inline style (e.g. #00ff00) show through */
   color: #000;
   padding: 10px;
   font-family: inherit;
   border: none;
 }
 
-/* .hp-line elements represent each actor's HP display.
-   We remove any background so that only the overlay's green shows. */
+/* Hide the default window header (if any) */
+.no-header .window-title {
+  display: none;
+}
+
+/* HP elements: transparent background to avoid a white box */
 .hp-line {
   position: absolute;
-  background-color: transparent; /* Ensures no white or other background is behind the text */
-  color: #000;
+  background-color: transparent;
+  color: inherit;
   padding: 4px 8px;
   border-radius: 4px;
   margin: 0;
