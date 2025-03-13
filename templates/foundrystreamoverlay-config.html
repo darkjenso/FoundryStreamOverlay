@@ -1,11 +1,12 @@
 <form>
-  <h3>Actor Positions</h3>
+  <h3>Actor Positions & Visibility</h3>
   <table style="width:100%; text-align:left;">
     <thead>
       <tr>
         <th>Name</th>
         <th>Top (px)</th>
         <th>Left (px)</th>
+        <th>Hide</th>
       </tr>
     </thead>
     <tbody>
@@ -14,6 +15,9 @@
         <td>{{this.name}}</td>
         <td><input type="number" name="top-{{this.id}}" value="{{this.top}}" /></td>
         <td><input type="number" name="left-{{this.id}}" value="{{this.left}}" /></td>
+        <td>
+          <input type="checkbox" name="hidden-{{this.id}}" {{#if this.hidden}}checked{{/if}} />
+        </td>
       </tr>
       {{/each}}
     </tbody>
@@ -25,16 +29,34 @@
     <input type="checkbox" name="showNames" id="showNames" {{#if showNames}}checked{{/if}} />
   </div>
   <div class="form-group">
-    <label for="fontFamily">Font Family</label>
-    <input type="text" name="fontFamily" id="fontFamily" value="{{fontFamily}}" />
+    <label for="hideMaxHP">Hide Max HP</label>
+    <input type="checkbox" name="hideMaxHP" id="hideMaxHP" {{#if hideMaxHP}}checked{{/if}} />
+  </div>
+  <h4>Name Styling</h4>
+  <div class="form-group">
+    <label for="nameFontSize">Font Size (px)</label>
+    <input type="number" name="nameFontSize" id="nameFontSize" value="{{nameFontSize}}" />
   </div>
   <div class="form-group">
-    <label for="fontColor">Font Colour</label>
-    <input type="text" name="fontColor" id="fontColor" value="{{fontColor}}" />
+    <label for="nameBold">Bold</label>
+    <input type="checkbox" name="nameBold" id="nameBold" {{#if nameBold}}checked{{/if}} />
   </div>
   <div class="form-group">
-    <label for="fontSize">Font Size (px)</label>
-    <input type="number" name="fontSize" id="fontSize" value="{{fontSize}}" />
+    <label for="nameFontColor">Font Colour</label>
+    <input type="text" name="nameFontColor" id="nameFontColor" value="{{nameFontColor}}" />
+  </div>
+  <h4>Number Styling</h4>
+  <div class="form-group">
+    <label for="numberFontSize">Font Size (px)</label>
+    <input type="number" name="numberFontSize" id="numberFontSize" value="{{numberFontSize}}" />
+  </div>
+  <div class="form-group">
+    <label for="numberBold">Bold</label>
+    <input type="checkbox" name="numberBold" id="numberBold" {{#if numberBold}}checked{{/if}} />
+  </div>
+  <div class="form-group">
+    <label for="numberFontColor">Font Colour</label>
+    <input type="text" name="numberFontColor" id="numberFontColor" value="{{numberFontColor}}" />
   </div>
   <div class="form-group" style="margin-top:1em; text-align:right;">
     <button type="submit" class="dialog-button">Save</button>
