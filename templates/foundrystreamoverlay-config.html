@@ -6,7 +6,7 @@
         <th>Name</th>
         <th>Top (px)</th>
         <th>Left (px)</th>
-        <th>Hide?</th> <!-- NEW column -->
+        <th>Hide?</th>
       </tr>
     </thead>
     <tbody>
@@ -20,7 +20,6 @@
           <input type="number" name="left-{{this.id}}" value="{{this.left}}" />
         </td>
         <td>
-          <!-- NEW: hide checkbox -->
           <input type="checkbox" name="hide-{{this.id}}" {{#if this.hide}}checked{{/if}} />
         </td>
       </tr>
@@ -36,13 +35,11 @@
     <input type="checkbox" name="showNames" id="showNames" {{#if showNames}}checked{{/if}} />
   </div>
 
-  <!-- NEW: Show Max HP -->
   <div class="form-group">
     <label for="showMaxHP">Show Max HP</label>
     <input type="checkbox" name="showMaxHP" id="showMaxHP" {{#if showMaxHP}}checked{{/if}} />
   </div>
 
-  <!-- NEW: Bold All -->
   <div class="form-group">
     <label for="boldAll">Bold All Text</label>
     <input type="checkbox" name="boldAll" id="boldAll" {{#if boldAll}}checked{{/if}} />
@@ -52,13 +49,48 @@
     <label for="fontFamily">Font Family</label>
     <input type="text" name="fontFamily" id="fontFamily" value="{{fontFamily}}" />
   </div>
+
   <div class="form-group">
     <label for="fontColor">Font Colour</label>
     <input type="text" name="fontColor" id="fontColor" value="{{fontColor}}" />
   </div>
+
   <div class="form-group">
     <label for="fontSize">Font Size (px)</label>
     <input type="number" name="fontSize" id="fontSize" value="{{fontSize}}" />
+  </div>
+
+  <!-- Optionally you can also place these heart settings in the standard Foundry module config 
+       (like hpPath, etc.), but if you prefer them in this custom layout config, here they are: -->
+
+  <hr/>
+  <h3>Heart Icon Options</h3>
+
+  <!-- Show Heart -->
+  <div class="form-group">
+    <label for="showHeart">Show Heart Icon</label>
+    <input type="checkbox" name="showHeart" id="showHeart" {{#if ../showHeart}}checked{{/if}} />
+    <p class="notes">If enabled, a heart icon will appear under each HP entry.</p>
+  </div>
+
+  <!-- Heart Image Path + File Picker Button -->
+  <div class="form-group">
+    <label for="heartImage">Heart Image Path</label>
+    <div class="form-fields">
+      <input type="text" name="heartImage" id="heartImage" value="{{../heartImage}}" placeholder="Path to heart image" />
+      <button type="button" class="file-picker" data-target="heartImage" data-type="image">
+        Browse
+      </button>
+    </div>
+    <p class="notes">Select or enter the path to your preferred heart icon (webp/png/jpg).</p>
+  </div>
+
+  <!-- Heart Size -->
+  <div class="form-group">
+    <label for="heartSize">Heart Icon Size (px)</label>
+    <input type="range" name="heartSize" id="heartSize" value="{{../heartSize}}" min="8" max="128" step="1" />
+    <span class="range-value">{{../heartSize}} px</span>
+    <p class="notes">Adjust the width of the heart icon. Height auto-adjusts to maintain aspect ratio.</p>
   </div>
 
   <div class="form-group" style="margin-top:1em; text-align:right;">
