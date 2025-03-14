@@ -1,35 +1,28 @@
 const MODULE_ID = "foundrystreamoverlay";
 
+// Example data fields for D&D5e.
+const POSSIBLE_DATA_PATHS = [
+  { label: "Actor Name", path: "name" },
+  { label: "Current HP", path: "system.attributes.hp.value" },
+  { label: "Max HP", path: "system.attributes.hp.max" },
+  { label: "AC", path: "system.attributes.ac.value" },
+  { label: "Level", path: "system.details.level" },
+  { label: "STR Score", path: "system.abilities.str.value" },
+  { label: "DEX Score", path: "system.abilities.dex.value" },
+  { label: "CON Score", path: "system.abilities.con.value" },
+  { label: "INT Score", path: "system.abilities.int.value" },
+  { label: "WIS Score", path: "system.abilities.wis.value" },
+  { label: "CHA Score", path: "system.abilities.cha.value" }
+];
+
 // -----------------------------------------
-// 1) Register Settings in Hooks.once("init")
+// 1) Register Settings and Helpers
 // -----------------------------------------
 Hooks.once("init", () => {
-
-
-  Handlebars.registerHelper('ifEquals', function(a, b, options) {
-  return (a === b) ? options.fn(this) : "";
-});
-  // Visible in the standard Foundry Module Settings panel:
-  game.settings.register(MODULE_ID, "hpPath", {
-    name: "HP Path",
-    hint: "Path to the current HP value in the actor's system data (e.g. attributes.hp.value).",
-    scope: "world",
-    type: String,
-    default: "attributes.hp.value",
-    config: true,
-    restricted: true
+  Handlebars.registerHelper("ifEquals", function(arg1, arg2, options) {
+    return (arg1 === arg2) ? options.fn(this) : options.inverse(this);
   });
-
-  game.settings.register(MODULE_ID, "maxHpPath", {
-    name: "Max HP Path",
-    hint: "Path to the maximum HP value in the actor's system data (e.g. attributes.hp.max).",
-    scope: "world",
-    type: String,
-    default: "attributes.hp.max",
-    config: true,
-    restricted: true
-  });
-
+  
   game.settings.register(MODULE_ID, "backgroundColour", {
     name: "Background Colour",
     hint: "Chroma key colour for the overlay background.",
@@ -39,121 +32,24 @@ Hooks.once("init", () => {
     config: true
   });
 
-  // Heart icon settings (config: false so they appear in Layout Config only):
-  game.settings.register(MODULE_ID, "showHeart", {
-    name: "Show Heart Icon",
-    hint: "If enabled, a heart icon will appear under the HP text.",
+  game.settings.register(MODULE_ID, "overlayItems", {
+    name: "Overlay Items (Dynamic Rows)",
+    hint: "Stores each row’s settings—text and image rows with location, order and styling.",
     scope: "client",
-    type: Boolean,
-    default: true,
+    type: Array,
+    default: [],
     config: false
   });
 
-  game.settings.register(MODULE_ID, "heartImage", {
-    name: "Heart Icon Image",
-    hint: "Path to the heart icon image (e.g., modules/foundrystreamoverlay/heart.webp).",
-    scope: "client",
-    type: String,
-    default: "modules/foundrystreamoverlay/heart.webp",
-    filePicker: true,
-    config: false
-  });
-
-  game.settings.register(MODULE_ID, "heartSize", {
-    name: "Heart Icon Size (px)",
-    hint: "Width in pixels for the heart icon. Height auto-scales to preserve aspect ratio.",
-    scope: "world",
-    type: Number,
-    default: 92,
-    config: false
-  });
-
-  // NEW setting for text offset above the heart:
-  game.settings.register(MODULE_ID, "heartTextOffset", {
-    name: "Heart Icon Text Offset (px)",
-    hint: "How many pixels from the top of the heart icon the HP text should be placed.",
-    scope: "world",
-    type: Number,
-    default: 30,       // you can tweak the default
-    config: false
-  });
-
-  // Additional Layout Config settings:
-  game.settings.register(MODULE_ID, "fontSize", {
-    name: "Font Size",
-    hint: "Font size for the overlay text (in pixels).",
-    scope: "client",
-    type: Number,
-    default: 16,
-    config: false
-  });
-
-  game.settings.register(MODULE_ID, "showNames", {
-    name: "Show Player Names",
-    hint: "If enabled, the overlay displays the player's name along with their HP.",
-    scope: "client",
-    type: Boolean,
-    default: false,
-    config: false
-  });
-
-  game.settings.register(MODULE_ID, "fontFamily", {
-    name: "Font Family",
-    hint: "The font family for the overlay text.",
-    scope: "client",
-    type: String,
-    default: "Arial, sans-serif",
-    config: false
-  });
-
-  game.settings.register(MODULE_ID, "fontColor", {
-    name: "Font Colour",
-    hint: "The font colour for the overlay text.",
-    scope: "client",
-    type: String,
-    default: "#000000",
-    config: false
-  });
-
-  game.settings.register(MODULE_ID, "showMaxHP", {
-    name: "Show Max HP",
-    hint: "If enabled, displays the max HP. If disabled, only current HP is shown.",
-    scope: "client",
-    type: Boolean,
-    default: true,
-    config: false
-  });
-
-  game.settings.register(MODULE_ID, "boldAll", {
-    name: "Bold All Text",
-    hint: "If enabled, the actor names and HP values will be wrapped in <strong>.",
-    scope: "client",
-    type: Boolean,
-    default: false,
-    config: false
-  });
-
-  // Layout Data (positions & hidden flags) stored in a single object
-  game.settings.register(MODULE_ID, "layoutData", {
-    name: "Layout Data",
-    hint: "Stores each actor's coordinates & hidden state.",
-    scope: "client",
-    type: Object,
-    default: {},
-    config: false
-  });
-
-  // Submenu for Layout Config
-  game.settings.registerMenu(MODULE_ID, "layoutConfigMenu", {
-    name: "Configure Layout & Display",
-    label: "Configure Layout",
-    hint: "Position each actor's HP element and set display options.",
-    icon: "fas fa-map-pin",
-    type: LayoutConfig,
+  game.settings.registerMenu(MODULE_ID, "overlayConfigMenu", {
+    name: "Configure Overlay Items",
+    label: "Configure Overlay",
+    hint: "Add or remove text rows or a background image. Use the order buttons to adjust layering.",
+    icon: "fas fa-bars",
+    type: OverlayConfig,
     restricted: false
   });
 
-  // Submenu for Opening the Overlay Window
   game.settings.registerMenu(MODULE_ID, "openOverlayWindow", {
     name: "Open Overlay Window",
     label: "Open Overlay",
@@ -183,167 +79,227 @@ class FoundryStreamOverlay extends Application {
   }
 
   getData() {
-    // Basic text settings
     const backgroundColour = game.settings.get(MODULE_ID, "backgroundColour");
-    const fontSize   = game.settings.get(MODULE_ID, "fontSize") + "px";
-    const fontFamily = game.settings.get(MODULE_ID, "fontFamily");
-    const fontColor  = game.settings.get(MODULE_ID, "fontColor");
-    const showNames  = game.settings.get(MODULE_ID, "showNames");
-    const boldAll    = game.settings.get(MODULE_ID, "boldAll");
-    const showMaxHP  = game.settings.get(MODULE_ID, "showMaxHP");
-    const hpPath     = game.settings.get(MODULE_ID, "hpPath");
-    const maxHpPath  = game.settings.get(MODULE_ID, "maxHpPath");
-    const layoutData = game.settings.get(MODULE_ID, "layoutData") || {};
+    const overlayItems = game.settings.get(MODULE_ID, "overlayItems") || [];
 
-    // Heart icon settings
-    const showHeart       = game.settings.get(MODULE_ID, "showHeart");
-    const heartImage      = game.settings.get(MODULE_ID, "heartImage") || "modules/foundrystreamoverlay/heart.webp";
-    const heartSize       = game.settings.get(MODULE_ID, "heartSize") || 32;
-    const heartTextOffset = game.settings.get(MODULE_ID, "heartTextOffset") || 8;
-
-    // Grab all player-owned characters
-    const actors = game.actors.contents.filter(a => a.hasPlayerOwner && a.type === "character");
-
-    // Build HP data
-    const hpData = actors
-      .map(actor => {
-        const coords = layoutData[actor.id] || { top: 0, left: 0, hide: false };
-        if (coords.hide) return null; // skip hidden
-        const current = foundry.utils.getProperty(actor.system, hpPath) ?? "N/A";
-        const max     = foundry.utils.getProperty(actor.system, maxHpPath) ?? "N/A";
+    // Process each item as either text or image.
+    const items = overlayItems.map(item => {
+      if (item.type === "image") {
         return {
-          id: actor.id,
-          name: actor.name,
-          current,
-          max,
-          top: coords.top,
-          left: coords.left
+          type: "image",
+          imagePath: item.imagePath || "",
+          imageSize: item.imageSize || 100,
+          top: item.top ?? 0,
+          left: item.left ?? 0,
+          hide: item.hide ?? false,
+          order: item.order ?? 0
         };
-      })
-      .filter(a => a !== null);
+      } else {
+        const actor = game.actors.get(item.actorId);
+        if (!actor) return null;
+        if (item.hide) return null;
+        let textValue;
+        if (item.dataPath === "name") {
+          textValue = actor.name;
+        } else {
+          textValue = foundry.utils.getProperty(actor, item.dataPath);
+        }
+        if (textValue === null || textValue === undefined) textValue = "N/A";
+        return {
+          type: "text",
+          actorId: item.actorId,
+          dataPath: item.dataPath,
+          data: textValue,
+          top: item.top ?? 0,
+          left: item.left ?? 0,
+          hide: item.hide ?? false,
+          fontSize: item.fontSize ?? 16,
+          bold: item.bold ?? false,
+          fontFamily: item.fontFamily ?? "Arial, sans-serif",
+          fontColor: item.fontColor ?? "#000000",
+          order: item.order ?? 0
+        };
+      }
+    }).filter(Boolean);
+
+    // Sort items by order in ascending order (first item in config should be in front).
+    items.sort((a, b) => a.order - b.order);
+    // Now compute renderOrder: the first item gets highest z-index.
+    const max = items.length;
+    items.forEach((item, index) => {
+      item.renderOrder = max - index;
+    });
 
     return {
-      hpData,
       backgroundColour,
-      fontSize,
-      fontFamily,
-      fontColor,
-      showNames,
-      boldAll,
-      showMaxHP,
-      showHeart,
-      heartImage,
-      heartSize,
-      heartTextOffset
+      items
     };
   }
 
   activateListeners(html) {
     super.activateListeners(html);
-    // Typically no extra listeners unless you add drag/click events
   }
 }
 
 // -----------------------------------------
-// 3) Layout Config Form
+// 3) Overlay Config Form (Dynamic Rows)
 // -----------------------------------------
-class LayoutConfig extends FormApplication {
+class OverlayConfig extends FormApplication {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
-      id: "foundrystreamoverlay-layout-config",
-      title: "Stream Overlay Layout & Display Options",
+      title: "Overlay Item Config",
+      id: "foundrystreamoverlay-config",
       template: `modules/${MODULE_ID}/templates/foundrystreamoverlay-config.html`,
-      width: 400,
+      width: 800,
       height: "auto",
       closeOnSubmit: false
     });
   }
 
   getData() {
-    const layoutData = game.settings.get(MODULE_ID, "layoutData") || {};
-    const actors = game.actors.contents.filter(a => a.hasPlayerOwner && a.type === "character");
-
-    // Actor positions
-    const actorPositions = actors.map(actor => {
-      const coords = layoutData[actor.id] || { top: 0, left: 0, hide: false };
+    const overlayItems = game.settings.get(MODULE_ID, "overlayItems") || [];
+    const rows = overlayItems.map((item, idx) => {
       return {
-        id: actor.id,
-        name: actor.name,
-        top: coords.top,
-        left: coords.left,
-        hide: coords.hide || false
+        idx,
+        type: item.type || "text",
+        actorId: item.actorId || "",
+        dataPath: item.dataPath || "name",
+        top: item.top || 0,
+        left: item.left || 0,
+        hide: item.hide || false,
+        fontSize: item.fontSize || 16,
+        bold: item.bold || false,
+        fontFamily: item.fontFamily || "Arial, sans-serif",
+        fontColor: item.fontColor || "#000000",
+        imagePath: item.imagePath || "",
+        imageSize: item.imageSize || 100,
+        order: item.order || idx  // default order is the index
       };
     });
+    const dataPathChoices = POSSIBLE_DATA_PATHS;
+    const allActors = game.actors.contents.filter(a => a.type === "character" || a.hasPlayerOwner);
+    return { rows, allActors, dataPathChoices };
+  }
 
-    // Display options
-    const showNames      = game.settings.get(MODULE_ID, "showNames");
-    const fontFamily     = game.settings.get(MODULE_ID, "fontFamily");
-    const fontColor      = game.settings.get(MODULE_ID, "fontColor");
-    const fontSize       = game.settings.get(MODULE_ID, "fontSize");
-    const showMaxHP      = game.settings.get(MODULE_ID, "showMaxHP");
-    const boldAll        = game.settings.get(MODULE_ID, "boldAll");
+  activateListeners(html) {
+    super.activateListeners(html);
+    html.find(".add-row").click(this._onAddRow.bind(this));
+    html.find(".add-image").click(this._onAddImage.bind(this));
+    html.on("click", ".remove-row", this._onRemoveRow.bind(this));
+    html.find(".move-up").click(this._onMoveUp.bind(this));
+    html.find(".move-down").click(this._onMoveDown.bind(this));
+  }
 
-    // Heart icon options
-    const showHeart      = game.settings.get(MODULE_ID, "showHeart");
-    const heartImage     = game.settings.get(MODULE_ID, "heartImage");
-    const heartSize      = game.settings.get(MODULE_ID, "heartSize");
-    const heartTextOffset = game.settings.get(MODULE_ID, "heartTextOffset");
+  async _onAddRow(event) {
+    event.preventDefault();
+    const overlayItems = game.settings.get(MODULE_ID, "overlayItems") || [];
+    overlayItems.push({
+      type: "text",
+      actorId: "",
+      dataPath: "name",
+      top: 0,
+      left: 0,
+      hide: false,
+      fontSize: 16,
+      bold: false,
+      fontFamily: "Arial, sans-serif",
+      fontColor: "#000000",
+      order: overlayItems.length
+    });
+    await game.settings.set(MODULE_ID, "overlayItems", overlayItems);
+    this.render();
+  }
 
-    return {
-      actorPositions,
-      showNames,
-      fontFamily,
-      fontColor,
-      fontSize,
-      showMaxHP,
-      boldAll,
-      showHeart,
-      heartImage,
-      heartSize,
-      heartTextOffset
-    };
+  async _onAddImage(event) {
+    event.preventDefault();
+    const overlayItems = game.settings.get(MODULE_ID, "overlayItems") || [];
+    overlayItems.push({
+      type: "image",
+      imagePath: "",
+      imageSize: 100,
+      top: 0,
+      left: 0,
+      hide: false,
+      order: overlayItems.length
+    });
+    await game.settings.set(MODULE_ID, "overlayItems", overlayItems);
+    this.render();
+  }
+
+  async _onRemoveRow(event) {
+    event.preventDefault();
+    const index = Number(event.currentTarget.dataset.index);
+    const overlayItems = game.settings.get(MODULE_ID, "overlayItems") || [];
+    overlayItems.splice(index, 1);
+    await game.settings.set(MODULE_ID, "overlayItems", overlayItems);
+    this.render();
+  }
+
+  async _onMoveUp(event) {
+    event.preventDefault();
+    const index = Number(event.currentTarget.dataset.index);
+    const overlayItems = game.settings.get(MODULE_ID, "overlayItems") || [];
+    if (index > 0) {
+      [overlayItems[index - 1], overlayItems[index]] = [overlayItems[index], overlayItems[index - 1]];
+      await game.settings.set(MODULE_ID, "overlayItems", overlayItems);
+      this.render();
+    }
+  }
+
+  async _onMoveDown(event) {
+    event.preventDefault();
+    const index = Number(event.currentTarget.dataset.index);
+    const overlayItems = game.settings.get(MODULE_ID, "overlayItems") || [];
+    if (index < overlayItems.length - 1) {
+      [overlayItems[index], overlayItems[index + 1]] = [overlayItems[index + 1], overlayItems[index]];
+      await game.settings.set(MODULE_ID, "overlayItems", overlayItems);
+      this.render();
+    }
   }
 
   async _updateObject(event, formData) {
-    // Reconstruct layoutData for actor positions
-    const layoutData = {};
-
-    for (const key in formData) {
-      // top-<actorId> / left-<actorId>
-      if (key.startsWith("top-") || key.startsWith("left-")) {
-        const [type, actorId] = key.split("-");
-        if (!layoutData[actorId]) layoutData[actorId] = { top: 0, left: 0, hide: false };
-        layoutData[actorId][type] = Number(formData[key]) || 0;
+    const newItems = [];
+    for (let [key, val] of Object.entries(formData)) {
+      const [field, idx] = key.split("-");
+      if (!idx) continue;
+      const rowIndex = Number(idx);
+      if (!newItems[rowIndex]) {
+        newItems[rowIndex] = {
+          type: "text",
+          actorId: "",
+          dataPath: "name",
+          top: 0,
+          left: 0,
+          hide: false,
+          fontSize: 16,
+          bold: false,
+          fontFamily: "Arial, sans-serif",
+          fontColor: "#000000",
+          imagePath: "",
+          imageSize: 100,
+          order: 0
+        };
       }
-      // hide-<actorId>
-      else if (key.startsWith("hide-")) {
-        const actorId = key.replace("hide-", "");
-        if (!layoutData[actorId]) layoutData[actorId] = { top: 0, left: 0, hide: false };
-        layoutData[actorId].hide = formData[key] ? true : false;
+      switch (field) {
+        case "type": newItems[rowIndex].type = val; break;
+        case "actorId": newItems[rowIndex].actorId = val; break;
+        case "dataPath": newItems[rowIndex].dataPath = val; break;
+        case "top": newItems[rowIndex].top = Number(val) || 0; break;
+        case "left": newItems[rowIndex].left = Number(val) || 0; break;
+        case "hide": newItems[rowIndex].hide = Boolean(val); break;
+        case "fontSize": newItems[rowIndex].fontSize = Number(val) || 16; break;
+        case "bold": newItems[rowIndex].bold = Boolean(val); break;
+        case "fontFamily": newItems[rowIndex].fontFamily = val; break;
+        case "fontColor": newItems[rowIndex].fontColor = val; break;
+        case "imagePath": newItems[rowIndex].imagePath = val; break;
+        case "imageSize": newItems[rowIndex].imageSize = Number(val) || 100; break;
+        case "order": newItems[rowIndex].order = Number(val) || 0; break;
+        default: break;
       }
     }
-
-    await game.settings.set(MODULE_ID, "layoutData", layoutData);
-
-    // Save display settings
-    await game.settings.set(MODULE_ID, "showNames",      !!formData.showNames);
-    await game.settings.set(MODULE_ID, "fontFamily",     formData.fontFamily);
-    await game.settings.set(MODULE_ID, "fontColor",      formData.fontColor);
-    await game.settings.set(MODULE_ID, "fontSize",       Number(formData.fontSize) || 16);
-    await game.settings.set(MODULE_ID, "showMaxHP",      !!formData.showMaxHP);
-    await game.settings.set(MODULE_ID, "boldAll",        !!formData.boldAll);
-
-    // Save heart icon settings
-    await game.settings.set(MODULE_ID, "showHeart",      !!formData.showHeart);
-    await game.settings.set(MODULE_ID, "heartImage",     formData.heartImage);
-    await game.settings.set(MODULE_ID, "heartSize",      Number(formData.heartSize) || 32);
-
-    // Save the new offset from the form
-    await game.settings.set(MODULE_ID, "heartTextOffset", Number(formData.heartTextOffset) || 8);
-
-    // Re-render if overlay is open
+    await game.settings.set(MODULE_ID, "overlayItems", newItems);
     if (window.foundryStreamOverlayApp) {
-      foundryStreamOverlayApp.render();
+      window.foundryStreamOverlayApp.render();
     }
   }
 }
@@ -360,28 +316,28 @@ class OverlayWindowOpener extends FormApplication {
       width: 400
     });
   }
-
+  
   getData(options) {
     return {};
   }
-
+  
   activateListeners(html) {
     super.activateListeners(html);
     html.find("button[name='open-overlay']").click(this._openOverlay.bind(this));
   }
-
+  
   _openOverlay(event) {
     event.preventDefault();
     openOverlayWindow();
   }
-
+  
   async _updateObject(event, formData) {
-    // not used
+    // Not used.
   }
 }
 
 // -----------------------------------------
-// 5) openOverlayWindow() - Single-Click w/ Hook
+// 5) openOverlayWindow() - Single-Click with Hook
 // -----------------------------------------
 function openOverlayWindow() {
   const overlayWindow = window.open(
@@ -389,16 +345,11 @@ function openOverlayWindow() {
     "FoundryStreamOverlayWindow",
     "width=800,height=600,resizable=yes"
   );
-
   if (!overlayWindow) {
     ui.notifications.warn("Popup blocked! Please allow popups for Foundry.");
     return;
   }
-
-  // Create new instance each time
   const overlayApp = new FoundryStreamOverlay();
-
-  // Wait for the overlay's HTML to render
   Hooks.once("renderFoundryStreamOverlay", (app, html) => {
     const bg = game.settings.get(MODULE_ID, "backgroundColour");
     overlayWindow.document.write(`<!DOCTYPE html>
@@ -413,16 +364,10 @@ function openOverlayWindow() {
 </body>
 </html>`);
     overlayWindow.document.close();
-
-    // Move the newly rendered overlay HTML into #overlay-container
     const container = overlayWindow.document.getElementById("overlay-container");
     if (container) container.appendChild(html[0]);
   });
-
-  // Render the app
   overlayApp.render(true);
-
-  // Store references if needed
   window.overlayWindow = overlayWindow;
   window.foundryStreamOverlayApp = overlayApp;
 }
@@ -431,7 +376,7 @@ function openOverlayWindow() {
 // 6) Update overlay on actor changes
 // -----------------------------------------
 Hooks.on("updateActor", (actor, update, options, userId) => {
-  if (actor.hasPlayerOwner && actor.type === "character" && window.foundryStreamOverlayApp) {
-    foundryStreamOverlayApp.render();
+  if (window.foundryStreamOverlayApp) {
+    window.foundryStreamOverlayApp.render();
   }
 });

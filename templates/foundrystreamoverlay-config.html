@@ -1,173 +1,112 @@
 <form>
-  <h3>Actor Positions</h3>
-  <table style="width:100%; text-align:left;">
+  <h2>Dynamic Overlay Items</h2>
+  <p>
+    Add text rows or a background image. Use “Add Text” for regular data and “Add Image” for an image.
+  </p>
+
+  <table style="width: 100%; text-align: left;">
     <thead>
       <tr>
-        <th>Name</th>
+        <th>Type</th>
+        <th style="width: 50px;">Order</th>
+        <th style="width:20%;">Content</th>
+        <th>Extra</th>
         <th>Top (px)</th>
         <th>Left (px)</th>
-        <th>Hide?</th>
+        <th>Hide</th>
+        <th style="width: 50px;">Remove</th>
       </tr>
     </thead>
     <tbody>
-      {{#each actorPositions}}
+      {{#each rows}}
       <tr>
-        <td>{{this.name}}</td>
+        <!-- Hidden field to store the row type -->
+        <input type="hidden" name="type-{{this.idx}}" value="{{this.type}}">
+        <td>{{this.type}}</td>
+        <td style="width: 50px;">
+          <button type="button" class="move-up" data-index="{{this.idx}}">↑</button>
+          <button type="button" class="move-down" data-index="{{this.idx}}">↓</button>
+        </td>
+        {{#ifEquals this.type "text"}}
+          <td>
+            Actor:
+            <select name="actorId-{{this.idx}}">
+              <option value="">(None)</option>
+              {{#each ../allActors}}
+                <option value="{{this.id}}" {{#ifEquals this.id ../this.actorId}}selected{{/ifEquals}}>
+                  {{this.name}}
+                </option>
+              {{/each}}
+            </select>
+            <br>
+            Data Field:
+            <select name="dataPath-{{this.idx}}">
+              {{#each ../dataPathChoices}}
+                <option value="{{this.path}}" {{#ifEquals this.path ../this.dataPath}}selected{{/ifEquals}}>
+                  {{this.label}}
+                </option>
+              {{/each}}
+            </select>
+          </td>
+          <td>
+            Font Size:
+            <input type="number" name="fontSize-{{this.idx}}" value="{{this.fontSize}}" style="width:60px;">
+            <br>
+            Bold:
+            <input type="checkbox" name="bold-{{this.idx}}" {{#if this.bold}}checked{{/if}}>
+            <br>
+            Font:
+            <select name="fontFamily-{{this.idx}}">
+              <option value="Arial, sans-serif" {{#ifEquals this.fontFamily "Arial, sans-serif"}}selected{{/ifEquals}}>Arial</option>
+              <option value="Verdana, sans-serif" {{#ifEquals this.fontFamily "Verdana, sans-serif"}}selected{{/ifEquals}}>Verdana</option>
+              <option value="Trebuchet MS, sans-serif" {{#ifEquals this.fontFamily "Trebuchet MS, sans-serif"}}selected{{/ifEquals}}>Trebuchet MS</option>
+              <option value="Impact, sans-serif" {{#ifEquals this.fontFamily "Impact, sans-serif"}}selected{{/ifEquals}}>Impact</option>
+              <option value="Georgia, serif" {{#ifEquals this.fontFamily "Georgia, serif"}}selected{{/ifEquals}}>Georgia</option>
+              <option value="Times New Roman, serif" {{#ifEquals this.fontFamily "Times New Roman, serif"}}selected{{/ifEquals}}>Times New Roman</option>
+              <option value="Courier New, monospace" {{#ifEquals this.fontFamily "Courier New, monospace"}}selected{{/ifEquals}}>Courier New</option>
+              <option value="Monaco, monospace" {{#ifEquals this.fontFamily "Monaco, monospace"}}selected{{/ifEquals}}>Monaco</option>
+              <option value="Comic Sans MS, cursive" {{#ifEquals this.fontFamily "Comic Sans MS, cursive"}}selected{{/ifEquals}}>Comic Sans MS</option>
+              <option value="Brush Script MT, cursive" {{#ifEquals this.fontFamily "Brush Script MT, cursive"}}selected{{/ifEquals}}>Brush Script MT</option>
+              <option value="Papyrus, fantasy" {{#ifEquals this.fontFamily "Papyrus, fantasy"}}selected{{/ifEquals}}>Papyrus</option>
+            </select>
+            <br>
+            Colour:
+            <input type="color" name="fontColor-{{this.idx}}" value="{{this.fontColor}}" style="width:80px;">
+          </td>
+        {{else}}
+          <td>
+            Image Path:
+            <input type="text" name="imagePath-{{this.idx}}" value="{{this.imagePath}}" style="width:100%;">
+          </td>
+          <td>
+            Size:
+            <input type="number" name="imageSize-{{this.idx}}" value="{{this.imageSize}}" style="width:60px;">
+          </td>
+        {{/ifEquals}}
         <td>
-          <input type="number" name="top-{{this.id}}" value="{{this.top}}" />
+          <input type="number" name="top-{{this.idx}}" value="{{this.top}}" style="width:60px;">
         </td>
         <td>
-          <input type="number" name="left-{{this.id}}" value="{{this.left}}" />
+          <input type="number" name="left-{{this.idx}}" value="{{this.left}}" style="width:60px;">
         </td>
-        <td>
-          <input type="checkbox" name="hide-{{this.id}}" {{#if this.hide}}checked{{/if}} />
+        <td style="text-align:center;">
+          <input type="checkbox" name="hide-{{this.idx}}" {{#if this.hide}}checked{{/if}}>
+        </td>
+        <td style="text-align:center;">
+          <button type="button" class="remove-row" data-index="{{this.idx}}">X</button>
         </td>
       </tr>
       {{/each}}
     </tbody>
   </table>
 
-  <hr/>
-  <h3>Display Options</h3>
-
-  <div class="form-group">
-    <label for="showNames">Show Player Names</label>
-    <input type="checkbox" name="showNames" id="showNames" {{#if showNames}}checked{{/if}} />
+  <div style="margin-top: 1em;">
+    <button type="button" class="add-row">Add Text</button>
+    <button type="button" class="add-image">Add Image</button>
   </div>
 
-  <div class="form-group">
-    <label for="showMaxHP">Show Max HP</label>
-    <input type="checkbox" name="showMaxHP" id="showMaxHP" {{#if showMaxHP}}checked{{/if}} />
-  </div>
-
-  <div class="form-group">
-    <label for="boldAll">Bold All Text</label>
-    <input type="checkbox" name="boldAll" id="boldAll" {{#if boldAll}}checked{{/if}} />
-  </div>
-
-<div class="form-group">
-  <label for="fontFamily">Font Family</label>
-  <select name="fontFamily" id="fontFamily">
-    <!-- Common Sans-Serif -->
-    <option value="Arial, sans-serif"
-      {{#ifEquals fontFamily "Arial, sans-serif"}}selected{{/ifEquals}}>
-      Arial
-    </option>
-    <option value="Verdana, sans-serif"
-      {{#ifEquals fontFamily "Verdana, sans-serif"}}selected{{/ifEquals}}>
-      Verdana
-    </option>
-    <option value="Trebuchet MS, sans-serif"
-      {{#ifEquals fontFamily "Trebuchet MS, sans-serif"}}selected{{/ifEquals}}>
-      Trebuchet MS
-    </option>
-    <option value="Impact, sans-serif"
-      {{#ifEquals fontFamily "Impact, sans-serif"}}selected{{/ifEquals}}>
-      Impact
-    </option>
-
-    <!-- Serif Options -->
-    <option value="Georgia, serif"
-      {{#ifEquals fontFamily "Georgia, serif"}}selected{{/ifEquals}}>
-      Georgia
-    </option>
-    <option value="Times New Roman, serif"
-      {{#ifEquals fontFamily "Times New Roman, serif"}}selected{{/ifEquals}}>
-      Times New Roman
-    </option>
-
-    <!-- Monospace Options -->
-    <option value="Courier New, monospace"
-      {{#ifEquals fontFamily "Courier New, monospace"}}selected{{/ifEquals}}>
-      Courier New
-    </option>
-    <option value="Monaco, monospace"
-      {{#ifEquals fontFamily "Monaco, monospace"}}selected{{/ifEquals}}>
-      Monaco
-    </option>
-
-    <!-- Fun / Decorative -->
-    <option value="Comic Sans MS, cursive"
-      {{#ifEquals fontFamily "Comic Sans MS, cursive"}}selected{{/ifEquals}}>
-      Comic Sans MS
-    </option>
-    <option value="Brush Script MT, cursive"
-      {{#ifEquals fontFamily "Brush Script MT, cursive"}}selected{{/ifEquals}}>
-      Brush Script MT
-    </option>
-    <option value="Papyrus, fantasy"
-      {{#ifEquals fontFamily "Papyrus, fantasy"}}selected{{/ifEquals}}>
-      Papyrus
-    </option>
-  </select>
-  <p class="notes">Choose a font for the overlay text.</p>
-</div>
-
-  <div class="form-group">
-    <label for="fontColor">Font Colour</label>
-    <input type="text" name="fontColor" id="fontColor" value="{{fontColor}}" />
-  </div>
-
-  <div class="form-group">
-    <label for="fontSize">Font Size (px)</label>
-    <input type="number" name="fontSize" id="fontSize" value="{{fontSize}}" />
-  </div>
-
-  <hr/>
-  <h3>Heart Icon Options</h3>
-
-  <!-- Show Heart -->
-  <div class="form-group">
-    <label for="showHeart">Show Heart Icon</label>
-    <input type="checkbox" name="showHeart" id="showHeart" {{#if ../showHeart}}checked{{/if}} />
-    <p class="notes">If enabled, a heart icon will appear under each HP entry.</p>
-  </div>
-
-  <!-- Heart Image Path + File Picker -->
-  <div class="form-group">
-    <label for="heartImage">Heart Image Path</label>
-    <div class="form-fields">
-      <input type="text" name="heartImage" id="heartImage" value="{{../heartImage}}" placeholder="Path to heart image" />
-      <button type="button" class="file-picker" data-target="heartImage" data-type="image">
-        Browse
-      </button>
-    </div>
-    <p class="notes">Select or enter the path to your preferred heart icon (webp/png/jpg).</p>
-  </div>
-
-  <!-- Heart Size -->
-  <div class="form-group">
-    <label for="heartSize">Heart Icon Size (px)</label>
-    <input type="range" name="heartSize" id="heartSize" 
-           value="{{../heartSize}}" 
-           min="8" max="248" step="1" />
-    <span class="range-value">{{../heartSize}} px</span>
-    <p class="notes">Adjust the width of the heart icon. Height auto-adjusts to maintain aspect ratio.</p>
-  </div>
-
-  <!-- Heart Text Offset -->
-  <div class="form-group">
-    <label for="heartTextOffset">Heart Text Offset (px)</label>
-    <input type="range" name="heartTextOffset" id="heartTextOffset" 
-           value="{{../heartTextOffset}}" 
-           min="-50" max="50" step="1" />
-    <span class="range-value">{{../heartTextOffset}} px</span>
-    <p class="notes">Adjust how far the HP text is placed from the top of the heart icon to reduce overlap.</p>
-  </div>
-
-  <!-- Submit (Save) Button -->
-  <div class="form-group" style="margin-top:1em; text-align:right;">
+  <hr />
+  <div style="text-align:right; margin-top:1em;">
     <button type="submit" class="dialog-button">Save</button>
   </div>
-
-  <hr/>
-<div class="form-group" style="text-align: center; font-size: 0.85em; margin-top: 1em;">
-  <p>Made by jenzelta. 
-    <br>
-    Please consider supporting on 
-    <a href="https://www.patreon.com/c/jenzelta" target="_blank">Patreon</a>.
-  </p>
-</div>
-
-</div>
 </form>

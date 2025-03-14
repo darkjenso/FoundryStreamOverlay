@@ -1,77 +1,31 @@
-<!-- Main overlay container -->
-<div id="foundry-stream-overlay" class="stream-overlay-container"
-     style="background-color: {{backgroundColour}}; font-size: {{fontSize}}; font-family: {{fontFamily}}; color: {{fontColor}};">
-
-  {{#each hpData}}
-    <div class="hp-line"
-         style="
-           top: {{top}}px;
-           left: {{left}}px;
-           position: absolute;
-           width: {{../heartSize}}px;
-           height: {{../heartSize}}px;
-         ">
-      {{#if ../showHeart}}
-        <img src="{{../heartImage}}"
-             alt="Heart Icon"
-             style="
-               position: absolute;
-               top: 0;
-               left: 0;
-               width: 100%;
-               height: 100%;
-               z-index: 1;
-             " />
-      {{/if}}
-
-      <!-- Text container, centred by flex, then shifted with translateY(heartTextOffset) -->
-      <div class="hp-text"
-           style="
-             display: flex;
-             flex-direction: column;
-             justify-content: center;
-             align-items: center;
-             text-align: center;
-             position: absolute;
-             top: 0;
-             left: 0;
-             width: 100%;
-             height: 100%;
-             z-index: 2;
-             transform: translateY({{../heartTextOffset}}px);
-           ">
-
-        {{#if ../boldAll}}
-          <strong>
-            {{#if ../showNames}}
-              <div>{{name}}</div>
-            {{/if}}
-            <div>
-              {{current}}{{#if ../showMaxHP}} / {{max}}{{/if}}
-            </div>
-          </strong>
-        {{else}}
-          {{#if ../showNames}}
-            <div>{{name}}</div>
-          {{/if}}
-          <div>
-            {{current}}{{#if ../showMaxHP}} / {{max}}{{/if}}
-          </div>
-        {{/if}}
+<div id="foundry-stream-overlay" style="background-color: {{backgroundColour}}; width: 100%; height: 100%;">
+  {{#each items}}
+    {{#ifEquals this.type "image"}}
+      <img src="{{this.imagePath}}" style="
+        position: absolute;
+        top: {{this.top}}px;
+        left: {{this.left}}px;
+        width: {{this.imageSize}}px;
+        z-index: {{this.renderOrder}};
+      ">
+    {{else}}
+      <div class="overlay-item" style="
+        position: absolute;
+        top: {{this.top}}px;
+        left: {{this.left}}px;
+        font-size: {{this.fontSize}}px;
+        font-family: {{this.fontFamily}};
+        color: {{this.fontColor}};
+        z-index: {{this.renderOrder}};
+        {{#if this.bold}}font-weight: bold;{{/if}}
+      ">
+        {{this.data}}
       </div>
-    </div>
+    {{/ifEquals}}
   {{/each}}
 </div>
 
-<!-- Optional small footer in the overlay -->
-<div class="overlay-footer"
-     style="
-       position: absolute;
-       bottom: 5px;
-       right: 5px;
-       font-size: 0.8em;
-       opacity: 0.8;
-     ">
-  Made by jenzelta.
+<div style="position: absolute; bottom: 5px; right: 5px; font-size: 0.8em; opacity: 0.8;">
+  Made by Jen.
   <a href="https://www.patreon.com/c/jenzelta" target="_blank">Support on Patreon</a>
 </div>
