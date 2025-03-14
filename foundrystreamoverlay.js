@@ -19,10 +19,20 @@ const POSSIBLE_DATA_PATHS = [
 // 1) Register Settings and Helpers
 // -----------------------------------------
 Hooks.once("init", () => {
+  // Register our ifEquals helper.
   Handlebars.registerHelper("ifEquals", function(arg1, arg2, options) {
     return (arg1 === arg2) ? options.fn(this) : options.inverse(this);
   });
   
+  // New helper: ifNotDefault – returns content only if value is not "Default"
+  Handlebars.registerHelper("ifNotDefault", function(value, options) {
+    if (value !== "Default") {
+      return options.fn(this);
+    }
+    return "";
+  });
+  
+  // Background colour.
   game.settings.register(MODULE_ID, "backgroundColour", {
     name: "Background Colour",
     hint: "Chroma key colour for the overlay background.",
@@ -31,32 +41,67 @@ Hooks.once("init", () => {
     default: "#00ff00",
     config: true
   });
-
-  game.settings.register(MODULE_ID, "overlayItems", {
-    name: "Overlay Items (Dynamic Rows)",
-    hint: "Stores each row’s settings—text and image rows with location, order and styling.",
+  
+  // Layouts: an object mapping layout names to arrays of overlay items.
+  game.settings.register(MODULE_ID, "layouts", {
+    name: "Layouts",
+    hint: "Stores all overlay layouts. Each key is a layout name and its value is an array of overlay items.",
     scope: "client",
-    type: Array,
-    default: [],
+    type: Object,
+    default: { "Default": [] },
     config: false
   });
-
+  
+  // Active layout: which layout is currently in use.
+  game.settings.register(MODULE_ID, "activeLayout", {
+    name: "Active Layout",
+    hint: "The layout that is currently in use.",
+    scope: "client",
+    type: String,
+    default: "Default",
+    config: false
+  });
+  
+  // Register the configuration menu (editing items for the active layout).
   game.settings.registerMenu(MODULE_ID, "overlayConfigMenu", {
     name: "Configure Overlay Items",
     label: "Configure Overlay",
-    hint: "Add or remove text rows or a background image. Use the order buttons to adjust layering.",
+    hint: "Edit overlay items for the active layout.",
     icon: "fas fa-bars",
     type: OverlayConfig,
     restricted: false
   });
-
+  
+  // Register the new Manage Layouts menu.
+  game.settings.registerMenu(MODULE_ID, "manageLayouts", {
+    name: "Manage Layouts",
+    label: "Manage Layouts",
+    hint: "Create, rename, delete, export, or import overlay layouts.",
+    icon: "fas fa-layer-group",
+    type: ManageLayouts,
+    restricted: false
+  });
+  
+  // Register the overlay window opener.
   game.settings.registerMenu(MODULE_ID, "openOverlayWindow", {
     name: "Open Overlay Window",
     label: "Open Overlay",
-    hint: "Manually open the overlay in a separate pop-up window.",
+    hint: "Open the overlay in a separate pop-up window.",
     icon: "fas fa-external-link-alt",
     type: OverlayWindowOpener,
-    restricted: false
+    restricted: false,
+    config: true
+  });
+  
+  console.log("Module settings registered.");
+
+  // When activeLayout is updated, re-render the overlay if it's open.
+  Hooks.on("updateSetting", (namespace, key, value, options, userId) => {
+    if (namespace === MODULE_ID && key === "activeLayout") {
+      if (window.foundryStreamOverlayApp) {
+        window.foundryStreamOverlayApp.render();
+      }
+    }
   });
 });
 
@@ -77,13 +122,13 @@ class FoundryStreamOverlay extends Application {
       classes: ["foundry-stream-overlay", "no-header"]
     });
   }
-
+  
   getData() {
     const backgroundColour = game.settings.get(MODULE_ID, "backgroundColour");
-    const overlayItems = game.settings.get(MODULE_ID, "overlayItems") || [];
-
-    // Process each item as either text or image.
-    const items = overlayItems.map(item => {
+    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    
+    const items = (layouts[activeLayout] || []).map(item => {
       if (item.type === "image") {
         return {
           type: "image",
@@ -92,62 +137,73 @@ class FoundryStreamOverlay extends Application {
           top: item.top ?? 0,
           left: item.left ?? 0,
           hide: item.hide ?? false,
-          order: item.order ?? 0
+          order: item.order || 0
+        };
+      } else if (item.type === "static") {
+        return {
+          type: "static",
+          content: item.content || "",
+          top: item.top ?? 0,
+          left: item.left ?? 0,
+          hide: item.hide ?? false,
+          fontSize: item.fontSize || 16,
+          bold: item.bold || false,
+          fontFamily: item.fontFamily || "Arial, sans-serif",
+          fontColor: item.fontColor || "#000000",
+          order: item.order || 0
         };
       } else {
+        // Dynamic data items.
         const actor = game.actors.get(item.actorId);
         if (!actor) return null;
         if (item.hide) return null;
-        let textValue;
-        if (item.dataPath === "name") {
-          textValue = actor.name;
-        } else {
-          textValue = foundry.utils.getProperty(actor, item.dataPath);
-        }
+        let textValue = (item.dataPath === "name")
+          ? actor.name
+          : foundry.utils.getProperty(actor, item.dataPath);
         if (textValue === null || textValue === undefined) textValue = "N/A";
         return {
-          type: "text",
+          type: "data",
           actorId: item.actorId,
           dataPath: item.dataPath,
           data: textValue,
           top: item.top ?? 0,
           left: item.left ?? 0,
           hide: item.hide ?? false,
-          fontSize: item.fontSize ?? 16,
-          bold: item.bold ?? false,
-          fontFamily: item.fontFamily ?? "Arial, sans-serif",
-          fontColor: item.fontColor ?? "#000000",
-          order: item.order ?? 0
+          fontSize: item.fontSize || 16,
+          bold: item.bold || false,
+          fontFamily: item.fontFamily || "Arial, sans-serif",
+          fontColor: item.fontColor || "#000000",
+          order: item.order || 0
         };
       }
     }).filter(Boolean);
-
-    // Sort items by order in ascending order (first item in config should be in front).
+    
+    // Sort items in ascending order.
     items.sort((a, b) => a.order - b.order);
-    // Now compute renderOrder: the first item gets highest z-index.
+    // Compute renderOrder so that items at the top of the config list appear in front.
     const max = items.length;
     items.forEach((item, index) => {
       item.renderOrder = max - index;
     });
-
+    
     return {
       backgroundColour,
       items
     };
   }
-
+  
   activateListeners(html) {
     super.activateListeners(html);
   }
 }
 
 // -----------------------------------------
-// 3) Overlay Config Form (Dynamic Rows)
+// 3) Overlay Config Form (Editing Active Layout Items)
 // -----------------------------------------
 class OverlayConfig extends FormApplication {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
-      title: "Overlay Item Config",
+      title: "Configure Active Layout Items",
       id: "foundrystreamoverlay-config",
       template: `modules/${MODULE_ID}/templates/foundrystreamoverlay-config.html`,
       width: 800,
@@ -155,15 +211,17 @@ class OverlayConfig extends FormApplication {
       closeOnSubmit: false
     });
   }
-
+  
   getData() {
-    const overlayItems = game.settings.get(MODULE_ID, "overlayItems") || [];
-    const rows = overlayItems.map((item, idx) => {
+    const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
+    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const rows = (layouts[activeLayout] || []).map((item, idx) => {
       return {
         idx,
-        type: item.type || "text",
+        type: item.type || "data", // "data", "static", or "image"
         actorId: item.actorId || "",
         dataPath: item.dataPath || "name",
+        content: item.content || "",
         top: item.top || 0,
         left: item.left || 0,
         hide: item.hide || false,
@@ -173,28 +231,47 @@ class OverlayConfig extends FormApplication {
         fontColor: item.fontColor || "#000000",
         imagePath: item.imagePath || "",
         imageSize: item.imageSize || 100,
-        order: item.order || idx  // default order is the index
+        order: item.order || idx
       };
     });
     const dataPathChoices = POSSIBLE_DATA_PATHS;
     const allActors = game.actors.contents.filter(a => a.type === "character" || a.hasPlayerOwner);
-    return { rows, allActors, dataPathChoices };
+    return { rows, allActors, dataPathChoices, activeLayout, layouts };
   }
-
+  
   activateListeners(html) {
     super.activateListeners(html);
+    // Bind layout selection change to update active layout immediately.
+    html.find("#active-layout").change(async e => {
+      e.preventDefault();
+      const newLayout = html.find("#active-layout").val();
+      await game.settings.set("foundrystreamoverlay", "activeLayout", newLayout);
+      ui.notifications.info("Active layout set to " + newLayout);
+      if (window.foundryStreamOverlayApp) {
+        window.foundryStreamOverlayApp.render();
+      }
+      this.render();
+    });
     html.find(".add-row").click(this._onAddRow.bind(this));
     html.find(".add-image").click(this._onAddImage.bind(this));
+    html.find(".add-static").click(this._onAddStatic.bind(this));
     html.on("click", ".remove-row", this._onRemoveRow.bind(this));
     html.find(".move-up").click(this._onMoveUp.bind(this));
     html.find(".move-down").click(this._onMoveDown.bind(this));
+    // Open Overlay button inside config.
+    html.find("#open-overlay-from-config").click(e => {
+      e.preventDefault();
+      openOverlayWindow();
+    });
   }
-
+  
   async _onAddRow(event) {
     event.preventDefault();
-    const overlayItems = game.settings.get(MODULE_ID, "overlayItems") || [];
-    overlayItems.push({
-      type: "text",
+    const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
+    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const current = layouts[activeLayout] || [];
+    current.push({
+      type: "data",
       actorId: "",
       dataPath: "name",
       top: 0,
@@ -204,59 +281,94 @@ class OverlayConfig extends FormApplication {
       bold: false,
       fontFamily: "Arial, sans-serif",
       fontColor: "#000000",
-      order: overlayItems.length
+      order: current.length
     });
-    await game.settings.set(MODULE_ID, "overlayItems", overlayItems);
+    layouts[activeLayout] = current;
+    await game.settings.set(MODULE_ID, "layouts", layouts);
     this.render();
   }
-
+  
   async _onAddImage(event) {
     event.preventDefault();
-    const overlayItems = game.settings.get(MODULE_ID, "overlayItems") || [];
-    overlayItems.push({
+    const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
+    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const current = layouts[activeLayout] || [];
+    current.push({
       type: "image",
       imagePath: "",
       imageSize: 100,
       top: 0,
       left: 0,
       hide: false,
-      order: overlayItems.length
+      order: current.length
     });
-    await game.settings.set(MODULE_ID, "overlayItems", overlayItems);
+    layouts[activeLayout] = current;
+    await game.settings.set(MODULE_ID, "layouts", layouts);
     this.render();
   }
-
+  
+  async _onAddStatic(event) {
+    event.preventDefault();
+    const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
+    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const current = layouts[activeLayout] || [];
+    current.push({
+      type: "static",
+      content: "Static text",
+      top: 0,
+      left: 0,
+      hide: false,
+      fontSize: 16,
+      bold: false,
+      fontFamily: "Arial, sans-serif",
+      fontColor: "#000000",
+      order: current.length
+    });
+    layouts[activeLayout] = current;
+    await game.settings.set(MODULE_ID, "layouts", layouts);
+    this.render();
+  }
+  
   async _onRemoveRow(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
-    const overlayItems = game.settings.get(MODULE_ID, "overlayItems") || [];
-    overlayItems.splice(index, 1);
-    await game.settings.set(MODULE_ID, "overlayItems", overlayItems);
+    const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
+    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const current = layouts[activeLayout] || [];
+    current.splice(index, 1);
+    layouts[activeLayout] = current;
+    await game.settings.set(MODULE_ID, "layouts", layouts);
     this.render();
   }
-
+  
   async _onMoveUp(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
-    const overlayItems = game.settings.get(MODULE_ID, "overlayItems") || [];
+    const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
+    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const current = layouts[activeLayout] || [];
     if (index > 0) {
-      [overlayItems[index - 1], overlayItems[index]] = [overlayItems[index], overlayItems[index - 1]];
-      await game.settings.set(MODULE_ID, "overlayItems", overlayItems);
+      [current[index - 1], current[index]] = [current[index], current[index - 1]];
+      layouts[activeLayout] = current;
+      await game.settings.set(MODULE_ID, "layouts", layouts);
       this.render();
     }
   }
-
+  
   async _onMoveDown(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
-    const overlayItems = game.settings.get(MODULE_ID, "overlayItems") || [];
-    if (index < overlayItems.length - 1) {
-      [overlayItems[index], overlayItems[index + 1]] = [overlayItems[index + 1], overlayItems[index]];
-      await game.settings.set(MODULE_ID, "overlayItems", overlayItems);
+    const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
+    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const current = layouts[activeLayout] || [];
+    if (index < current.length - 1) {
+      [current[index], current[index + 1]] = [current[index + 1], current[index]];
+      layouts[activeLayout] = current;
+      await game.settings.set(MODULE_ID, "layouts", layouts);
       this.render();
     }
   }
-
+  
   async _updateObject(event, formData) {
     const newItems = [];
     for (let [key, val] of Object.entries(formData)) {
@@ -265,7 +377,7 @@ class OverlayConfig extends FormApplication {
       const rowIndex = Number(idx);
       if (!newItems[rowIndex]) {
         newItems[rowIndex] = {
-          type: "text",
+          type: "data",
           actorId: "",
           dataPath: "name",
           top: 0,
@@ -284,6 +396,7 @@ class OverlayConfig extends FormApplication {
         case "type": newItems[rowIndex].type = val; break;
         case "actorId": newItems[rowIndex].actorId = val; break;
         case "dataPath": newItems[rowIndex].dataPath = val; break;
+        case "content": newItems[rowIndex].content = val; break;
         case "top": newItems[rowIndex].top = Number(val) || 0; break;
         case "left": newItems[rowIndex].left = Number(val) || 0; break;
         case "hide": newItems[rowIndex].hide = Boolean(val); break;
@@ -297,7 +410,10 @@ class OverlayConfig extends FormApplication {
         default: break;
       }
     }
-    await game.settings.set(MODULE_ID, "overlayItems", newItems);
+    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    layouts[activeLayout] = newItems;
+    await game.settings.set(MODULE_ID, "layouts", layouts);
     if (window.foundryStreamOverlayApp) {
       window.foundryStreamOverlayApp.render();
     }
@@ -380,3 +496,132 @@ Hooks.on("updateActor", (actor, update, options, userId) => {
     window.foundryStreamOverlayApp.render();
   }
 });
+
+// -----------------------------------------
+// 7) Manage Layouts Class
+// -----------------------------------------
+class ManageLayouts extends FormApplication {
+  static get defaultOptions() {
+    return foundry.utils.mergeObject(super.defaultOptions, {
+      title: "Manage Layouts",
+      id: "foundrystreamoverlay-manage-layouts",
+      template: `modules/${MODULE_ID}/templates/foundrystreamoverlay-layouts.html`,
+      width: 600,
+      height: "auto",
+      closeOnSubmit: true
+    });
+  }
+  
+  getData() {
+    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    return { layouts, activeLayout };
+  }
+  
+  activateListeners(html) {
+    super.activateListeners(html);
+    html.find(".create-new-layout").click(this._onCreateNewLayout.bind(this));
+    html.find(".activate-layout").click(this._onActivate.bind(this));
+    html.find(".rename-layout").click(this._onRename.bind(this));
+    html.find(".delete-layout").click(this._onDelete.bind(this));
+    html.find(".export-layout").click(this._onExport.bind(this));
+    html.find(".import-layout").click(this._onImport.bind(this));
+  }
+  
+  async _onCreateNewLayout(event) {
+    event.preventDefault();
+    const layoutName = prompt("Enter a new layout name:");
+    if (!layoutName) return;
+    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    if (layouts[layoutName]) {
+      ui.notifications.warn("That layout already exists.");
+      return;
+    }
+    layouts[layoutName] = [];
+    await game.settings.set(MODULE_ID, "layouts", layouts);
+    ui.notifications.info(`Layout "${layoutName}" created.`);
+    this.render();
+  }
+  
+  async _onActivate(event) {
+    event.preventDefault();
+    const layoutName = event.currentTarget.dataset.layout;
+    await game.settings.set(MODULE_ID, "activeLayout", layoutName);
+    ui.notifications.info(`Activated layout: ${layoutName}`);
+    if (window.foundryStreamOverlayApp) {
+      window.foundryStreamOverlayApp.render();
+    }
+    this.render();
+  }
+  
+  async _onRename(event) {
+    event.preventDefault();
+    const oldName = event.currentTarget.dataset.layout;
+    let newName = prompt("Enter a new name for this layout:", oldName);
+    if (!newName || newName === oldName) return;
+    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    if (layouts[newName]) {
+      ui.notifications.warn("A layout with that name already exists.");
+      return;
+    }
+    layouts[newName] = layouts[oldName];
+    delete layouts[oldName];
+    const activeLayout = game.settings.get(MODULE_ID, "activeLayout");
+    if (activeLayout === oldName) {
+      await game.settings.set(MODULE_ID, "activeLayout", newName);
+    }
+    await game.settings.set(MODULE_ID, "layouts", layouts);
+    this.render();
+  }
+  
+  async _onDelete(event) {
+    event.preventDefault();
+    const layoutName = event.currentTarget.dataset.layout;
+    if (layoutName === "Default") {
+      ui.notifications.warn("Cannot delete the Default layout.");
+      return;
+    }
+    if (!confirm(`Are you sure you want to delete layout: ${layoutName}?`)) return;
+    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    delete layouts[layoutName];
+    const activeLayout = game.settings.get(MODULE_ID, "activeLayout");
+    if (activeLayout === layoutName) {
+      await game.settings.set(MODULE_ID, "activeLayout", "Default");
+    }
+    await game.settings.set(MODULE_ID, "layouts", layouts);
+    this.render();
+  }
+  
+  async _onExport(event) {
+    event.preventDefault();
+    const layoutName = event.currentTarget.dataset.layout;
+    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    const data = JSON.stringify(layouts[layoutName], null, 2);
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${layoutName}-layout.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+  
+  async _onImport(event) {
+    event.preventDefault();
+    const layoutName = prompt("Enter the name for the imported layout:");
+    if (!layoutName) return;
+    const json = prompt("Paste the JSON for the layout:");
+    try {
+      const importedLayout = JSON.parse(json);
+      const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+      layouts[layoutName] = importedLayout;
+      await game.settings.set(MODULE_ID, "layouts", layouts);
+      ui.notifications.info(`Imported layout: ${layoutName}`);
+      this.render();
+    } catch (e) {
+      ui.notifications.error("Invalid JSON.");
+    }
+  }
+}

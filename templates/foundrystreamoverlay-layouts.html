@@ -1,0 +1,38 @@
+<form>
+    <h2>Manage Layouts</h2>
+    <table style="width: 100%; text-align: left;">
+      <thead>
+        <tr>
+          <th>Layout Name</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each layouts}}
+        <tr>
+          <td>{{@key}}</td>
+          <td>
+            {{#ifEquals ../activeLayout @key}}
+              Active
+            {{else}}
+              <button type="button" class="activate-layout" data-layout="{{@key}}">Activate</button>
+            {{/ifEquals}}
+          </td>
+          <td>
+            <button type="button" class="rename-layout" data-layout="{{@key}}">Rename</button>
+            {{#ifNotDefault @key}}
+              <button type="button" class="delete-layout" data-layout="{{@key}}">Delete</button>
+            {{/ifNotDefault}}
+            <button type="button" class="export-layout" data-layout="{{@key}}">Export</button>
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+    <div style="margin-top:1em; text-align:center;">
+      <button type="button" class="create-new-layout">Create New Layout</button>
+      <button type="button" class="import-layout">Import Layout</button>
+    </div>
+  </form>
+  

@@ -8,6 +8,19 @@
         width: {{this.imageSize}}px;
         z-index: {{this.renderOrder}};
       ">
+    {{else ifEquals this.type "static"}}
+      <div class="overlay-item" style="
+        position: absolute;
+        top: {{this.top}}px;
+        left: {{this.left}}px;
+        font-size: {{this.fontSize}}px;
+        font-family: {{this.fontFamily}};
+        color: {{this.fontColor}};
+        z-index: {{this.renderOrder}};
+        {{#if this.bold}}font-weight: bold;{{/if}}
+      ">
+        {{this.content}}
+      </div>
     {{else}}
       <div class="overlay-item" style="
         position: absolute;

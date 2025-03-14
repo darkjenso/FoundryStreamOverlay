@@ -1,9 +1,17 @@
 <form>
-  <h2>Dynamic Overlay Items</h2>
-  <p>
-    Add text rows or a background image. Use “Add Text” for regular data and “Add Image” for an image.
-  </p>
-
+  <h2>Configure Active Layout Items</h2>
+  <div style="margin-bottom: 1em;">
+    <label for="active-layout">Select Layout:</label>
+    <select id="active-layout" name="activeLayout">
+      {{#each layouts}}
+        <option value="{{@key}}" {{#ifEquals ../activeLayout @key}}selected{{/ifEquals}}>
+          {{@key}} {{#ifEquals ../activeLayout @key}}(Active){{/ifEquals}}
+        </option>
+      {{/each}}
+    </select>
+    <button type="button" class="manage-layouts" onclick="new ManageLayouts().render(true)">Manage Layouts</button>
+  </div>
+  
   <table style="width: 100%; text-align: left;">
     <thead>
       <tr>
@@ -20,14 +28,13 @@
     <tbody>
       {{#each rows}}
       <tr>
-        <!-- Hidden field to store the row type -->
         <input type="hidden" name="type-{{this.idx}}" value="{{this.type}}">
         <td>{{this.type}}</td>
-        <td style="width: 50px;">
+        <td style="width:50px;">
           <button type="button" class="move-up" data-index="{{this.idx}}">↑</button>
           <button type="button" class="move-down" data-index="{{this.idx}}">↓</button>
         </td>
-        {{#ifEquals this.type "text"}}
+        {{#ifEquals this.type "data"}}
           <td>
             Actor:
             <select name="actorId-{{this.idx}}">
@@ -58,16 +65,28 @@
             Font:
             <select name="fontFamily-{{this.idx}}">
               <option value="Arial, sans-serif" {{#ifEquals this.fontFamily "Arial, sans-serif"}}selected{{/ifEquals}}>Arial</option>
-              <option value="Verdana, sans-serif" {{#ifEquals this.fontFamily "Verdana, sans-serif"}}selected{{/ifEquals}}>Verdana</option>
-              <option value="Trebuchet MS, sans-serif" {{#ifEquals this.fontFamily "Trebuchet MS, sans-serif"}}selected{{/ifEquals}}>Trebuchet MS</option>
-              <option value="Impact, sans-serif" {{#ifEquals this.fontFamily "Impact, sans-serif"}}selected{{/ifEquals}}>Impact</option>
-              <option value="Georgia, serif" {{#ifEquals this.fontFamily "Georgia, serif"}}selected{{/ifEquals}}>Georgia</option>
-              <option value="Times New Roman, serif" {{#ifEquals this.fontFamily "Times New Roman, serif"}}selected{{/ifEquals}}>Times New Roman</option>
-              <option value="Courier New, monospace" {{#ifEquals this.fontFamily "Courier New, monospace"}}selected{{/ifEquals}}>Courier New</option>
-              <option value="Monaco, monospace" {{#ifEquals this.fontFamily "Monaco, monospace"}}selected{{/ifEquals}}>Monaco</option>
-              <option value="Comic Sans MS, cursive" {{#ifEquals this.fontFamily "Comic Sans MS, cursive"}}selected{{/ifEquals}}>Comic Sans MS</option>
-              <option value="Brush Script MT, cursive" {{#ifEquals this.fontFamily "Brush Script MT, cursive"}}selected{{/ifEquals}}>Brush Script MT</option>
-              <option value="Papyrus, fantasy" {{#ifEquals this.fontFamily "Papyrus, fantasy"}}selected{{/ifEquals}}>Papyrus</option>
+              <!-- Additional font options here -->
+            </select>
+            <br>
+            Colour:
+            <input type="color" name="fontColor-{{this.idx}}" value="{{this.fontColor}}" style="width:80px;">
+          </td>
+        {{else ifEquals this.type "static"}}
+          <td>
+            Static Text:
+            <input type="text" name="content-{{this.idx}}" value="{{this.content}}" style="width:100%;">
+          </td>
+          <td>
+            Font Size:
+            <input type="number" name="fontSize-{{this.idx}}" value="{{this.fontSize}}" style="width:60px;">
+            <br>
+            Bold:
+            <input type="checkbox" name="bold-{{this.idx}}" {{#if this.bold}}checked{{/if}}>
+            <br>
+            Font:
+            <select name="fontFamily-{{this.idx}}">
+              <option value="Arial, sans-serif" {{#ifEquals this.fontFamily "Arial, sans-serif"}}selected{{/ifEquals}}>Arial</option>
+              <!-- Additional options -->
             </select>
             <br>
             Colour:
@@ -99,14 +118,20 @@
       {{/each}}
     </tbody>
   </table>
-
+  
   <div style="margin-top: 1em;">
-    <button type="button" class="add-row">Add Text</button>
+    <button type="button" class="add-row">Add Data</button>
+    <button type="button" class="add-static">Add Static Text</button>
     <button type="button" class="add-image">Add Image</button>
   </div>
-
+  
   <hr />
   <div style="text-align:right; margin-top:1em;">
     <button type="submit" class="dialog-button">Save</button>
+  </div>
+  
+  <!-- Open Overlay Button -->
+  <div style="text-align:center; margin-top:1em;">
+    <button type="button" id="open-overlay-from-config">Open Overlay</button>
   </div>
 </form>
