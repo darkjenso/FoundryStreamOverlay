@@ -17,11 +17,11 @@
 1. **Configurable HP paths** – supports systems that store HP differently (e.g. `attributes.hp.value`).
 2. **Per-actor layout** – easily position each actor’s stats or hide them.
 3. **Visual customisation** – change font sizes, colours, and select from a range of built-in font families.
-4. **Heart icon** – optional heart image with adjustable size and offset for a fun, thematic touch.
+4. **Add images and reorder them!
 5. **Green-screen background** – set any colour, but default is `#00ff00` for easy chroma keying.
 ## Usage
-1. **Assign Players Actors**
-   - Players will need to have actors assigned to them to appear in the list
+1. **Add Actors**
+   - Add adctors to your world, all the dnd stuff will be updated
 2. **Open Overlay**  
    - Under **Module Settings**, there’s an “Open Overlay Window” option. Click that to pop up the overlay in a new window.  
    - Or call the `openOverlayWindow()` function from the console.
@@ -32,6 +32,8 @@
    - Whenever HP changes or you move the layout, the overlay refreshes automatically.
 
 ![Overlay Example](screenshots/config.png)
+
+![Overlay Example](screenshots/Screenshot 2025-03-14 000521.png)
 
 ## Setup
 
