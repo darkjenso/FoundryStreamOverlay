@@ -33,7 +33,7 @@
 
 ![Overlay Example](screenshots/config.png)
 
-![Overlay Example](screenshots/Screenshot 2025-03-14 000521.png)
+![Overlay Example](screenshots/exampleoverlay.png)
 
 ## Setup
 
