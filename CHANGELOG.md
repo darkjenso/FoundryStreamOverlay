@@ -1,6 +1,20 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+## [2.1.0] - 2025-03-14
+- Added a layout manager, users can now save multiple different layouts, import and export layouts, and dynamically change the layout as needed. 
+- Users can use a macro as below to change layouts without going into the settings:
+
+// Replace "MyLayoutName" with the layout you wish to activate.
+let newLayout = "MyLayoutName";
+game.settings.set("foundrystreamoverlay", "activeLayout", newLayout)
+  .then(() => {
+    ui.notifications.info(`Active layout set to ${newLayout}`);
+    if (window.foundryStreamOverlayApp) {
+      window.foundryStreamOverlayApp.render();
+    }
+  })
+  .catch(err => console.error("Failed to set active layout:", err));
 
 
 ## [2.0.0] - 2025-03-14
