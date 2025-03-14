@@ -31,7 +31,7 @@
 4. **Live Updates**  
    - Whenever HP changes or you move the layout, the overlay refreshes automatically.
 
-![Overlay Example](layoutsh.png)
+![Overlay Example](screenshots/config.png)
 
 ## Setup
 
