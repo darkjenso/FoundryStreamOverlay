@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.1] - 2025-03-14
+Added back the font options
+
 ## [2.1.0] - 2025-03-14
 - Added a layout manager—users can now save multiple different layouts, import and export layouts, and dynamically change the layout as needed.
 - Users can use a macro as below to change layouts without going into the settings:
