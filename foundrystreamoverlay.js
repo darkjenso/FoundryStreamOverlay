@@ -31,6 +31,19 @@ Hooks.once("init", () => {
     }
     return "";
   });
+fetch("https://jolly-dust-4f49.darkjenso.workers.dev/", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    module: MODULE_ID,
+    event: "module_loaded",
+    timestamp: Date.now()
+  })
+}).catch(err => console.error("Telemetry error:", err));
+
+
   
   // Background colour.
   game.settings.register(MODULE_ID, "backgroundColour", {
