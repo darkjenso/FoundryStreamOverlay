@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.0] - 2025-03-15
+- Added a dedicated Slideshow Settings window, allowing users to create and manage a slideshow of overlay layouts.
+- Users can add multiple layouts to the slideshow with individual duration settings and reorder them.
+- Introduced a "Random Order" option that shuffles the layouts randomly instead of cycling through them sequentially.
+- Improved UI aesthetics by placing the layout dropdown inline with the add button, and by featuring play/pause icons on the start/stop slideshow buttons.
+
+
 ## [2.1.1] - 2025-03-14
 Added back the font options
 
