@@ -23,7 +23,7 @@ Hooks.once("init", () => {
   Handlebars.registerHelper("ifEquals", function(arg1, arg2, options) {
     return (arg1 === arg2) ? options.fn(this) : options.inverse(this);
   });
-  
+
   // New helper: ifNotDefault – returns content only if value is not "Default"
   Handlebars.registerHelper("ifNotDefault", function(value, options) {
     if (value !== "Default") {
@@ -31,20 +31,20 @@ Hooks.once("init", () => {
     }
     return "";
   });
-fetch("https://jolly-dust-4f49.darkjenso.workers.dev/", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    module: MODULE_ID,
-    event: "module_loaded",
-    timestamp: Date.now()
-  })
-}).catch(err => console.error("Telemetry error:", err));
 
+  // Telemetry (optional)
+  fetch("https://jolly-dust-4f49.darkjenso.workers.dev/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      module: MODULE_ID,
+      event: "module_loaded",
+      timestamp: Date.now()
+    })
+  }).catch(err => console.error("Telemetry error:", err));
 
-  
   // Background colour.
   game.settings.register(MODULE_ID, "backgroundColour", {
     name: "Background Colour",
@@ -54,7 +54,7 @@ fetch("https://jolly-dust-4f49.darkjenso.workers.dev/", {
     default: "#00ff00",
     config: true
   });
-  
+
   // Layouts: an object mapping layout names to arrays of overlay items.
   game.settings.register(MODULE_ID, "layouts", {
     name: "Layouts",
@@ -64,7 +64,7 @@ fetch("https://jolly-dust-4f49.darkjenso.workers.dev/", {
     default: { "Default": [] },
     config: false
   });
-  
+
   // Active layout: which layout is currently in use.
   game.settings.register(MODULE_ID, "activeLayout", {
     name: "Active Layout",
@@ -74,7 +74,7 @@ fetch("https://jolly-dust-4f49.darkjenso.workers.dev/", {
     default: "Default",
     config: false
   });
-  
+
   // Register the configuration menu (editing items for the active layout).
   game.settings.registerMenu(MODULE_ID, "overlayConfigMenu", {
     name: "Configure Overlay Items",
@@ -84,7 +84,7 @@ fetch("https://jolly-dust-4f49.darkjenso.workers.dev/", {
     type: OverlayConfig,
     restricted: false
   });
-  
+
   // Register the new Manage Layouts menu.
   game.settings.registerMenu(MODULE_ID, "manageLayouts", {
     name: "Manage Layouts",
@@ -94,7 +94,7 @@ fetch("https://jolly-dust-4f49.darkjenso.workers.dev/", {
     type: ManageLayouts,
     restricted: false
   });
-  
+
   // Register the overlay window opener.
   game.settings.registerMenu(MODULE_ID, "openOverlayWindow", {
     name: "Open Overlay Window",
@@ -105,7 +105,27 @@ fetch("https://jolly-dust-4f49.darkjenso.workers.dev/", {
     restricted: false,
     config: true
   });
-  
+
+  // Register the Slideshow configuration (new!).
+  game.settings.register(MODULE_ID, "slideshow", {
+    name: "Slideshow Configuration",
+    hint: "Stores the ordered list of layouts with durations for the slideshow.",
+    scope: "client",
+    type: Object,
+    default: { list: [] },
+    config: false
+  });
+
+  // Register the Slideshow Settings menu.
+  game.settings.registerMenu(MODULE_ID, "slideshowSettings", {
+    name: "Slideshow Settings",
+    label: "Slideshow Settings",
+    hint: "Configure a slideshow of overlay layouts.",
+    icon: "fas fa-play",
+    type: SlideshowConfig,
+    restricted: false
+  });
+
   console.log("Module settings registered.");
 
   // When activeLayout is updated, re-render the overlay if it's open.
@@ -135,12 +155,12 @@ class FoundryStreamOverlay extends Application {
       classes: ["foundry-stream-overlay", "no-header"]
     });
   }
-  
+
   getData() {
     const backgroundColour = game.settings.get(MODULE_ID, "backgroundColour");
     const layouts = game.settings.get(MODULE_ID, "layouts") || {};
     const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
-    
+
     const items = (layouts[activeLayout] || []).map(item => {
       if (item.type === "image") {
         return {
@@ -190,7 +210,7 @@ class FoundryStreamOverlay extends Application {
         };
       }
     }).filter(Boolean);
-    
+
     // Sort items in ascending order.
     items.sort((a, b) => a.order - b.order);
     // Compute renderOrder so that items at the top of the config list appear in front.
@@ -198,13 +218,13 @@ class FoundryStreamOverlay extends Application {
     items.forEach((item, index) => {
       item.renderOrder = max - index;
     });
-    
+
     return {
       backgroundColour,
       items
     };
   }
-  
+
   activateListeners(html) {
     super.activateListeners(html);
   }
@@ -224,7 +244,7 @@ class OverlayConfig extends FormApplication {
       closeOnSubmit: false
     });
   }
-  
+
   getData() {
     const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
     const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
@@ -251,7 +271,7 @@ class OverlayConfig extends FormApplication {
     const allActors = game.actors.contents.filter(a => a.type === "character" || a.hasPlayerOwner);
     return { rows, allActors, dataPathChoices, activeLayout, layouts };
   }
-  
+
   activateListeners(html) {
     super.activateListeners(html);
     // Bind layout selection change to update active layout immediately.
@@ -277,7 +297,7 @@ class OverlayConfig extends FormApplication {
       openOverlayWindow();
     });
   }
-  
+
   async _onAddRow(event) {
     event.preventDefault();
     const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
@@ -300,7 +320,7 @@ class OverlayConfig extends FormApplication {
     await game.settings.set(MODULE_ID, "layouts", layouts);
     this.render();
   }
-  
+
   async _onAddImage(event) {
     event.preventDefault();
     const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
@@ -319,7 +339,7 @@ class OverlayConfig extends FormApplication {
     await game.settings.set(MODULE_ID, "layouts", layouts);
     this.render();
   }
-  
+
   async _onAddStatic(event) {
     event.preventDefault();
     const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
@@ -341,7 +361,7 @@ class OverlayConfig extends FormApplication {
     await game.settings.set(MODULE_ID, "layouts", layouts);
     this.render();
   }
-  
+
   async _onRemoveRow(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
@@ -353,7 +373,7 @@ class OverlayConfig extends FormApplication {
     await game.settings.set(MODULE_ID, "layouts", layouts);
     this.render();
   }
-  
+
   async _onMoveUp(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
@@ -367,7 +387,7 @@ class OverlayConfig extends FormApplication {
       this.render();
     }
   }
-  
+
   async _onMoveDown(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
@@ -381,7 +401,7 @@ class OverlayConfig extends FormApplication {
       this.render();
     }
   }
-  
+
   async _updateObject(event, formData) {
     const newItems = [];
     for (let [key, val] of Object.entries(formData)) {
@@ -445,21 +465,21 @@ class OverlayWindowOpener extends FormApplication {
       width: 400
     });
   }
-  
+
   getData(options) {
     return {};
   }
-  
+
   activateListeners(html) {
     super.activateListeners(html);
     html.find("button[name='open-overlay']").click(this._openOverlay.bind(this));
   }
-  
+
   _openOverlay(event) {
     event.preventDefault();
     openOverlayWindow();
   }
-  
+
   async _updateObject(event, formData) {
     // Not used.
   }
@@ -524,13 +544,13 @@ class ManageLayouts extends FormApplication {
       closeOnSubmit: true
     });
   }
-  
+
   getData() {
     const layouts = game.settings.get(MODULE_ID, "layouts") || {};
     const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
     return { layouts, activeLayout };
   }
-  
+
   activateListeners(html) {
     super.activateListeners(html);
     html.find(".create-new-layout").click(this._onCreateNewLayout.bind(this));
@@ -540,7 +560,7 @@ class ManageLayouts extends FormApplication {
     html.find(".export-layout").click(this._onExport.bind(this));
     html.find(".import-layout").click(this._onImport.bind(this));
   }
-  
+
   async _onCreateNewLayout(event) {
     event.preventDefault();
     const layoutName = prompt("Enter a new layout name:");
@@ -555,7 +575,7 @@ class ManageLayouts extends FormApplication {
     ui.notifications.info(`Layout "${layoutName}" created.`);
     this.render();
   }
-  
+
   async _onActivate(event) {
     event.preventDefault();
     const layoutName = event.currentTarget.dataset.layout;
@@ -566,7 +586,7 @@ class ManageLayouts extends FormApplication {
     }
     this.render();
   }
-  
+
   async _onRename(event) {
     event.preventDefault();
     const oldName = event.currentTarget.dataset.layout;
@@ -586,7 +606,7 @@ class ManageLayouts extends FormApplication {
     await game.settings.set(MODULE_ID, "layouts", layouts);
     this.render();
   }
-  
+
   async _onDelete(event) {
     event.preventDefault();
     const layoutName = event.currentTarget.dataset.layout;
@@ -604,7 +624,7 @@ class ManageLayouts extends FormApplication {
     await game.settings.set(MODULE_ID, "layouts", layouts);
     this.render();
   }
-  
+
   async _onExport(event) {
     event.preventDefault();
     const layoutName = event.currentTarget.dataset.layout;
@@ -620,7 +640,7 @@ class ManageLayouts extends FormApplication {
     a.remove();
     URL.revokeObjectURL(url);
   }
-  
+
   async _onImport(event) {
     event.preventDefault();
     const layoutName = prompt("Enter the name for the imported layout:");
@@ -636,5 +656,153 @@ class ManageLayouts extends FormApplication {
     } catch (e) {
       ui.notifications.error("Invalid JSON.");
     }
+  }
+}
+
+// -----------------------------------------
+// 8) Slideshow Configuration (New!)
+// -----------------------------------------
+class SlideshowConfig extends FormApplication {
+  static get defaultOptions() {
+    return foundry.utils.mergeObject(super.defaultOptions, {
+      title: "Slideshow Settings",
+      id: "foundrystreamoverlay-slideshow",
+      template: `modules/${MODULE_ID}/templates/foundrystreamoverlay-slideshow.html`,
+      width: 600,
+      height: "auto",
+      closeOnSubmit: false
+    });
+  }
+
+  getData() {
+    const slideshow = game.settings.get(MODULE_ID, "slideshow") || { list: [], random: false };
+    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    const availableLayouts = Object.keys(layouts);
+    return {
+      slideshowItems: slideshow.list,
+      availableLayouts,
+      random: slideshow.random
+    };
+  }
+
+  activateListeners(html) {
+    super.activateListeners(html);
+    html.find(".add-selected-item").click(this._onAddSelectedItem.bind(this));
+    html.find(".remove-item").click(this._onRemoveItem.bind(this));
+    html.find(".move-up").click(this._onMoveUp.bind(this));
+    html.find(".move-down").click(this._onMoveDown.bind(this));
+    html.find(".start-slideshow").click(this._onStartSlideshow.bind(this));
+    html.find(".stop-slideshow").click(this._onStopSlideshow.bind(this));
+  }
+
+  async _onAddSelectedItem(event) {
+    event.preventDefault();
+    // Get the selected layout from the dropdown.
+    const selectedLayout = $(event.currentTarget).closest("form").find("#new-layout-dropdown").val();
+    const data = game.settings.get(MODULE_ID, "slideshow") || { list: [], random: false };
+    // Add the selected layout with a default 10-second duration.
+    data.list.push({ layout: selectedLayout, duration: 10 });
+    await game.settings.set(MODULE_ID, "slideshow", data);
+    this.render();
+  }
+
+  async _onRemoveItem(event) {
+    event.preventDefault();
+    const index = Number(event.currentTarget.dataset.index);
+    const data = game.settings.get(MODULE_ID, "slideshow") || { list: [], random: false };
+    data.list.splice(index, 1);
+    await game.settings.set(MODULE_ID, "slideshow", data);
+    this.render();
+  }
+
+  async _onMoveUp(event) {
+    event.preventDefault();
+    const index = Number(event.currentTarget.dataset.index);
+    const data = game.settings.get(MODULE_ID, "slideshow") || { list: [], random: false };
+    if (index > 0) {
+      [data.list[index - 1], data.list[index]] = [data.list[index], data.list[index - 1]];
+      await game.settings.set(MODULE_ID, "slideshow", data);
+      this.render();
+    }
+  }
+
+  async _onMoveDown(event) {
+    event.preventDefault();
+    const index = Number(event.currentTarget.dataset.index);
+    const data = game.settings.get(MODULE_ID, "slideshow") || { list: [], random: false };
+    if (index < data.list.length - 1) {
+      [data.list[index], data.list[index + 1]] = [data.list[index + 1], data.list[index]];
+      await game.settings.set(MODULE_ID, "slideshow", data);
+      this.render();
+    }
+  }
+
+  // Start slideshow using a recursive setTimeout.
+  async _onStartSlideshow(event) {
+    event.preventDefault();
+    const slideshow = game.settings.get(MODULE_ID, "slideshow") || { list: [], random: false };
+    if (slideshow.list.length === 0) {
+      ui.notifications.warn("No layouts in slideshow.");
+      return;
+    }
+    // Clear any existing slideshow timer.
+    if (window.foundryStreamSlideshowTimeout) {
+      clearTimeout(window.foundryStreamSlideshowTimeout);
+    }
+    let currentIndex = 0;
+    const runSlideshow = async () => {
+      let currentItem;
+      if (slideshow.random) {
+        // Pick a random layout.
+        const randomIndex = Math.floor(Math.random() * slideshow.list.length);
+        currentItem = slideshow.list[randomIndex];
+      } else {
+        // Use sequential order.
+        currentItem = slideshow.list[currentIndex];
+        currentIndex = (currentIndex + 1) % slideshow.list.length;
+      }
+      await game.settings.set(MODULE_ID, "activeLayout", currentItem.layout);
+      ui.notifications.info(`Switched to layout: ${currentItem.layout}`);
+      if (window.foundryStreamOverlayApp) {
+        window.foundryStreamOverlayApp.render();
+      }
+      window.foundryStreamSlideshowTimeout = setTimeout(runSlideshow, currentItem.duration * 1000);
+    };
+    runSlideshow();
+    ui.notifications.info("Slideshow started.");
+  }
+
+  async _onStopSlideshow(event) {
+    event.preventDefault();
+    if (window.foundryStreamSlideshowTimeout) {
+      clearTimeout(window.foundryStreamSlideshowTimeout);
+      window.foundryStreamSlideshowTimeout = null;
+      ui.notifications.info("Slideshow stopped.");
+    }
+  }
+
+  async _updateObject(event, formData) {
+    event.preventDefault();
+    // Process formData keys in the format layout-0, duration-0, etc.
+    const data = { list: [] };
+    const temp = {};
+    for (let [key, value] of Object.entries(formData)) {
+      const [field, index] = key.split("-");
+      if (index !== undefined) {
+        if (!temp[index]) temp[index] = {};
+        temp[index][field] = value;
+      }
+    }
+    for (let key in temp) {
+      temp[key].duration = Number(temp[key].duration) || 10;
+      data.list.push({
+        layout: temp[key].layout || "Default",
+        duration: temp[key].duration
+      });
+    }
+    // Process the random checkbox.
+    data.random = ("random" in formData);
+    await game.settings.set(MODULE_ID, "slideshow", data);
+    ui.notifications.info("Slideshow configuration saved.");
   }
 }
