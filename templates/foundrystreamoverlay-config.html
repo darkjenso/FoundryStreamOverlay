@@ -19,7 +19,6 @@
         <th style="width: 50px;">Order</th>
         <th style="width:20%;">Content</th>
         <th>Extra</th>
-        <th>Animation</th>
         <th>Top (px)</th>
         <th>Left (px)</th>
         <th>Hide</th>
@@ -29,16 +28,12 @@
     <tbody>
       {{#each rows}}
       <tr>
-        <!-- Hidden type field -->
         <input type="hidden" name="type-{{this.idx}}" value="{{this.type}}">
-        <!-- Type Column -->
         <td>{{this.type}}</td>
-        <!-- Order Column -->
         <td style="width:50px;">
           <button type="button" class="move-up" data-index="{{this.idx}}">↑</button>
           <button type="button" class="move-down" data-index="{{this.idx}}">↓</button>
         </td>
-        <!-- Content Column -->
         {{#ifEquals this.type "data"}}
           <td>
             Actor:
@@ -60,7 +55,6 @@
               {{/each}}
             </select>
           </td>
-          <!-- Extra Column for data -->
           <td>
             Font Size:
             <input type="number" name="fontSize-{{this.idx}}" value="{{this.fontSize}}" style="width:60px;">
@@ -72,24 +66,25 @@
             <select name="fontFamily-{{this.idx}}">
               <option value="Arial, sans-serif" {{#ifEquals this.fontFamily "Arial, sans-serif"}}selected{{/ifEquals}}>Arial</option>
               <option value="Verdana, sans-serif" {{#ifEquals this.fontFamily "Verdana, sans-serif"}}selected{{/ifEquals}}>Verdana</option>
-              <option value="Trebuchet MS, sans-serif" {{#ifEquals this.fontFamily "Trebuchet MS, sans-serif"}}selected{{/ifEquals}}>Trebuchet MS</option>
-              <option value="Helvetica, sans-serif" {{#ifEquals this.fontFamily "Helvetica, sans-serif"}}selected{{/ifEquals}}>Helvetica</option>
-              <option value="Impact, sans-serif" {{#ifEquals this.fontFamily "Impact, sans-serif"}}selected{{/ifEquals}}>Impact</option>
-              <option value="Times New Roman, serif" {{#ifEquals this.fontFamily "Times New Roman, serif"}}selected{{/ifEquals}}>Times New Roman</option>
-              <option value="Georgia, serif" {{#ifEquals this.fontFamily "Georgia, serif"}}selected{{/ifEquals}}>Georgia</option>
-              <option value="Garamond, serif" {{#ifEquals this.fontFamily "Garamond, serif"}}selected{{/ifEquals}}>Garamond</option>
-              <option value="Palatino, serif" {{#ifEquals this.fontFamily "Palatino, serif"}}selected{{/ifEquals}}>Palatino</option>
-              <option value="Courier New, monospace" {{#ifEquals this.fontFamily "Courier New, monospace"}}selected{{/ifEquals}}>Courier New</option>
-              <option value="Consolas, monospace" {{#ifEquals this.fontFamily "Consolas, monospace"}}selected{{/ifEquals}}>Consolas</option>
-              <option value="Monaco, monospace" {{#ifEquals this.fontFamily "Monaco, monospace"}}selected{{/ifEquals}}>Monaco</option>
-              <option value="Comic Sans MS, cursive" {{#ifEquals this.fontFamily "Comic Sans MS, cursive"}}selected{{/ifEquals}}>Comic Sans</option>
-              <option value="Papyrus, fantasy" {{#ifEquals this.fontFamily "Papyrus, fantasy"}}selected{{/ifEquals}}>Papyrus</option>
-              <option value="Brush Script MT, cursive" {{#ifEquals this.fontFamily "Brush Script MT, cursive"}}selected{{/ifEquals}}>Brush Script</option>
-              <option value="Lucida Handwriting, cursive" {{#ifEquals this.fontFamily "Lucida Handwriting, cursive"}}selected{{/ifEquals}}>Lucida Handwriting</option>
-              <option value="Chalkboard, sans-serif" {{#ifEquals this.fontFamily "Chalkboard, sans-serif"}}selected{{/ifEquals}}>Chalkboard</option>
-              <option value="Futura, sans-serif" {{#ifEquals this.fontFamily "Futura, sans-serif"}}selected{{/ifEquals}}>Futura</option>
-              <option value="Bauhaus 93, fantasy" {{#ifEquals this.fontFamily "Bauhaus 93, fantasy"}}selected{{/ifEquals}}>Bauhaus 93</option>
-            </select>
+  <option value="Trebuchet MS, sans-serif" {{#ifEquals this.fontFamily "Trebuchet MS, sans-serif"}}selected{{/ifEquals}}>Trebuchet MS</option>
+  <option value="Helvetica, sans-serif" {{#ifEquals this.fontFamily "Helvetica, sans-serif"}}selected{{/ifEquals}}>Helvetica</option>
+  <option value="Impact, sans-serif" {{#ifEquals this.fontFamily "Impact, sans-serif"}}selected{{/ifEquals}}>Impact</option>
+  <option value="Times New Roman, serif" {{#ifEquals this.fontFamily "Times New Roman, serif"}}selected{{/ifEquals}}>Times New Roman</option>
+  <option value="Georgia, serif" {{#ifEquals this.fontFamily "Georgia, serif"}}selected{{/ifEquals}}>Georgia</option>
+  <option value="Garamond, serif" {{#ifEquals this.fontFamily "Garamond, serif"}}selected{{/ifEquals}}>Garamond</option>
+  <option value="Palatino, serif" {{#ifEquals this.fontFamily "Palatino, serif"}}selected{{/ifEquals}}>Palatino</option>
+  <option value="Courier New, monospace" {{#ifEquals this.fontFamily "Courier New, monospace"}}selected{{/ifEquals}}>Courier New</option>
+  <option value="Consolas, monospace" {{#ifEquals this.fontFamily "Consolas, monospace"}}selected{{/ifEquals}}>Consolas</option>
+  <option value="Monaco, monospace" {{#ifEquals this.fontFamily "Monaco, monospace"}}selected{{/ifEquals}}>Monaco</option>
+  <option value="Comic Sans MS, cursive" {{#ifEquals this.fontFamily "Comic Sans MS, cursive"}}selected{{/ifEquals}}>Comic Sans</option>
+  <option value="Papyrus, fantasy" {{#ifEquals this.fontFamily "Papyrus, fantasy"}}selected{{/ifEquals}}>Papyrus</option>
+  <option value="Brush Script MT, cursive" {{#ifEquals this.fontFamily "Brush Script MT, cursive"}}selected{{/ifEquals}}>Brush Script</option>
+  <option value="Lucida Handwriting, cursive" {{#ifEquals this.fontFamily "Lucida Handwriting, cursive"}}selected{{/ifEquals}}>Lucida Handwriting</option>
+  <option value="Chalkboard, sans-serif" {{#ifEquals this.fontFamily "Chalkboard, sans-serif"}}selected{{/ifEquals}}>Chalkboard</option>
+  <option value="Futura, sans-serif" {{#ifEquals this.fontFamily "Futura, sans-serif"}}selected{{/ifEquals}}>Futura</option>
+  <option value="Bauhaus 93, fantasy" {{#ifEquals this.fontFamily "Bauhaus 93, fantasy"}}selected{{/ifEquals}}>Bauhaus 93</option>
+</select>
+
             <br>
             Colour:
             <input type="color" name="fontColor-{{this.idx}}" value="{{this.fontColor}}" style="width:80px;">
@@ -109,7 +104,7 @@
             Font:
             <select name="fontFamily-{{this.idx}}">
               <option value="Arial, sans-serif" {{#ifEquals this.fontFamily "Arial, sans-serif"}}selected{{/ifEquals}}>Arial</option>
-              <!-- Additional options can be added here -->
+              <!-- Additional options -->
             </select>
             <br>
             Colour:
@@ -118,49 +113,22 @@
         {{else}}
           <td>
             Image Path:
-            <input type="text" name="imagePath-{{this.idx}}" value="{{this.imagePath}}" style="width:100%;" readonly>
-            <button type="button" class="file-picker" data-index="{{this.idx}}">Choose</button>
+            <input type="text" name="imagePath-{{this.idx}}" value="{{this.imagePath}}" style="width:100%;">
           </td>
           <td>
             Size:
             <input type="number" name="imageSize-{{this.idx}}" value="{{this.imageSize}}" style="width:60px;">
           </td>
         {{/ifEquals}}
-        <!-- Combined Animation Column -->
-        <td>
-          <select name="animation-{{this.idx}}">
-            <option value="none" {{#ifEquals this.animation "none"}}selected{{/ifEquals}}>None</option>
-            <option value="hover" {{#ifEquals this.animation "hover"}}selected{{/ifEquals}}>Hover Up/Down</option>
-            <option value="glitch" {{#ifEquals this.animation "glitch"}}selected{{/ifEquals}}>Glitch</option>
-            <option value="heartbeat" {{#ifEquals this.animation "heartbeat"}}selected{{/ifEquals}}>Heartbeat</option>
-            <option value="rotate" {{#ifEquals this.animation "rotate"}}selected{{/ifEquals}}>Rotate</option>
-            <option value="wiggle" {{#ifEquals this.animation "wiggle"}}selected{{/ifEquals}}>Wiggle</option>
-            <option value="pulse" {{#ifEquals this.animation "pulse"}}selected{{/ifEquals}}>Pulse</option>
-            <option value="slide" {{#ifEquals this.animation "slide"}}selected{{/ifEquals}}>Slide</option>
-            <option value="flash" {{#ifEquals this.animation "flash"}}selected{{/ifEquals}}>Flash</option>
-            <option value="shake" {{#ifEquals this.animation "shake"}}selected{{/ifEquals}}>Shake</option>
-            <option value="shimmer" {{#ifEquals this.animation "shimmer"}}selected{{/ifEquals}}>Shimmer</option>
-          </select>
-          <br>
-          <label style="font-size:0.8em;">Offset:</label>
-          <input type="number" name="animationDelay-{{this.idx}}" value="{{this.animationDelay}}" style="width:50px;" placeholder="ms">
-          <br>
-          <label style="font-size:0.8em;">Duration:</label>
-          <input type="number" step="0.1" name="animationDuration-{{this.idx}}" value="{{this.animationDuration}}" style="width:50px;" placeholder="s">
-        </td>
-        <!-- Top (px) Column -->
         <td>
           <input type="number" name="top-{{this.idx}}" value="{{this.top}}" style="width:60px;">
         </td>
-        <!-- Left (px) Column -->
         <td>
           <input type="number" name="left-{{this.idx}}" value="{{this.left}}" style="width:60px;">
         </td>
-        <!-- Hide Column -->
         <td style="text-align:center;">
           <input type="checkbox" name="hide-{{this.idx}}" {{#if this.hide}}checked{{/if}}>
         </td>
-        <!-- Remove Column -->
         <td style="text-align:center;">
           <button type="button" class="remove-row" data-index="{{this.idx}}">X</button>
         </td>

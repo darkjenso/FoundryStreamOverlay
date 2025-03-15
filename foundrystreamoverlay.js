@@ -1,5 +1,4 @@
 const MODULE_ID = "foundrystreamoverlay";
-let socket;
 
 // Example data fields for D&D5e.
 const POSSIBLE_DATA_PATHS = [
@@ -36,7 +35,9 @@ Hooks.once("init", () => {
   // Telemetry (optional)
   fetch("https://jolly-dust-4f49.darkjenso.workers.dev/", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify({
       module: MODULE_ID,
       event: "module_loaded",
@@ -51,14 +52,7 @@ Hooks.once("init", () => {
     scope: "client",
     type: String,
     default: "#00ff00",
-    config: true,
-    onChange: (value) => {
-      if (window.foundryStreamOverlayApp) {
-        window.foundryStreamOverlayApp.render();
-      }
-      // Broadcast background color change
-      broadcastOverlayUpdate();
-    }
+    config: true
   });
 
   // Layouts: an object mapping layout names to arrays of overlay items.
@@ -68,11 +62,7 @@ Hooks.once("init", () => {
     scope: "client",
     type: Object,
     default: { "Default": [] },
-    config: false,
-    onChange: () => {
-      // Broadcast layouts update
-      broadcastOverlayUpdate();
-    }
+    config: false
   });
 
   // Active layout: which layout is currently in use.
@@ -82,33 +72,6 @@ Hooks.once("init", () => {
     scope: "client",
     type: String,
     default: "Default",
-    config: false,
-    onChange: () => {
-      if (window.foundryStreamOverlayApp) {
-        window.foundryStreamOverlayApp.render();
-      }
-      // Broadcast active layout change
-      broadcastOverlayUpdate();
-    }
-  });
-  
-  // Secret key for browser source authentication
-  game.settings.register(MODULE_ID, "browserSourceKey", {
-    name: "Browser Source Authentication Key",
-    hint: "Secret key for authenticating browser sources. Keep this private.",
-    scope: "world",
-    type: String,
-    default: generateRandomKey(),
-    config: false
-  });
-
-  // Active browser sources
-  game.settings.register(MODULE_ID, "activeBrowserSources", {
-    name: "Active Browser Sources",
-    hint: "Tracks active browser source connections",
-    scope: "world",
-    type: Object,
-    default: {},
     config: false
   });
 
@@ -163,16 +126,6 @@ Hooks.once("init", () => {
     restricted: false
   });
 
-  // Register the Browser Source URL generator.
-  game.settings.registerMenu(MODULE_ID, "browserSource", {
-    name: "Browser Source URL",
-    label: "Browser Source URL",
-    hint: "Generate a URL for a browser source with a transparent overlay.",
-    icon: "fas fa-link",
-    type: BrowserSourceConfig,
-    restricted: false
-  });
-
   console.log("Module settings registered.");
 
   // When activeLayout is updated, re-render the overlay if it's open.
@@ -186,257 +139,7 @@ Hooks.once("init", () => {
 });
 
 // -----------------------------------------
-// 2) socketlib Setup
-// -----------------------------------------
-Hooks.once("socketlib.ready", () => {
-  // Initialize socketlib
-  socket = socketlib.registerModule(MODULE_ID);
-  
-  // Register socket functions
-  socket.register("requestOverlayData", requestOverlayData);
-  socket.register("broadcastActorUpdate", broadcastActorUpdate);
-  socket.register("authenticateBrowserSource", authenticateBrowserSource);
-  
-  // We register the receiveOverlayUpdate callback differently
-  socket.register("receiveOverlayUpdate", (data) => {
-    // This is just a placeholder - this function is used for broadcasts
-    console.log(`${MODULE_ID} | Broadcast overlay update`);
-    return true;
-  });
-  
-  console.log(`${MODULE_ID} | socketlib initialized`);
-});
-
-// Function to receive overlay updates (browser source will listen for this)
-function receiveOverlayUpdate(data) {
-  // This function is primarily for browser sources to listen to
-  // It's executed on the client side via socketlib
-  console.log(`${MODULE_ID} | Received overlay update`);
-}
-
-// Function to generate a random key for browser source authentication
-function generateRandomKey(length = 32) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
-
-// Modified authenticateBrowserSource function
-function authenticateBrowserSource(providedKey, sourceId) {
-  const validKey = game.settings.get(MODULE_ID, "browserSourceKey");
-  
-  // Check standard key
-  if (providedKey === validKey) {
-    // Register this source as active
-    const activeSources = game.settings.get(MODULE_ID, "activeBrowserSources") || {};
-    activeSources[sourceId] = {
-      lastSeen: Date.now(),
-      ip: this.ip // socketlib provides this
-    };
-    game.settings.set(MODULE_ID, "activeBrowserSources", activeSources);
-    
-    // Return the initial overlay data
-    return getOverlayData();
-  }
-  
-  // Check temporary keys
-  if (window.tempBrowserSourceKeys && window.tempBrowserSourceKeys[providedKey]) {
-    const tempKeyData = window.tempBrowserSourceKeys[providedKey];
-    
-    // Check if the key is still valid
-    if (tempKeyData.expires > Date.now()) {
-      // For temporary keys, we don't register them in the activeBrowserSources setting
-      // But we do update their last seen time
-      tempKeyData.lastSeen = Date.now();
-      
-      // Return the overlay data
-      return getOverlayData();
-    }
-    
-    // If expired, remove it
-    delete window.tempBrowserSourceKeys[providedKey];
-  }
-  
-  // If we get here, authentication failed
-  return { authenticated: false, error: "Invalid authentication key" };
-}
-
-// Function to get current overlay data
-function getOverlayData() {
-  const backgroundColour = game.settings.get(MODULE_ID, "backgroundColour");
-  const layouts = game.settings.get(MODULE_ID, "layouts") || {};
-  const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
-
-  const items = (layouts[activeLayout] || []).map(item => {
-    // Include the new animation timing properties.
-    const animation = item.animation || "none";
-    const animationDelay = (item.animationDelay !== undefined) ? item.animationDelay : 0;
-    const animationDuration = item.animationDuration || 1.5;
-    
-    if (item.type === "image") {
-      return {
-        type: "image",
-        imagePath: item.imagePath || "",
-        imageSize: item.imageSize || 100,
-        top: item.top ?? 0,
-        left: item.left ?? 0,
-        hide: item.hide ?? false,
-        order: item.order || 0,
-        animation,
-        animationDelay,
-        animationDuration
-      };
-    } else if (item.type === "static") {
-      return {
-        type: "static",
-        content: item.content || "",
-        top: item.top ?? 0,
-        left: item.left ?? 0,
-        hide: item.hide ?? false,
-        fontSize: item.fontSize || 16,
-        bold: item.bold || false,
-        fontFamily: item.fontFamily || "Arial, sans-serif",
-        fontColor: item.fontColor || "#000000",
-        order: item.order || 0,
-        animation,
-        animationDelay,
-        animationDuration
-      };
-    } else {
-      // Dynamic data items.
-      const actor = game.actors.get(item.actorId);
-      if (!actor) return null;
-      if (item.hide) return null;
-      let textValue = (item.dataPath === "name")
-        ? actor.name
-        : foundry.utils.getProperty(actor, item.dataPath);
-      if (textValue === null || textValue === undefined) textValue = "N/A";
-      return {
-        type: "data",
-        actorId: item.actorId,
-        dataPath: item.dataPath,
-        data: textValue,
-        top: item.top ?? 0,
-        left: item.left ?? 0,
-        hide: item.hide ?? false,
-        fontSize: item.fontSize || 16,
-        bold: item.bold || false,
-        fontFamily: item.fontFamily || "Arial, sans-serif",
-        fontColor: item.fontColor || "#000000",
-        order: item.order || 0,
-        animation,
-        animationDelay,
-        animationDuration
-      };
-    }
-  }).filter(Boolean);
-
-  // Sort items in ascending order.
-  items.sort((a, b) => a.order - b.order);
-  // Compute renderOrder so that items at the top of the config list appear in front.
-  const max = items.length;
-  items.forEach((item, index) => {
-    item.renderOrder = max - index;
-  });
-
-  return {
-    authenticated: true,
-    backgroundColour,
-    items,
-    timestamp: Date.now()
-  };
-}
-
-// Modified requestOverlayData function
-function requestOverlayData(sourceId, authKey) {
-  // Verify authentication with standard key
-  const validKey = game.settings.get(MODULE_ID, "browserSourceKey");
-  
-  if (authKey === validKey) {
-    // Update last seen timestamp
-    const activeSources = game.settings.get(MODULE_ID, "activeBrowserSources") || {};
-    if (activeSources[sourceId]) {
-      activeSources[sourceId].lastSeen = Date.now();
-      game.settings.set(MODULE_ID, "activeBrowserSources", activeSources);
-    }
-    
-    // Return the current overlay data
-    return getOverlayData();
-  }
-  
-  // Check temporary keys
-  if (window.tempBrowserSourceKeys && window.tempBrowserSourceKeys[authKey]) {
-    const tempKeyData = window.tempBrowserSourceKeys[authKey];
-    
-    // Check if the key is still valid
-    if (tempKeyData.expires > Date.now()) {
-      // For temporary keys, we don't register them in the activeBrowserSources setting
-      // But we do update their last seen time
-      tempKeyData.lastSeen = Date.now();
-      
-      // Return the overlay data
-      return getOverlayData();
-    }
-    
-    // If expired, remove it
-    delete window.tempBrowserSourceKeys[authKey];
-  }
-  
-  // If we get here, authentication failed
-  return { authenticated: false, error: "Invalid authentication key" };
-}
-
-// Function to broadcast actor updates to browser sources
-function broadcastActorUpdate(actorId) {
-  // This function could be called from client-side code after an actor is updated
-  if (!socket) return;
-  
-  const overlayData = getOverlayData();
-  socket.executeForEveryone("receiveOverlayUpdate", overlayData);
-}
-
-// Updated Function to broadcast overlay updates to browser sources
-function broadcastOverlayUpdate() {
-  // First, use socketlib if available
-  if (socket) {
-    try {
-      const overlayData = getOverlayData();
-      socket.executeForEveryone("receiveOverlayUpdate", overlayData);
-    } catch (e) {
-      console.error(`${MODULE_ID} | Error broadcasting with socketlib:`, e);
-    }
-  }
-  
-  // Then, send updates directly to any browser source windows we've opened
-  if (!window.browserSourceWindows) {
-    window.browserSourceWindows = [];
-  }
-  
-  // Clean up closed windows
-  window.browserSourceWindows = window.browserSourceWindows.filter(win => !win.closed);
-  
-  // Get the overlay data
-  const data = getOverlayData();
-  
-  // Send updates to each window
-  window.browserSourceWindows.forEach(win => {
-    try {
-      win.postMessage({
-        module: 'foundrystreamoverlay',
-        type: 'update',
-        data: data
-      }, '*');
-    } catch (error) {
-      console.error(`${MODULE_ID} | Error sending update to browser source:`, error);
-    }
-  });
-}
-
-// -----------------------------------------
-// 3) Main Overlay Application
+// 2) Main Overlay Application
 // -----------------------------------------
 class FoundryStreamOverlay extends Application {
   static get defaultOptions() {
@@ -459,10 +162,6 @@ class FoundryStreamOverlay extends Application {
     const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
 
     const items = (layouts[activeLayout] || []).map(item => {
-      // Include the new animation timing properties.
-      const animation = item.animation || "none";
-      const animationDelay = (item.animationDelay !== undefined) ? item.animationDelay : 0;
-      const animationDuration = item.animationDuration || 1.5;
       if (item.type === "image") {
         return {
           type: "image",
@@ -471,10 +170,7 @@ class FoundryStreamOverlay extends Application {
           top: item.top ?? 0,
           left: item.left ?? 0,
           hide: item.hide ?? false,
-          order: item.order || 0,
-          animation,
-          animationDelay,
-          animationDuration
+          order: item.order || 0
         };
       } else if (item.type === "static") {
         return {
@@ -487,10 +183,7 @@ class FoundryStreamOverlay extends Application {
           bold: item.bold || false,
           fontFamily: item.fontFamily || "Arial, sans-serif",
           fontColor: item.fontColor || "#000000",
-          order: item.order || 0,
-          animation,
-          animationDelay,
-          animationDuration
+          order: item.order || 0
         };
       } else {
         // Dynamic data items.
@@ -513,10 +206,7 @@ class FoundryStreamOverlay extends Application {
           bold: item.bold || false,
           fontFamily: item.fontFamily || "Arial, sans-serif",
           fontColor: item.fontColor || "#000000",
-          order: item.order || 0,
-          animation,
-          animationDelay,
-          animationDuration
+          order: item.order || 0
         };
       }
     }).filter(Boolean);
@@ -541,7 +231,7 @@ class FoundryStreamOverlay extends Application {
 }
 
 // -----------------------------------------
-// 4) Overlay Config Form (Editing Active Layout Items)
+// 3) Overlay Config Form (Editing Active Layout Items)
 // -----------------------------------------
 class OverlayConfig extends FormApplication {
   static get defaultOptions() {
@@ -574,10 +264,7 @@ class OverlayConfig extends FormApplication {
         fontColor: item.fontColor || "#000000",
         imagePath: item.imagePath || "",
         imageSize: item.imageSize || 100,
-        order: item.order || idx,
-        animation: item.animation || "none",
-        animationDelay: (item.animationDelay !== undefined) ? item.animationDelay : 0,
-        animationDuration: item.animationDuration || 1.5
+        order: item.order || idx
       };
     });
     const dataPathChoices = POSSIBLE_DATA_PATHS;
@@ -604,18 +291,6 @@ class OverlayConfig extends FormApplication {
     html.on("click", ".remove-row", this._onRemoveRow.bind(this));
     html.find(".move-up").click(this._onMoveUp.bind(this));
     html.find(".move-down").click(this._onMoveDown.bind(this));
-    // Bind file-picker for image path fields.
-    html.find(".file-picker").off("click").click(e => {
-      const idx = $(e.currentTarget).data("index");
-      new FilePicker({
-        type: "image",
-        current: "",
-        callback: path => {
-          html.find(`input[name="imagePath-${idx}"]`).val(path);
-        }
-      }).render(true);
-    });
-    
     // Open Overlay button inside config.
     html.find("#open-overlay-from-config").click(e => {
       e.preventDefault();
@@ -639,10 +314,7 @@ class OverlayConfig extends FormApplication {
       bold: false,
       fontFamily: "Arial, sans-serif",
       fontColor: "#000000",
-      order: current.length,
-      animation: "none",
-      animationDelay: 0,
-      animationDuration: 1.5
+      order: current.length
     });
     layouts[activeLayout] = current;
     await game.settings.set(MODULE_ID, "layouts", layouts);
@@ -661,10 +333,7 @@ class OverlayConfig extends FormApplication {
       top: 0,
       left: 0,
       hide: false,
-      order: current.length,
-      animation: "none",
-      animationDelay: 0,
-      animationDuration: 1.5
+      order: current.length
     });
     layouts[activeLayout] = current;
     await game.settings.set(MODULE_ID, "layouts", layouts);
@@ -686,10 +355,7 @@ class OverlayConfig extends FormApplication {
       bold: false,
       fontFamily: "Arial, sans-serif",
       fontColor: "#000000",
-      order: current.length,
-      animation: "none",
-      animationDelay: 0,
-      animationDuration: 1.5
+      order: current.length
     });
     layouts[activeLayout] = current;
     await game.settings.set(MODULE_ID, "layouts", layouts);
@@ -756,10 +422,7 @@ class OverlayConfig extends FormApplication {
           fontColor: "#000000",
           imagePath: "",
           imageSize: 100,
-          order: 0,
-          animation: "none",
-          animationDelay: 0,
-          animationDuration: 1.5
+          order: 0
         };
       }
       switch (field) {
@@ -777,9 +440,6 @@ class OverlayConfig extends FormApplication {
         case "imagePath": newItems[rowIndex].imagePath = val; break;
         case "imageSize": newItems[rowIndex].imageSize = Number(val) || 100; break;
         case "order": newItems[rowIndex].order = Number(val) || 0; break;
-        case "animation": newItems[rowIndex].animation = val; break;
-        case "animationDelay": newItems[rowIndex].animationDelay = Number(val) || 0; break;
-        case "animationDuration": newItems[rowIndex].animationDuration = Number(val) || 1.5; break;
         default: break;
       }
     }
@@ -790,14 +450,11 @@ class OverlayConfig extends FormApplication {
     if (window.foundryStreamOverlayApp) {
       window.foundryStreamOverlayApp.render();
     }
-    
-    // Broadcast changes to browser sources
-    broadcastOverlayUpdate();
   }
 }
 
 // -----------------------------------------
-// 5) "Open Overlay" Button Form
+// 4) "Open Overlay" Button Form
 // -----------------------------------------
 class OverlayWindowOpener extends FormApplication {
   static get defaultOptions() {
@@ -829,7 +486,7 @@ class OverlayWindowOpener extends FormApplication {
 }
 
 // -----------------------------------------
-// 6) openOverlayWindow() - Single-Click with Hook
+// 5) openOverlayWindow() - Single-Click with Hook
 // -----------------------------------------
 function openOverlayWindow() {
   const overlayWindow = window.open(
@@ -862,33 +519,19 @@ function openOverlayWindow() {
   overlayApp.render(true);
   window.overlayWindow = overlayWindow;
   window.foundryStreamOverlayApp = overlayApp;
-  
-  // Add this window to the list of browser source windows to update
-  if (!window.browserSourceWindows) {
-    window.browserSourceWindows = [];
-  }
-  window.browserSourceWindows.push(overlayWindow);
 }
 
 // -----------------------------------------
-// 7) Update overlay on actor changes
+// 6) Update overlay on actor changes
 // -----------------------------------------
 Hooks.on("updateActor", (actor, update, options, userId) => {
   if (window.foundryStreamOverlayApp) {
     window.foundryStreamOverlayApp.render();
   }
-  
-  // Broadcast update to browser sources
-  if (socket) {
-    broadcastActorUpdate(actor.id);
-  } else {
-    // If socketlib is not available, use direct message method
-    broadcastOverlayUpdate();
-  }
 });
 
 // -----------------------------------------
-// 8) Manage Layouts Class
+// 7) Manage Layouts Class
 // -----------------------------------------
 class ManageLayouts extends FormApplication {
   static get defaultOptions() {
@@ -941,10 +584,6 @@ class ManageLayouts extends FormApplication {
     if (window.foundryStreamOverlayApp) {
       window.foundryStreamOverlayApp.render();
     }
-    
-    // Broadcast layout change to browser sources
-    broadcastOverlayUpdate();
-    
     this.render();
   }
 
@@ -1021,7 +660,7 @@ class ManageLayouts extends FormApplication {
 }
 
 // -----------------------------------------
-// 9) Slideshow Configuration
+// 8) Slideshow Configuration (New!)
 // -----------------------------------------
 class SlideshowConfig extends FormApplication {
   static get defaultOptions() {
@@ -1127,10 +766,6 @@ class SlideshowConfig extends FormApplication {
       if (window.foundryStreamOverlayApp) {
         window.foundryStreamOverlayApp.render();
       }
-      
-      // Also broadcast the change to browser sources
-      broadcastOverlayUpdate();
-      
       window.foundryStreamSlideshowTimeout = setTimeout(runSlideshow, currentItem.duration * 1000);
     };
     runSlideshow();
@@ -1171,185 +806,3 @@ class SlideshowConfig extends FormApplication {
     ui.notifications.info("Slideshow configuration saved.");
   }
 }
-
-// -----------------------------------------
-// 10) Browser Source Config
-// -----------------------------------------
-class BrowserSourceConfig extends FormApplication {
-  static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      title: "Browser Source URL",
-      id: "foundrystreamoverlay-browser",
-      template: `modules/${MODULE_ID}/templates/foundrystreamoverlay-browser.html`,
-      width: 600,
-      height: "auto",
-      closeOnSubmit: false
-    });
-  }
-
-  getData() {
-    const sourceKey = game.settings.get(MODULE_ID, "browserSourceKey");
-    
-    // Create browser source URL
-    const hostURL = window.location.origin;
-    const serverURL = `${hostURL}/modules/${MODULE_ID}/browser-source.html`;
-    
-    // Add key parameter
-    const fullURL = `${serverURL}?key=${sourceKey}`;
-    
-    // Add optional transparent background parameter
-    const transparentURL = `${fullURL}&bg=transparent`;
-
-    // Generate a temporary single-use URL (not stored in settings)
-    const tempKey = generateRandomKey(16);
-    const tempURL = `${serverURL}?key=${tempKey}&temp=true`;
-    const tempTransparentURL = `${tempURL}&bg=transparent`;
-    
-    // Get active browser sources
-    const activeSources = game.settings.get(MODULE_ID, "activeBrowserSources") || {};
-    const activeBrowserSources = Object.entries(activeSources).map(([id, data]) => {
-      return {
-        id: id.substring(0, 12) + "...", // Truncate long IDs
-        fullId: id,
-        lastSeen: new Date(data.lastSeen).toLocaleString(),
-        timeSince: Math.floor((Date.now() - data.lastSeen) / 1000),
-        ip: data.ip || "Unknown"
-      };
-    });
-    
-    return {
-      browserSourceURL: fullURL,
-      transparentURL: transparentURL,
-      tempURL: tempURL,
-      tempTransparentURL: tempTransparentURL,
-      activeBrowserSources,
-      sourceKey,
-      hasActiveSources: activeBrowserSources.length > 0
-    };
-  }
-
-  activateListeners(html) {
-    super.activateListeners(html);
-    
-    // Copy standard URL button
-    html.find(".copy-url").click(async (event) => {
-      event.preventDefault();
-      const url = html.find("#browser-source-url").val();
-      await navigator.clipboard.writeText(url);
-      ui.notifications.info("Browser source URL copied to clipboard");
-    });
-    
-    // Copy transparent URL button
-    html.find(".copy-transparent-url").click(async (event) => {
-      event.preventDefault();
-      const url = html.find("#transparent-source-url").val();
-      await navigator.clipboard.writeText(url);
-      ui.notifications.info("Transparent browser source URL copied to clipboard");
-    });
-    
-    // Open Browser Source buttons (new)
-    html.find(".open-browser-source").click((event) => {
-      event.preventDefault();
-      this._openBrowserSource(false);
-    });
-    
-    html.find(".open-transparent-source").click((event) => {
-      event.preventDefault();
-      this._openBrowserSource(true);
-    });
-
-    // Generate new source button
-    html.find(".generate-new-source").click(async (event) => {
-      event.preventDefault();
-      // Create a fresh temporary URL and update the display
-      const tempKey = generateRandomKey(16);
-      const hostURL = window.location.origin;
-      const serverURL = `${hostURL}/modules/${MODULE_ID}/browser-source.html`;
-      const tempURL = `${serverURL}?key=${tempKey}&temp=true`;
-      
-      html.find("#temp-source-url").val(tempURL);
-      html.find("#temp-transparent-url").val(`${tempURL}&bg=transparent`);
-      
-      // Store this temporary key - we're using a more straightforward approach
-      // that doesn't rely on socket.data
-      window.tempBrowserSourceKeys = window.tempBrowserSourceKeys || {};
-      window.tempBrowserSourceKeys[tempKey] = {
-        created: Date.now(),
-        expires: Date.now() + 3600000 // 1 hour expiration
-      };
-      
-      ui.notifications.info("New temporary browser source URL generated");
-    });
-    
-    // Copy temporary URL buttons
-    html.find(".copy-temp-url").click(async (event) => {
-      event.preventDefault();
-      const url = html.find("#temp-source-url").val();
-      await navigator.clipboard.writeText(url);
-      ui.notifications.info("Temporary browser source URL copied to clipboard");
-    });
-    
-    html.find(".copy-temp-transparent-url").click(async (event) => {
-      event.preventDefault();
-      const url = html.find("#temp-transparent-url").val();
-      await navigator.clipboard.writeText(url);
-      ui.notifications.info("Temporary transparent browser source URL copied to clipboard");
-    });
-    
-    // Generate new key button
-    html.find(".generate-new-key").click(async (event) => {
-      event.preventDefault();
-      if (!confirm("This will invalidate all existing browser sources. Continue?")) return;
-      
-      const newKey = generateRandomKey();
-      await game.settings.set(MODULE_ID, "browserSourceKey", newKey);
-      
-      // Clear active sources
-      await game.settings.set(MODULE_ID, "activeBrowserSources", {});
-      
-      ui.notifications.info("New browser source key generated. Update all your browser sources.");
-      this.render();
-    });
-    
-    // Broadcast update button
-    html.find(".broadcast-update").click(async (event) => {
-      event.preventDefault();
-      broadcastOverlayUpdate();
-      ui.notifications.info("Manual update broadcast to all browser sources");
-    });
-    
-    // Disconnect source button
-    html.find(".disconnect-source").click(async (event) => {
-      event.preventDefault();
-      const sourceId = event.currentTarget.dataset.id;
-      const activeSources = game.settings.get(MODULE_ID, "activeBrowserSources") || {};
-      delete activeSources[sourceId];
-      await game.settings.set(MODULE_ID, "activeBrowserSources", activeSources);
-      ui.notifications.info(`Browser source disconnected`);
-      this.render();
-    });
-  }
-}
-
-// Clean up inactive browser sources periodically
-Hooks.on("ready", () => {
-  // Every 10 minutes, clean up sources that haven't been seen in 20 minutes
-  setInterval(() => {
-    const activeSources = game.settings.get(MODULE_ID, "activeBrowserSources");
-    let changed = false;
-    const now = Date.now();
-    
-    for (const [id, data] of Object.entries(activeSources)) {
-      // If not seen in 20 minutes, remove it
-      if (now - data.lastSeen > 1200000) {
-        delete activeSources[id];
-        changed = true;
-      }
-    }
-    
-    if (changed) {
-      game.settings.set(MODULE_ID, "activeBrowserSources", activeSources);
-      console.log(`${MODULE_ID} | Cleaned up inactive browser sources`);
-    }
-  }, 600000);
-});
