@@ -1,0 +1,190 @@
+<form>
+    <h2>Browser Source URL Generator</h2>
+    
+    <div class="form-group">
+      <h3>Main Browser Source (Persistent)</h3>
+      <div class="url-group">
+        <label for="browser-source-url"><strong>Green Screen URL:</strong></label>
+        <div class="url-container">
+          <input type="text" id="browser-source-url" value="{{browserSourceURL}}" readonly style="width:100%;">
+          <button type="button" class="copy-url" title="Copy to clipboard"><i class="fas fa-copy"></i></button>
+        </div>
+      </div>
+      <div class="url-group">
+        <label for="transparent-source-url"><strong>Transparent URL:</strong></label>
+        <div class="url-container">
+          <input type="text" id="transparent-source-url" value="{{transparentURL}}" readonly style="width:100%;">
+          <button type="button" class="copy-transparent-url" title="Copy to clipboard"><i class="fas fa-copy"></i></button>
+        </div>
+      </div>
+      <p class="notes">These URLs connect to the main overlay that updates whenever you change layouts.</p>
+    </div>
+    
+    <hr>
+    
+    <div class="form-group">
+      <h3>New Browser Source</h3>
+      <button type="button" class="generate-new-source"><i class="fas fa-plus-circle"></i> Generate New Source URL</button>
+      <p class="notes">Create a new browser source URL without affecting existing ones.</p>
+      
+      <div class="url-group">
+        <label for="temp-source-url"><strong>Green Screen URL:</strong></label>
+        <div class="url-container">
+          <input type="text" id="temp-source-url" value="{{tempURL}}" readonly style="width:100%;">
+          <button type="button" class="copy-temp-url" title="Copy to clipboard"><i class="fas fa-copy"></i></button>
+        </div>
+      </div>
+      <div class="url-group">
+        <label for="temp-transparent-url"><strong>Transparent URL:</strong></label>
+        <div class="url-container">
+          <input type="text" id="temp-transparent-url" value="{{tempTransparentURL}}" readonly style="width:100%;">
+          <button type="button" class="copy-temp-transparent-url" title="Copy to clipboard"><i class="fas fa-copy"></i></button>
+        </div>
+      </div>
+      <p class="notes">Each new URL creates an independent browser source that can display a different layout.</p>
+    </div>
+    
+    <hr>
+    
+    <div class="form-group">
+      <h3>Connection Settings</h3>
+      <div class="settings-container">
+        <div class="setting">
+          <label for="source-key">Authentication Key:</label>
+          <div class="key-container">
+            <input type="text" id="source-key" value="{{sourceKey}}" readonly>
+            <button type="button" class="generate-new-key" title="Generate new key"><i class="fas fa-sync"></i></button>
+          </div>
+          <p class="notes warning">Warning: Generating a new key will disconnect all existing browser sources!</p>
+        </div>
+        
+        <div class="setting">
+          <button type="button" class="broadcast-update">
+            <i class="fas fa-broadcast-tower"></i> Manual Update Broadcast
+          </button>
+          <p class="notes">Force all connected browser sources to refresh with current data.</p>
+        </div>
+      </div>
+    </div>
+    
+    <hr>
+    
+    <div class="form-group">
+      <h3>Active Browser Sources</h3>
+      
+      {{#if hasActiveSources}}
+        <table class="active-sources">
+          <thead>
+            <tr>
+              <th>Source ID</th>
+              <th>Last Seen</th>
+              <th>Connection Time</th>
+              <th>IP Address</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each activeBrowserSources}}
+              <tr>
+                <td title="{{this.fullId}}">{{this.id}}</td>
+                <td>{{this.lastSeen}}</td>
+                <td>{{this.timeSince}}s ago</td>
+                <td>{{this.ip}}</td>
+                <td>
+                  <button type="button" class="disconnect-source" data-id="{{this.fullId}}">
+                    <i class="fas fa-unlink"></i> Disconnect
+                  </button>
+                </td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      {{else}}
+        <p>No active browser sources connected. Add this URL to your streaming software to connect.</p>
+      {{/if}}
+    </div>
+    
+    <hr>
+    
+    <div class="form-group">
+      <h3>Setup Instructions</h3>
+      <ol>
+        <li>Copy one of the Browser Source URLs above.</li>
+        <li>In OBS/Streamlabs, add a new <strong>Browser Source</strong>.</li>
+        <li>Paste the URL and set the width and height to match your stream resolution.</li>
+        <li>If using a green screen URL, apply a chroma key filter to the source.</li>
+        <li>If using a transparent URL, check <strong>"Background color" is transparent</strong> in OBS settings.</li>
+        <li>Position the overlay as desired in your scene.</li>
+      </ol>
+      <p class="notes">Browser sources will automatically reconnect if your Foundry server restarts.</p>
+    </div>
+    
+    <style>
+      .form-group {
+        margin-bottom: 1.5em;
+      }
+      
+      .url-group {
+        margin-bottom: 0.5em;
+      }
+      
+      .url-container, .key-container {
+        display: flex;
+        align-items: center;
+        margin-top: 0.2em;
+      }
+      
+      .url-container input, .key-container input {
+        flex: 1;
+      }
+      
+      .notes {
+        font-size: 0.9em;
+        font-style: italic;
+        color: #777;
+        margin-top: 0.5em;
+      }
+      
+      .warning {
+        color: #aa3333;
+      }
+      
+      button {
+        margin-left: 0.5em;
+      }
+      
+      .generate-new-source {
+        padding: 5px 10px;
+        background-color: #4b8;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+      
+      .generate-new-source:hover {
+        background-color: #3a7;
+      }
+      
+      .settings-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1em;
+      }
+      
+      .active-sources {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      
+      .active-sources th, .active-sources td {
+        padding: 0.5em;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      
+      .active-sources th {
+        background-color: #f5f5f5;
+      }
+    </style>
+  </form>

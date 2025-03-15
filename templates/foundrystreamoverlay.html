@@ -1,44 +1,165 @@
-<div id="foundry-stream-overlay" style="background-color: {{backgroundColour}}; width: 100%; height: 100%;">
-  {{#each items}}
-    {{#ifEquals this.type "image"}}
-      <img src="{{this.imagePath}}" style="
-        position: absolute;
-        top: {{this.top}}px;
-        left: {{this.left}}px;
-        width: {{this.imageSize}}px;
-        z-index: {{this.renderOrder}};
-      ">
-    {{else ifEquals this.type "static"}}
-      <div class="overlay-item" style="
-        position: absolute;
-        top: {{this.top}}px;
-        left: {{this.left}}px;
-        font-size: {{this.fontSize}}px;
-        font-family: {{this.fontFamily}};
-        color: {{this.fontColor}};
-        z-index: {{this.renderOrder}};
-        {{#if this.bold}}font-weight: bold;{{/if}}
-      ">
-        {{this.content}}
-      </div>
-    {{else}}
-      <div class="overlay-item" style="
-        position: absolute;
-        top: {{this.top}}px;
-        left: {{this.left}}px;
-        font-size: {{this.fontSize}}px;
-        font-family: {{this.fontFamily}};
-        color: {{this.fontColor}};
-        z-index: {{this.renderOrder}};
-        {{#if this.bold}}font-weight: bold;{{/if}}
-      ">
-        {{this.data}}
-      </div>
-    {{/ifEquals}}
-  {{/each}}
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Foundry Stream Overlay</title>
+  <style>
+    /* Inline critical CSS for animations */
+    .foundry-stream-overlay {
+      color: #000;
+      padding: 10px;
+      font-family: inherit;
+      border: none;
+    }
+    .no-header .window-title {
+      display: none;
+    }
+    .overlay-item {
+      position: absolute;
+      background-color: transparent;
+      color: inherit;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin: 0;
+      cursor: default;
+      user-select: none;
+    }
+    @keyframes hover {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    .overlay-item.hover { animation: hover 2s infinite; }
+    @keyframes glitch2 {
+      0% { clip: rect(40px, 9999px, 50px, 0); transform: translate(0); }
+      15% { clip: rect(10px, 9999px, 20px, 0); transform: translate(-5px, 5px); }
+      30% { clip: rect(60px, 9999px, 70px, 0); transform: translate(5px, -5px); }
+      45% { clip: rect(20px, 9999px, 30px, 0); transform: translate(-5px, 5px); }
+      60% { clip: rect(50px, 9999px, 60px, 0); transform: translate(5px, -5px); }
+      75% { clip: rect(30px, 9999px, 40px, 0); transform: translate(-5px, 5px); }
+      100% { clip: rect(40px, 9999px, 50px, 0); transform: translate(0); }
+    }
+    .overlay-item.glitch { animation: glitch2 1.5s infinite; }
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      25% { transform: scale(1.1); }
+      50% { transform: scale(1.2); }
+      75% { transform: scale(1.1); }
+    }
+    .overlay-item.heartbeat { animation: heartbeat 1.5s infinite; }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.3); }
+    }
+    .overlay-item.pulse { animation: pulse 1.5s infinite; }
+    @keyframes rotate {
+      0% { transform: rotate(0deg); }
+      50% { transform: rotate(2deg); }
+      100% { transform: rotate(0deg); }
+    }
+    .overlay-item.rotate { animation: rotate 2s infinite; }
+    @keyframes wiggle {
+      0% { transform: rotate(0deg); }
+      25% { transform: rotate(3deg); }
+      50% { transform: rotate(0deg); }
+      75% { transform: rotate(-3deg); }
+      100% { transform: rotate(0deg); }
+    }
+    .overlay-item.wiggle { animation: wiggle 1s infinite; }
+    @keyframes flash {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    .overlay-item.flash { animation: flash 1s infinite; }
+    @keyframes shake {
+      0% { transform: translate(0, 0); }
+      20% { transform: translate(-3px, 3px); }
+      40% { transform: translate(3px, -3px); }
+      60% { transform: translate(-3px, 3px); }
+      80% { transform: translate(3px, -3px); }
+      100% { transform: translate(0, 0); }
+    }
+    .overlay-item.shake { animation: shake 0.5s infinite; }
+    @keyframes shimmer {
+      0% { filter: brightness(1); }
+      50% { filter: brightness(1.5); }
+      100% { filter: brightness(1); }
+    }
+    .overlay-item.shimmer { animation: shimmer 2s infinite; }
+    @keyframes slide {
+      0% { transform: translateX(0); }
+      50% { transform: translateX(5px); }
+      100% { transform: translateX(0); }
+    }
+    .overlay-item.slide { animation: slide 3s infinite; }
+  </style>
+</head>
+<body style="background-color: {{backgroundColour}}; width: 100%; height: 100%;">
+  <div id="foundry-stream-overlay">
+    {{#each items}}
+      {{#ifEquals this.type "image"}}
+        <img src="{{this.imagePath}}" class="overlay-item {{this.animation}}" style="
+          position: absolute;
+          top: {{this.top}}px;
+          left: {{this.left}}px;
+          width: {{this.imageSize}}px;
+          z-index: {{this.renderOrder}};
+          animation-delay: {{this.animationDelay}}ms;
+          animation-duration: {{this.animationDuration}}s;
+        ">
+      {{else ifEquals this.type "static"}}
+        <div class="overlay-item {{this.animation}}" style="
+          position: absolute;
+          top: {{this.top}}px;
+          left: {{this.left}}px;
+          font-size: {{this.fontSize}}px;
+          font-family: {{this.fontFamily}};
+          color: {{this.fontColor}};
+          z-index: {{this.renderOrder}};
+          {{#if this.bold}}font-weight: bold;{{/if}}
+          animation-delay: {{this.animationDelay}}ms;
+          animation-duration: {{this.animationDuration}}s;
+        ">
+          {{this.content}}
+        </div>
+      {{else}}
+        <div class="overlay-item {{this.animation}}" style="
+          position: absolute;
+          top: {{this.top}}px;
+          left: {{this.left}}px;
+          font-size: {{this.fontSize}}px;
+          font-family: {{this.fontFamily}};
+          color: {{this.fontColor}};
+          z-index: {{this.renderOrder}};
+          {{#if this.bold}}font-weight: bold;{{/if}}
+          animation-delay: {{this.animationDelay}}ms;
+          animation-duration: {{this.animationDuration}}s;
+        ">
+          {{this.data}}
+        </div>
+      {{/ifEquals}}
+    {{/each}}
+  </div>
 
-<div style="position: absolute; bottom: 5px; right: 5px; font-size: 0.8em; opacity: 0.8;">
-  Made by Jen.
-  <a href="https://www.patreon.com/c/jenzelta" target="_blank">Support on Patreon</a>
-</div>
+  <div style="position: absolute; bottom: 5px; right: 5px; font-size: 0.8em; opacity: 0.8;">
+    Made by Jen.
+    <a href="https://www.patreon.com/c/jenzelta" target="_blank">Support on Patreon</a>
+  </div>
+
+  <script>
+    (function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("bg") === "transparent") {
+        document.getElementById("foundry-stream-overlay").style.backgroundColor = "transparent";
+        // Auto-refresh every 5 seconds with a cache-busting timestamp
+        setTimeout(() => {
+          let currentURL = window.location.href;
+          // Remove any existing ts parameter
+          currentURL = currentURL.replace(/(&|\?)ts=\d+/g, '');
+          const separator = currentURL.indexOf('?') === -1 ? '?' : '&';
+          window.location.href = currentURL + separator + 'ts=' + new Date().getTime();
+        }, 5000);
+      }
+    })();
+  </script>
+</body>
+</html>
