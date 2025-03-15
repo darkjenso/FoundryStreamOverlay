@@ -1,0 +1,65 @@
+<form>
+    <h2>Slideshow Settings</h2>
+    <table style="width: 100%; text-align: left;">
+      <thead>
+        <tr>
+          <th>Order</th>
+          <th>Layout</th>
+          <th>Duration (seconds)</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each slideshowItems}}
+        <tr>
+          <td>
+            <button type="button" class="move-up" data-index="{{@index}}">↑</button>
+            <button type="button" class="move-down" data-index="{{@index}}">↓</button>
+          </td>
+          <td>{{this.layout}}</td>
+          <td>
+            <input type="number" name="duration-{{@index}}" value="{{this.duration}}" style="width:60px;">
+          </td>
+          <td>
+            <button type="button" class="remove-item" data-index="{{@index}}">X</button>
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  
+    <!-- Random checkbox -->
+    <div style="margin: 1em 0;">
+      <label>
+        <input type="checkbox" name="random" {{#if random}}checked{{/if}}>
+        Random Order
+      </label>
+    </div>
+  
+    <!-- Dropdown and add button on one line -->
+    <div style="margin-top: 1em; display: flex; align-items: center;">
+      <select id="new-layout-dropdown" style="margin-right: 0.5em;">
+        {{#each availableLayouts}}
+          <option value="{{this}}">{{this}}</option>
+        {{/each}}
+      </select>
+      <button type="button" class="add-selected-item">Add Selected Layout</button>
+    </div>
+  
+    <!-- Start/Stop slideshow buttons on one line with icons -->
+    <div style="margin-top: 1em; display: flex; align-items: center; justify-content: center;">
+      <button type="button" class="start-slideshow" style="margin-right: 1em;">
+        <i class="fas fa-play"></i> Start
+      </button>
+      <button type="button" class="stop-slideshow">
+        <i class="fas fa-pause"></i> Stop
+      </button>
+    </div>
+  
+    <hr />
+  
+    <div style="text-align:right; margin-top:1em;">
+      <button type="submit" class="dialog-button">Save Slideshow</button>
+    </div>
+  </form>
+  
