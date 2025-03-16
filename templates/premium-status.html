@@ -1,0 +1,46 @@
+<div class="premium-status">
+    <h2>Premium Status</h2>
+    
+    {{#if isPremium}}
+      <div class="premium-active">
+        <i class="fas fa-check-circle" style="color: #4CAF50;"></i>
+        <span>Premium features activated!</span>
+      </div>
+      <p>Thank you for supporting Foundry Stream Overlay on Patreon.</p>
+    {{else}}
+      <div class="premium-inactive">
+        <i class="fas fa-times-circle" style="color: #FF424D;"></i>
+        <span>Free version - Premium features locked</span>
+      </div>
+      <p>Activate premium features to unlock more features! You only need to subscribe once for a key! Get:</p>
+      <ul>
+        <li>All animations and entrance effects</li>
+        <li>Multiple layouts management</li>
+        <li>Slideshow functionality</li>
+        <li>No promotional footer in overlay</li>
+      </ul>
+      <div class="premium-action">
+        <a href="https://www.patreon.com/c/jenzelta" target="_blank" class="patreon-button">
+          Support on Patreon
+        </a>
+        <p>Supporting at the £5/month tier or higher grants access to premium features.</p>
+      </div>
+    {{/if}}
+    
+    <div class="activation-key">
+      <label for="activation-key-input">Activation Key:</label>
+      <input type="text" id="activation-key-input" value="{{activationKey}}" placeholder="Enter your activation key">
+      <button type="button" id="activate-key-button">Activate</button>
+    </div>
+  
+    <div class="patreon-member-link">
+      <h3>Already a Patreon Member?</h3>
+      <p>If you've already supported the project, 
+        <a href="https://cool-puffpuff-4ee93b.netlify.app" 
+           target="_blank" 
+           style="color: #FF424D; text-decoration: underline;">
+          click here to get your activation key!
+        </a>
+      </p>
+    </div>
+  </div>

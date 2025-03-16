@@ -19,3 +19,513 @@
   cursor: default;
   user-select: none;
 }
+
+/* Hover Up/Down Animation */
+@keyframes hover {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+.overlay-item.hover {
+  animation: hover 2s infinite;
+}
+
+/* Revised Glitch Animation */
+@keyframes glitch2 {
+  0% {
+    clip: rect(40px, 9999px, 50px, 0);
+    transform: translate(0);
+  }
+  15% {
+    clip: rect(10px, 9999px, 20px, 0);
+    transform: translate(-5px, 5px);
+  }
+  30% {
+    clip: rect(60px, 9999px, 70px, 0);
+    transform: translate(5px, -5px);
+  }
+  45% {
+    clip: rect(20px, 9999px, 30px, 0);
+    transform: translate(-5px, 5px);
+  }
+  60% {
+    clip: rect(50px, 9999px, 60px, 0);
+    transform: translate(5px, -5px);
+  }
+  75% {
+    clip: rect(30px, 9999px, 40px, 0);
+    transform: translate(-5px, 5px);
+  }
+  100% {
+    clip: rect(40px, 9999px, 50px, 0);
+    transform: translate(0);
+  }
+}
+.overlay-item.glitch {
+  animation: glitch2 1.5s infinite;
+}
+
+/* Heartbeat Animation */
+@keyframes heartbeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  75% {
+    transform: scale(1.1);
+  }
+}
+.overlay-item.heartbeat {
+  animation: heartbeat 1.5s infinite;
+}
+
+/* Revised Pulse Animation */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+}
+.overlay-item.pulse {
+  animation: pulse 1.5s infinite;
+}
+
+/* Rotate Animation */
+@keyframes rotate {
+  0% { transform: rotate(0deg); }
+  50% { transform: rotate(2deg); }
+  100% { transform: rotate(0deg); }
+}
+.overlay-item.rotate {
+  animation: rotate 2s infinite;
+}
+
+/* Wiggle Animation */
+@keyframes wiggle {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(3deg); }
+  50% { transform: rotate(0deg); }
+  75% { transform: rotate(-3deg); }
+  100% { transform: rotate(0deg); }
+}
+.overlay-item.wiggle {
+  animation: wiggle 1s infinite;
+}
+
+/* Flash Animation */
+@keyframes flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.overlay-item.flash {
+  animation: flash 1s infinite;
+}
+
+/* Shake Animation */
+@keyframes shake {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-3px, 3px); }
+  40% { transform: translate(3px, -3px); }
+  60% { transform: translate(-3px, 3px); }
+  80% { transform: translate(3px, -3px); }
+  100% { transform: translate(0, 0); }
+}
+.overlay-item.shake {
+  animation: shake 0.5s infinite;
+}
+
+/* Shimmer Animation (Updated) */
+@keyframes shimmer {
+  0% { filter: brightness(1); }
+  50% { filter: brightness(2.5); }
+  100% { filter: brightness(1); }
+}
+.overlay-item.shimmer {
+  animation: shimmer 2s infinite;
+}
+
+/* Slide Animation */
+@keyframes slide {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(5px); }
+  100% { transform: translateX(0); }
+}
+.overlay-item.slide {
+  animation: slide 3s infinite;
+}
+
+/* Entrance animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.overlay-item.fadeIn {
+  animation-name: fadeIn;
+  animation-duration: 0.5s;
+  animation-fill-mode: forwards;
+  animation-iteration-count: 1;
+}
+
+@keyframes slideInRight {
+  from { 
+    transform: translateX(40px); 
+    opacity: 0; 
+  }
+  to { 
+    transform: translateX(0); 
+    opacity: 1; 
+  }
+}
+.overlay-item.slideInRight {
+  animation-name: slideInRight;
+  animation-duration: 0.7s;
+  animation-fill-mode: forwards;
+  animation-iteration-count: 1;
+}
+
+@keyframes slideInLeft {
+  from { 
+    transform: translateX(-40px);
+    opacity: 0; 
+  }
+  to { 
+    transform: translateX(0); 
+    opacity: 1; 
+  }
+}
+.overlay-item.slideInLeft {
+  animation-name: slideInLeft;
+  animation-duration: 0.7s;
+  animation-fill-mode: forwards;
+  animation-iteration-count: 1;
+}
+
+@keyframes slideInUp {
+  from { 
+    transform: translateY(40px);
+    opacity: 0; 
+  }
+  to { 
+    transform: translateY(0);
+    opacity: 1; 
+  }
+}
+.overlay-item.slideInUp {
+  animation-name: slideInUp;
+  animation-duration: 0.7s;
+  animation-fill-mode: forwards;
+  animation-iteration-count: 1;
+}
+
+@keyframes slideInDown {
+  from { 
+    transform: translateY(-40px);
+    opacity: 0; 
+  }
+  to { 
+    transform: translateY(0);
+    opacity: 1; 
+  }
+}
+.overlay-item.slideInDown {
+  animation-name: slideInDown;
+  animation-duration: 0.7s;
+  animation-fill-mode: forwards;
+  animation-iteration-count: 1;
+}
+
+@keyframes bounceIn {
+  0% { 
+    transform: scale(0.3); 
+    opacity: 0; 
+  }
+  50% { 
+    transform: scale(1.05); 
+  }
+  70% { 
+    transform: scale(0.9); 
+  }
+  100% { 
+    transform: scale(1); 
+    opacity: 1; 
+  }
+}
+.overlay-item.bounceIn {
+  animation-name: bounceIn;
+  animation-duration: 0.8s;
+  animation-fill-mode: forwards;
+  animation-iteration-count: 1;
+}
+
+@keyframes flipIn {
+  from { 
+    transform: perspective(400px) rotateY(90deg); 
+    opacity: 0; 
+  }
+  to { 
+    transform: perspective(400px) rotateY(0deg); 
+    opacity: 1; 
+  }
+}
+.overlay-item.flipIn {
+  animation-name: flipIn;
+  animation-duration: 0.6s;
+  animation-fill-mode: forwards;
+  backface-visibility: visible !important;
+  animation-iteration-count: 1;
+}
+
+@keyframes zoomIn {
+  from { 
+    transform: scale(0); 
+    opacity: 0; 
+  }
+  to { 
+    transform: scale(1); 
+    opacity: 1; 
+  }
+}
+.overlay-item.zoomIn {
+  animation-name: zoomIn;
+  animation-duration: 0.5s;
+  animation-fill-mode: forwards;
+  animation-iteration-count: 1;
+}
+
+/* Ensure entrance animations have animation-fill-mode: forwards */
+.overlay-item.fadeIn,
+.overlay-item.slideInRight,
+.overlay-item.slideInLeft,
+.overlay-item.slideInUp,
+.overlay-item.slideInDown,
+.overlay-item.bounceIn,
+.overlay-item.flipIn,
+.overlay-item.zoomIn {
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+}
+
+/* Layout transition helper classes */
+.layout-transition-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.layout-transition-container > div {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Slide effect helper classes */
+.slide-old {
+  transition: transform 0.5s ease-in-out;
+}
+
+.slide-new {
+  left: 100%;
+  transition: transform 0.5s ease-in-out;
+}
+
+.slide-active-old {
+  transform: translateX(-100%);
+}
+
+.slide-active-new {
+  transform: translateX(-100%);
+}
+
+/* Fade effect helper */
+.fade-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+  z-index: 9999;
+}
+
+.fade-active {
+  opacity: 1;
+}
+
+/* New Entrance Animations */
+
+/* TypeWriter - Text appears letter by letter */
+@keyframes typewriter {
+  from { width: 0; opacity: 1; }
+  to { width: 100%; opacity: 1; }
+}
+.overlay-item.typewriter {
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 2px solid currentColor;
+  width: 0;
+  animation: typewriter 1s steps(40) forwards;
+}
+
+/* DropIn - Element drops from above with a bounce */
+@keyframes dropIn {
+  0% { transform: translateY(-100px); opacity: 0; }
+  70% { transform: translateY(10px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.overlay-item.dropIn {
+  animation: dropIn 0.8s ease forwards;
+}
+
+/* SplitReveal - Content scales and reveals from the center */
+@keyframes splitReveal {
+  0% { transform: scale(0, 0.1); opacity: 0; }
+  50% { transform: scale(1, 0.1); opacity: 0.3; }
+  100% { transform: scale(1, 1); opacity: 1; }
+}
+.overlay-item.splitReveal {
+  animation: splitReveal 0.9s ease-out forwards;
+}
+
+/* FadeOutIn - Disappears momentarily before fading back in */
+@keyframes fadeOutIn {
+  0% { opacity: 0; transform: scale(0.8); }
+  40% { opacity: 0; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.overlay-item.fadeOutIn {
+  animation: fadeOutIn 1.2s ease forwards;
+}
+
+/* New Idle/Continuous Animations */
+
+/* FloatSway - Gentle floating with sideways motion */
+@keyframes floatSway {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(3px, -2px); }
+  50% { transform: translate(0, -4px); }
+  75% { transform: translate(-3px, -2px); }
+  100% { transform: translate(0, 0); }
+}
+.overlay-item.floatSway {
+  animation: floatSway 3s ease-in-out infinite;
+}
+
+/* TextGlow - Pulsing glow effect on text or outline */
+@keyframes textGlow {
+  0%, 100% { text-shadow: 0 0 2px rgba(255, 255, 255, 0.1); }
+  50% { text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 5px rgba(255, 255, 255, 0.4); }
+}
+.overlay-item.textGlow {
+  animation: textGlow 2s ease-in-out infinite;
+}
+
+/* Breathe - Natural expansion/contraction like breathing */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  30% { transform: scale(1.05); }
+  60% { transform: scale(1); }
+}
+.overlay-item.breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+/* ColorShift - Subtle color cycling */
+@keyframes colorShift {
+  0%, 100% { filter: hue-rotate(0deg); }
+  50% { filter: hue-rotate(10deg); }
+}
+.overlay-item.colorShift {
+  animation: colorShift 3s ease-in-out infinite;
+}
+
+/* Jitter - Small random-looking shakes */
+@keyframes jitter {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-1px, 1px); }
+  20% { transform: translate(1px, 0); }
+  30% { transform: translate(0, -1px); }
+  40% { transform: translate(-1px, 0); }
+  50% { transform: translate(0, 1px); }
+  60% { transform: translate(1px, -1px); }
+  70% { transform: translate(0, 1px); }
+  80% { transform: translate(-1px, 0); }
+  90% { transform: translate(1px, 1px); }
+}
+.overlay-item.jitter {
+  animation: jitter 0.5s linear infinite;
+}
+
+/* Emphasis - Grows slightly and returns, good for counters */
+@keyframes emphasis {
+  0%, 90%, 100% { transform: scale(1); }
+  45% { transform: scale(1.1); }
+}
+.overlay-item.emphasis {
+  animation: emphasis 2s ease-in-out infinite;
+}
+
+/* Ripple - Creates a ripple/wave effect */
+@keyframes ripple {
+  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.3); }
+  100% { box-shadow: 0 0 0 15px rgba(255, 255, 255, 0); }
+}
+.overlay-item.ripple {
+  animation: ripple 1.5s linear infinite;
+  border-radius: 50%; /* Works best with circular elements */
+}
+
+/* Blinking Cursor - Mimics a typing cursor */
+@keyframes blinkingCursor {
+  0%, 100% { border-right-color: transparent; }
+  50% { border-right-color: currentColor; }
+}
+.overlay-item.blinkingCursor {
+  border-right: 2px solid;
+  animation: blinkingCursor 1s step-end infinite;
+}
+
+/* Backdrop - Creates a subtle backdrop blur pulse */
+@keyframes backdropPulse {
+  0%, 100% { backdrop-filter: blur(0px); }
+  50% { backdrop-filter: blur(2px); }
+}
+.overlay-item.backdropPulse {
+  animation: backdropPulse 3s ease-in-out infinite;
+}
+
+.stroke-preview {
+  margin-top: 5px;
+  padding: 5px;
+  border: 1px dashed #ccc;
+  border-radius: 3px;
+  background-color: rgba(0,0,0,0.1);
+  text-align: center;
+  font-size: 14px;
+}
+
+/* Improved text stroke rendering for browsers that support it */
+.overlay-item.text-stroked {
+  /* Use paint-order for better stroke rendering */
+  paint-order: stroke fill;
+}
+
+/* For browsers that don't support paint-order, add a text-shadow fallback */
+@supports not (paint-order: stroke) {
+  .overlay-item.text-stroked {
+    text-shadow: 
+      -1px -1px 0 var(--stroke-color),  
+       1px -1px 0 var(--stroke-color),
+      -1px  1px 0 var(--stroke-color),
+       1px  1px 0 var(--stroke-color);
+  }
+}

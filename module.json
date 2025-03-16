@@ -1,11 +1,8 @@
 {
   "id": "foundrystreamoverlay",
-  "type": "module",
-  "name": "foundrystreamoverlay",
   "title": "Foundry Stream Overlay",
   "description": "This module creates a green‐screen overlay with live HP values for player characters, perfect for streaming. Customisable for Foundry V12.",
-  "version": "2.2.0",
-  "author": "Jen",
+  "version": "3.0.0",
   "compatibility": {
     "minimum": "12",
     "verified": "12"
@@ -20,16 +17,34 @@
     {
       "lang": "en",
       "name": "English",
-      "path": "lang/en.json"
+      "path": "lang/en.json",
+      "flags": {}
     }
   ],
   "url": "https://github.com/darkjenso/FoundryStreamOverlay/",
   "manifest": "https://raw.githubusercontent.com/darkjenso/FoundryStreamOverlay/refs/heads/main/module.json",
-  "download": "https://github.com/darkjenso/FoundryStreamOverlay/releases/download/2.2.0/foundrystreamoverlay.zip",
-  "socket": false,
-  "library": false,
+  "download": "https://github.com/darkjenso/FoundryStreamOverlay/releases/download/3.0.0/foundrystreamoverlay.zip",
+  "socket": true,
   "relationships": {
-    "requires": []
+    "requires": [
+      {
+        "id": "socketlib",
+        "type": "module",
+        "manifest": "https://raw.githubusercontent.com/manuelVo/foundryvtt-socketlib/master/module.json",
+        "compatibility": {}
+      }
+    ]
   },
-  "protected": false
+  "packs": [
+    {
+      "name": "macros",
+      "label": "Macros",
+      "path": "packs/macros",
+      "type": "Macro",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    }
+  ]
 }

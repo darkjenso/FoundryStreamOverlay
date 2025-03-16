@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+
+## [3.0.0] - 2025-03-16
+### Added
+- Premium feature tier system
+- Comprehensive slideshow functionality
+- Advanced animation options
+- Multiple layout management for premium users
+- Patreon integration for premium feature activation
+- Enhanced macro support for layout and overlay control
+- Compendium of example macros
+
+### Premium Features
+- Multiple layout creation
+- Entrance and continuous animations
+- Slideshow mode with customizable transitions
+- Removal of promotional footer
+
+### Improvements
+- Refined settings interface
+- More flexible data path selection
+- Improved performance and stability
+- Enhanced cross-system compatibility
+
 ## [2.2.0] - 2025-03-15
 - Added a dedicated Slideshow Settings window, allowing users to create and manage a slideshow of overlay layouts.
 - Users can add multiple layouts to the slideshow with individual duration settings and reorder them.
