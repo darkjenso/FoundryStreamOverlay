@@ -658,6 +658,82 @@ class OverlayConfig extends FormApplication {
     });
   }
 
+  _injectStyles() {
+    const styleId = "foundrystreamoverlay-config-styles";
+    if (document.getElementById(styleId)) return;
+    
+    const styleElem = document.createElement('style');
+    styleElem.id = styleId;
+    styleElem.textContent = `
+      .overlay-config-container {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 120px);
+        max-height: 800px;
+      }
+      
+      .overlay-config-header {
+        flex: 0 0 auto;
+        margin-bottom: 1em;
+      }
+      
+      .overlay-config-items {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        margin-bottom: 1em;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 0 4px;
+      }
+      
+      .overlay-config-footer {
+        flex: 0 0 auto;
+        border-top: 1px solid #ddd;
+        padding-top: 1em;
+        margin-top: 1em;
+        position: sticky;
+        bottom: 0;
+        background: var(--color-bg, white);
+        padding-bottom: 0.5em;
+      }
+      
+      .overlay-config-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 1em;
+      }
+      
+      .overlay-config-buttons .left-buttons {
+        display: flex;
+        gap: 0.5em;
+      }
+      
+      .overlay-config-buttons .right-buttons {
+        display: flex;
+        gap: 0.5em;
+      }
+      
+      .auto-save-feedback {
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        background: rgba(0, 100, 0, 0.7);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+    `;
+    document.head.appendChild(styleElem);
+  }
+  
+  async _render(force, options) {
+    await super._render(force, options);
+    this._injectStyles();
+  }
+
   getData() {
     const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
     const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
@@ -699,6 +775,9 @@ class OverlayConfig extends FormApplication {
     super.activateListeners(html);
     
     const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
+    
+    // Add auto-save functionality to all inputs, selects, and checkboxes
+    html.find('input, select').on('change', this._onFieldChange.bind(this));
     
     if (!isPremium) {
       html.find("select[name^='animation-']").each(function() {
@@ -747,6 +826,8 @@ class OverlayConfig extends FormApplication {
         current: "",
         callback: path => {
           html.find(`input[name="imagePath-${idx}"]`).val(path);
+          // Trigger auto-save after file selection
+          html.find(`input[name="imagePath-${idx}"]`).trigger('change');
         }
       }).render(true);
     });
@@ -767,6 +848,41 @@ class OverlayConfig extends FormApplication {
         optionsDiv.slideUp(200);
       }
     });
+  }
+
+  // New method to handle auto-saving on field changes
+  async _onFieldChange(event) {
+    // Get form data
+    const form = $(event.currentTarget).closest('form');
+    const formData = new FormDataExtended(form[0]).object;
+    
+    // Call _updateObject to save changes
+    await this._updateObject(event, formData);
+    
+    // Update the overlay window if it's open
+    if (window.overlayWindow && !window.overlayWindow.closed) {
+      updateOverlayWindow();
+    }
+    
+    // Show brief feedback
+    this._showAutoSaveFeedback();
+  }
+  
+  _showAutoSaveFeedback() {
+    // Remove existing feedback if present
+    $('.auto-save-feedback').remove();
+    
+    const flashFeedback = $(`<div class="auto-save-feedback">Auto-saved</div>`);
+    $('body').append(flashFeedback);
+    
+    // Show and hide with animation
+    window.setTimeout(() => {
+      flashFeedback.css('opacity', 1);
+      window.setTimeout(() => {
+        flashFeedback.css('opacity', 0);
+        window.setTimeout(() => flashFeedback.remove(), 300);
+      }, 1000);
+    }, 10);
   }
 
   async _onAddRow(event) {
@@ -815,22 +931,13 @@ class OverlayConfig extends FormApplication {
     const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
     const current = layouts[activeLayout] || [];
 
-    
     const newItem = {
-      type: "data",
-      actorId: "",
-      dataPath: "name",
+      type: "image",
+      imagePath: "",
+      imageSize: 100,
       top: 0,
       left: 0,
       hide: false,
-      fontSize: 16,
-      bold: false,
-      fontFamily: "Arial, sans-serif",
-      fontColor: "#000000",
-      fontStroke: false,
-      fontStrokeColor: "#000000",
-      fontStrokeWidth: 1,
-      addLabel: false, 
       order: 0,
       animation: "none",
       animationDelay: 0,
@@ -930,7 +1037,6 @@ class OverlayConfig extends FormApplication {
   }
 
   async _updateObject(event, formData) {
-
     const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
   
     if (!isPremium) {
@@ -949,7 +1055,6 @@ class OverlayConfig extends FormApplication {
       if (!newItems[rowIndex]) {
         newItems[rowIndex] = {
           type: "data",
-          type: "data",
           actorId: "",
           dataPath: "name",
           top: 0,
@@ -962,7 +1067,7 @@ class OverlayConfig extends FormApplication {
           fontStroke: false,
           fontStrokeColor: "#000000",
           fontStrokeWidth: 1,
-          addLabel: false, // Add this line
+          addLabel: false,
           imagePath: "",
           imageSize: 100,
           order: 0,
@@ -1196,27 +1301,78 @@ function updateOverlayWindow() {
         const maxHP = foundry.utils.getProperty(actor, 'system.attributes.hp.max');
         textValue = `${currentHP} / ${maxHP}`;
       } else if (item.dataPath === "system.details.class") {
-        const classVal = foundry.utils.getProperty(actor, 'system.details.class');
-        const classNameVal = foundry.utils.getProperty(actor, 'system.details.className');
-        const classesVal = foundry.utils.getProperty(actor, 'system.details.classes');
-        
-        if (classVal) {
-          textValue = classVal;
-        } else if (classNameVal) {
-          textValue = classNameVal;
-        } else if (classesVal && typeof classesVal === 'object') {
-          const classNames = Object.keys(classesVal);
-          if (classNames.length > 0) {
-            textValue = classNames.join('/');
+        // Try finding classes in items collection first
+        const classItems = actor.items?.filter(item => item.type === "class");
+      
+        if (classItems && classItems.length > 0) {
+          if (classItems.length === 1) {
+            // For single class, just show the class name without level
+            textValue = classItems[0].name;
+          } else {
+            // For multiclass, show all classes with levels
+            textValue = classItems.map(item => {
+              const level = foundry.utils.getProperty(item, 'system.levels') || "";
+              return `${item.name} ${level}`.trim();
+            }).join('/');
+          }
+        } else {
+          // If no class items, try the standard properties
+          const classesVal = foundry.utils.getProperty(actor, 'system.classes');
+          const detailClassesVal = foundry.utils.getProperty(actor, 'system.details.classes');
+          const classVal = foundry.utils.getProperty(actor, 'system.details.class');
+          const classNameVal = foundry.utils.getProperty(actor, 'system.details.className');
+          
+          // Try checking system.classes first (more common in newer versions)
+          if (classesVal && typeof classesVal === 'object') {
+            const classEntries = Object.entries(classesVal);
+            
+            if (classEntries.length > 0) {
+              if (classEntries.length === 1) {
+                // Single class - just show the name
+                textValue = classEntries[0][0];
+              } else {
+                // Multiclass - show names with levels
+                textValue = classEntries.map(([className, classData]) => {
+                  const level = classData.levels || "";
+                  return `${className} ${level}`.trim();
+                }).join('/');
+              }
+            } else {
+              textValue = 'N/A';
+            }
+          } 
+          // Then try system.details.classes
+          else if (detailClassesVal && typeof detailClassesVal === 'object') {
+            const classEntries = Object.entries(detailClassesVal);
+            
+            if (classEntries.length > 0) {
+              if (classEntries.length === 1) {
+                // Single class - just show the name
+                textValue = classEntries[0][0];
+              } else {
+                // Multiclass - show names with levels
+                textValue = classEntries.map(([className, classData]) => {
+                  const level = classData.levels || "";
+                  return `${className} ${level}`.trim();
+                }).join('/');
+              }
+            } else {
+              textValue = 'N/A';
+            }
+          } 
+          // Finally try direct class properties
+          else if (classVal) {
+            textValue = classVal;
+          } else if (classNameVal) {
+            textValue = classNameVal;
           } else {
             textValue = 'N/A';
           }
-        } else {
-          console.log("Actor data structure:", actor);
-          textValue = 'N/A';
         }
+      
       } else if (item.dataPath === "system.details.race") {
-        textValue = foundry.utils.getProperty(actor, 'system.details.race') || 'N/A';
+        textValue = foundry.utils.getProperty(actor, 'system.details.race') || 
+                   foundry.utils.getProperty(actor, 'system.race') || 'N/A';
       } else {
         textValue = foundry.utils.getProperty(actor, item.dataPath);
       }
@@ -1352,6 +1508,9 @@ function updateOverlayWindow() {
         color: ${item.fontColor};
         z-index: ${item.renderOrder};
         ${item.bold ? 'font-weight: bold;' : ''}
+        text-align: center;
+        min-width: 80px;
+        transform: translateX(-50%);
       `;
       
       if (item.fontStroke) {

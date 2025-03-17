@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.1.0] - 2025-03-20
+### Added
+- Text centering functionality for all text elements, that way when HP for example updates from double or triple to single digits, it stays centered on the location it was placed.
+- Auto-save for configuration changes so all changes appear immediatly. no more neeed for the save button!
+- Scrollable layout configuration interface
+
+### Improved
+- Enhanced user experience with visual feedback on auto-save
+- More intuitive configuration panel with fixed header and footer
+- Better visual organization of configuration elements
+
+### Fixed
+- Incorrect class data display for DnD5e characters, was previously just saying "N/A"
+- Layout management for large numbers of overlay elements
 
 ## [3.0.0] - 2025-03-16
 ### Added
