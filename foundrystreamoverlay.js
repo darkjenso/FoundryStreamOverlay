@@ -1,12 +1,12 @@
 const MODULE_ID = "foundrystreamoverlay";
 
 const LAYOUT_TRANSITIONS = {
-  // Keep fade and flip transitions exactly the same
+ 
   "none": {
     execute: async (container, duration, nextContent) => {
       console.log("Executing none transition", { container, duration, nextContent });
       
-      // Force convert to Element if possible
+      
       if (container && typeof container === 'object' && container.tagName) {
         container = container;
       } else {
@@ -14,7 +14,7 @@ const LAYOUT_TRANSITIONS = {
         return Promise.resolve();
       }
 
-      // No transition, just instant change
+      
       container.innerHTML = nextContent;
       return Promise.resolve();
     }
@@ -29,7 +29,7 @@ const LAYOUT_TRANSITIONS = {
         nextContent 
       });
       
-      // Force convert to Element if possible
+      
       if (container && typeof container === 'object' && container.tagName) {
         container = container;
       } else {
@@ -37,14 +37,14 @@ const LAYOUT_TRANSITIONS = {
         return Promise.resolve();
       }
       
-      // Ensure we're working with the correct document
+      
       const doc = container.ownerDocument || window.overlayWindow.document;
       
-      // Create overlay containers for old and new content
+      
       const oldOverlay = doc.createElement("div");
       const newOverlay = doc.createElement("div");
       
-      // Style for overlay containers
+      
       const overlayStyle = `
         position: absolute;
         top: 0;
@@ -64,22 +64,22 @@ const LAYOUT_TRANSITIONS = {
         opacity: 0;
       `;
       
-      // Populate overlays
+      
       oldOverlay.innerHTML = container.innerHTML;
       newOverlay.innerHTML = nextContent;
       
-      // Clear container and add overlays
+     
       container.innerHTML = '';
       container.appendChild(oldOverlay);
       container.appendChild(newOverlay);
       
-      // Fade transition
+      
       return new Promise((resolve) => {
         setTimeout(() => {
           oldOverlay.style.opacity = "0";
           newOverlay.style.opacity = "1";
           
-          // Clean up after transition
+         
           setTimeout(() => {
             container.innerHTML = nextContent;
             resolve();
@@ -98,7 +98,6 @@ const LAYOUT_TRANSITIONS = {
         nextContent 
       });
       
-      // Force convert to Element if possible
       if (container && typeof container === 'object' && container.tagName) {
         container = container;
       } else {
@@ -106,10 +105,8 @@ const LAYOUT_TRANSITIONS = {
         return Promise.resolve();
       }
       
-      // Ensure we're working with the correct document
       const doc = container.ownerDocument || window.overlayWindow.document;
       
-      // Create a wrapper for sliding
       const wrapper = doc.createElement('div');
       wrapper.style.cssText = `
         position: relative;
@@ -118,7 +115,6 @@ const LAYOUT_TRANSITIONS = {
         overflow: hidden;
       `;
 
-      // Move existing content to old div
       const oldDiv = doc.createElement('div');
       oldDiv.innerHTML = container.innerHTML;
       oldDiv.style.cssText = `
@@ -130,7 +126,6 @@ const LAYOUT_TRANSITIONS = {
         transition: transform ${duration}s ease-in-out;
       `;
 
-      // Create new div positioned off-screen
       const newDiv = doc.createElement('div');
       newDiv.innerHTML = nextContent;
       newDiv.style.cssText = `
@@ -142,24 +137,18 @@ const LAYOUT_TRANSITIONS = {
         transition: transform ${duration}s ease-in-out;
       `;
 
-      // Setup wrapper
       wrapper.appendChild(oldDiv);
       wrapper.appendChild(newDiv);
 
-      // Replace container contents with wrapper
       container.innerHTML = '';
       container.appendChild(wrapper);
 
-      // Trigger slide animation
       return new Promise((resolve) => {
         setTimeout(() => {
-          // Slide out old content to the left
           oldDiv.style.transform = 'translateX(-100%)';
           
-          // Simultaneously slide in new content from the right
           newDiv.style.transform = 'translateX(-100%)';
 
-          // Clean up after transition
           setTimeout(() => {
             container.innerHTML = nextContent;
             resolve();
@@ -178,7 +167,6 @@ const LAYOUT_TRANSITIONS = {
         nextContent 
       });
       
-      // Force convert to Element if possible
       if (container && typeof container === 'object' && container.tagName) {
         container = container;
       } else {
@@ -186,28 +174,23 @@ const LAYOUT_TRANSITIONS = {
         return Promise.resolve();
       }
       
-      // Ensure we're working with the correct document
       const doc = container.ownerDocument || window.overlayWindow.document;
       
       container.style.perspective = "1000px";
       container.style.transformStyle = "preserve-3d";
       
-      // Set up transition
       container.style.transition = `transform ${duration}s ease-in-out`;
       
-      // Flip out
       await new Promise(resolve => {
         setTimeout(() => {
           container.style.transform = "rotateY(90deg)";
           setTimeout(() => {
-            // Change content when flipped away
             container.innerHTML = nextContent;
             resolve();
           }, duration * 1000);
         }, 50);
       });
       
-      // Flip in
       await new Promise(resolve => {
         setTimeout(() => {
           container.style.transform = "rotateY(0deg)";
@@ -222,7 +205,6 @@ const LAYOUT_TRANSITIONS = {
     }
   }
 };
-// Example data fields for D&D5e.
 const POSSIBLE_DATA_PATHS = [
   { label: "Actor Name", path: "name" },
   { label: "Current HP", path: "system.attributes.hp.value" },
@@ -240,9 +222,7 @@ const POSSIBLE_DATA_PATHS = [
   { label: "CHA Score", path: "system.abilities.cha.value" }
 ];
 
-// Validates activation keys for premium features
 function validateActivationKey(key) {
-  // Basic format validation
   if (!key || key.length !== 16 || !/^[A-F0-9]{16}$/.test(key)) {
     if (key !== "") {
       ui.notifications.error("Invalid activation key format.");
@@ -251,15 +231,12 @@ function validateActivationKey(key) {
     return;
   }
   
-  // Checksum validation
   let sum = 0;
   for (let i = 0; i < 15; i++) {
-    // Convert hex character to decimal
     const charCode = parseInt(key[i], 16);
     sum = (sum + charCode) % 16;
   }
   
-  // Check if the last character is the checksum
   const expectedChecksum = sum.toString(16).toUpperCase();
   const lastChar = key[15];
   
@@ -274,16 +251,12 @@ function validateActivationKey(key) {
   }
 }
 
-// -----------------------------------------
-// 1) Register Settings and Helpers
-// -----------------------------------------
+
 Hooks.once("init", () => {
-  // Register our ifEquals helper.
   Handlebars.registerHelper("ifEquals", function(arg1, arg2, options) {
     return (arg1 === arg2) ? options.fn(this) : options.inverse(this);
   });
 
-  // New helper: ifNotDefault – returns content only if value is not "Default"
   Handlebars.registerHelper("ifNotDefault", function(value, options) {
     if (value !== "Default") {
       return options.fn(this);
@@ -291,7 +264,6 @@ Hooks.once("init", () => {
     return "";
   });
 
-  // Background colour.
   game.settings.register(MODULE_ID, "backgroundColour", {
     name: "Background Colour",
     hint: "Chroma key colour for the overlay background.",
@@ -306,7 +278,6 @@ Hooks.once("init", () => {
     }
   });
 
-// Register activation key and premium status
 game.settings.register(MODULE_ID, "activationKey", {
   name: "Premium Activation Key",
   hint: "Enter your key from Patreon to unlock premium features.",
@@ -326,7 +297,6 @@ game.settings.register(MODULE_ID, "isPremium", {
 });
 
 function validateActivationKey(key) {
-  // Basic format validation
   if (!key || key.length !== 16 || !/^[A-F0-9]{16}$/.test(key)) {
     if (key !== "") {
       ui.notifications.error("Invalid activation key format.");
@@ -335,15 +305,12 @@ function validateActivationKey(key) {
     return;
   }
   
-  // Checksum validation
   let sum = 0;
   for (let i = 0; i < 15; i++) {
-    // Convert hex character to decimal
     const charCode = parseInt(key[i], 16);
     sum = (sum + charCode) % 16;
   }
   
-  // Check if the last character is the checksum
   const expectedChecksum = sum.toString(16).toUpperCase();
   const lastChar = key[15];
   
@@ -358,7 +325,6 @@ function validateActivationKey(key) {
   }
 }
 
-  // Register activation key and premium status settings
   game.settings.register(MODULE_ID, "activationKey", {
     name: "Premium Activation Key",
     hint: "Enter your key from Patreon to unlock premium features.",
@@ -377,9 +343,7 @@ function validateActivationKey(key) {
     default: false
   });
 
-  // Key validation function
   function validateActivationKey(key) {
-    // Basic format validation
     if (!key || key.length !== 16 || !/^[A-F0-9]{16}$/.test(key)) {
       if (key !== "") {
         ui.notifications.error("Invalid activation key format.");
@@ -388,15 +352,12 @@ function validateActivationKey(key) {
       return;
     }
     
-    // Checksum validation
     let sum = 0;
     for (let i = 0; i < 15; i++) {
-      // Convert hex character to decimal
       const charCode = parseInt(key[i], 16);
       sum = (sum + charCode) % 16;
     }
     
-    // Check if the last character is the checksum
     const expectedChecksum = sum.toString(16).toUpperCase();
     const lastChar = key[15];
     
@@ -412,7 +373,6 @@ function validateActivationKey(key) {
   }
 
   
-  // Layouts: an object mapping layout names to arrays of overlay items.
   game.settings.register(MODULE_ID, "layouts", {
     name: "Layouts",
     hint: "Stores all overlay layouts. Each key is a layout name and its value is an array of overlay items.",
@@ -425,7 +385,6 @@ function validateActivationKey(key) {
     }
   });
 
-  // Active layout: which layout is currently in use.
   game.settings.register(MODULE_ID, "activeLayout", {
     name: "Active Layout",
     hint: "The layout that is currently in use.",
@@ -438,7 +397,6 @@ function validateActivationKey(key) {
     }
   });
 
-  // Register the configuration menu (editing items for the active layout).
   game.settings.registerMenu(MODULE_ID, "overlayConfigMenu", {
     name: "Configure Overlay Items",
     label: "Configure Overlay",
@@ -448,7 +406,6 @@ function validateActivationKey(key) {
     restricted: false
   });
 
-  // Register the new Manage Layouts menu.
   game.settings.registerMenu(MODULE_ID, "manageLayouts", {
     name: "Manage Layouts",
     label: "Manage Layouts",
@@ -458,7 +415,6 @@ function validateActivationKey(key) {
     restricted: false
   });
 
-  // Register the overlay window opener.
   game.settings.registerMenu(MODULE_ID, "openOverlayWindow", {
     name: "Open Overlay Window",
     label: "Open Overlay",
@@ -469,7 +425,6 @@ function validateActivationKey(key) {
     config: true
   });
 
-  // Register the Slideshow configuration (new!).
   game.settings.register(MODULE_ID, "slideshow", {
     name: "Slideshow Configuration",
     hint: "Stores the ordered list of layouts with durations for the slideshow.",
@@ -484,7 +439,6 @@ function validateActivationKey(key) {
     config: false
   });
 
-  // Register the Slideshow Settings menu.
   game.settings.registerMenu(MODULE_ID, "slideshowSettings", {
     name: "Slideshow Settings",
     label: "Slideshow Settings",
@@ -497,9 +451,6 @@ function validateActivationKey(key) {
   console.log("Module settings registered.");
 });
 
-// -----------------------------------------
-// 2) Main Overlay Application
-// -----------------------------------------
 class FoundryStreamOverlay extends Application {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
@@ -522,7 +473,6 @@ class FoundryStreamOverlay extends Application {
     const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
   
     const items = (layouts[activeLayout] || []).map(item => {
-      // Include the animation timing properties.
       const animation = item.animation || "none";
       const animationDelay = (item.animationDelay !== undefined) ? item.animationDelay : 0;
       const animationDuration = item.animationDuration || 1.5;
@@ -557,9 +507,9 @@ class FoundryStreamOverlay extends Application {
           bold: item.bold || false,
           fontFamily: item.fontFamily || "Arial, sans-serif",
           fontColor: item.fontColor || "#000000",
-          fontStroke: item.fontStroke || false,           // Add text stroke property
-          fontStrokeColor: item.fontStrokeColor || "#000000", // Add stroke color
-          fontStrokeWidth: item.fontStrokeWidth || 1,     // Add stroke width
+          fontStroke: item.fontStroke || false,           
+          fontStrokeColor: item.fontStrokeColor || "#000000", 
+          fontStrokeWidth: item.fontStrokeWidth || 1,     
           order: item.order || 0,
           animation,
           animationDelay,
@@ -569,7 +519,6 @@ class FoundryStreamOverlay extends Application {
           entranceDelay
         };
       } else {
-        // Dynamic data items.
         const actor = game.actors.get(item.actorId);
         if (!actor) return null;
         if (item.hide) return null;
@@ -589,9 +538,9 @@ class FoundryStreamOverlay extends Application {
           bold: item.bold || false,
           fontFamily: item.fontFamily || "Arial, sans-serif",
           fontColor: item.fontColor || "#000000",
-          fontStroke: item.fontStroke || false,           // Add text stroke property
-          fontStrokeColor: item.fontStrokeColor || "#000000", // Add stroke color
-          fontStrokeWidth: item.fontStrokeWidth || 1,     // Add stroke width
+          fontStroke: item.fontStroke || false,           
+          fontStrokeColor: item.fontStrokeColor || "#000000",
+          fontStrokeWidth: item.fontStrokeWidth || 1,    
           order: item.order || 0,
           animation,
           animationDelay,
@@ -603,9 +552,7 @@ class FoundryStreamOverlay extends Application {
       }
     }).filter(Boolean);
   
-    // Sort items in ascending order.
     items.sort((a, b) => a.order - b.order);
-    // Compute renderOrder so that items at the top of the config list appear in front.
     const max = items.length;
     items.forEach((item, index) => {
       item.renderOrder = max - index;
@@ -614,7 +561,7 @@ class FoundryStreamOverlay extends Application {
     return {
       backgroundColour,
       items,
-      isPremium   // Pass the premium status to the template
+      isPremium   
     };
   }
 
@@ -624,9 +571,7 @@ class FoundryStreamOverlay extends Application {
 }
 
 
-// -----------------------------------------
-// Premium Status Dialog for Activation Keys
-// -----------------------------------------
+
 class PremiumStatusDialog extends FormApplication {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
@@ -660,20 +605,16 @@ class PremiumStatusDialog extends FormApplication {
       }
       
       await game.settings.set(MODULE_ID, "activationKey", key);
-      // The key will be validated by the onChange handler
       this.render();
     });
   }
 
   async _updateObject(event, formData) {
-    // Not used since we handle the activation via button click
   }
 }
 
 Hooks.once("init", () => {
-  // Your existing registrations...
   
-  // Register activation key and premium status
   game.settings.register(MODULE_ID, "activationKey", {
     name: "Premium Activation Key",
     hint: "Enter your key from Patreon to unlock premium features.",
@@ -692,7 +633,6 @@ Hooks.once("init", () => {
     default: false
   });
   
-  // Register the Premium Status menu
   game.settings.registerMenu(MODULE_ID, "premiumStatus", {
     name: "Premium Status",
     label: "Premium Status",
@@ -702,12 +642,10 @@ Hooks.once("init", () => {
     restricted: false
   });
   
-  // Your other registerMenu calls...
 });
 
-// -----------------------------------------
-// 3) Overlay Config Form (Editing Active Layout Items)
-// -----------------------------------------
+
+
 class OverlayConfig extends FormApplication {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
@@ -726,7 +664,7 @@ class OverlayConfig extends FormApplication {
     const rows = (layouts[activeLayout] || []).map((item, idx) => {
       return {
         idx,
-        type: item.type || "data", // "data", "static", or "image"
+        type: item.type || "data", 
         actorId: item.actorId || "",
         dataPath: item.dataPath || "name",
         content: item.content || "",
@@ -737,9 +675,9 @@ class OverlayConfig extends FormApplication {
         bold: item.bold || false,
         fontFamily: item.fontFamily || "Arial, sans-serif",
         fontColor: item.fontColor || "#000000",
-        fontStroke: item.fontStroke || false,           // Add text stroke property
-        fontStrokeColor: item.fontStrokeColor || "#000000", // Add stroke color
-        fontStrokeWidth: item.fontStrokeWidth || 1,     // Add stroke width
+        fontStroke: item.fontStroke || false,           
+        fontStrokeColor: item.fontStrokeColor || "#000000",
+        fontStrokeWidth: item.fontStrokeWidth || 1,     
         addLabel: item.addLabel || false, 
         imagePath: item.imagePath || "",
         imageSize: item.imageSize || 100,
@@ -760,34 +698,24 @@ class OverlayConfig extends FormApplication {
   activateListeners(html) {
     super.activateListeners(html);
     
-    // Check premium status
     const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
     
-    // Disable animation controls for non-premium users
     if (!isPremium) {
-      // Disable animation dropdowns except for "none" option
       html.find("select[name^='animation-']").each(function() {
-        // First disable all options except "none"
         $(this).find("option:not([value='none'])").prop("disabled", true);
-        // Then set value to "none"
         $(this).val("none");
       });
       
-      // Disable entrance animation dropdowns except for "none" option
       html.find("select[name^='entranceAnimation-']").each(function() {
-        // First disable all options except "none"
         $(this).find("option:not([value='none'])").prop("disabled", true);
-        // Then set value to "none"
         $(this).val("none");
       });
       
-      // Disable animation timing inputs
       html.find("input[name^='animationDelay-']").prop("disabled", true);
       html.find("input[name^='animationDuration-']").prop("disabled", true);
       html.find("input[name^='entranceDuration-']").prop("disabled", true);
       html.find("input[name^='entranceDelay-']").prop("disabled", true);
       
-      // Add a premium note next to animation fields
       html.find("select[name^='animation-']").closest("td").append(
         '<div class="premium-note" style="color:#aa5555;font-size:0.8em;margin-top:5px;">Premium feature</div>'
       );
@@ -796,14 +724,12 @@ class OverlayConfig extends FormApplication {
       );
     }
     
-    // Bind layout selection change to update active layout immediately.
     html.find("#active-layout").change(async e => {
       e.preventDefault();
       const newLayout = html.find("#active-layout").val();
       await game.settings.set("foundrystreamoverlay", "activeLayout", newLayout);
       ui.notifications.info("Active layout set to " + newLayout);
       
-      // Refresh the configuration form
       this.render();
     });
     
@@ -814,7 +740,6 @@ class OverlayConfig extends FormApplication {
     html.find(".move-up").click(this._onMoveUp.bind(this));
     html.find(".move-down").click(this._onMoveDown.bind(this));
     
-    // Bind file-picker for image path fields.
     html.find(".file-picker").off("click").click(e => {
       const idx = $(e.currentTarget).data("index");
       new FilePicker({
@@ -826,13 +751,11 @@ class OverlayConfig extends FormApplication {
       }).render(true);
     });
     
-    // Open Overlay button inside config.
     html.find("#open-overlay-from-config").click(e => {
       e.preventDefault();
       openOverlayWindow();
     });
     
-    // Toggle text stroke options visibility
     html.on("change", "input[name^='fontStroke-']", (event) => {
       const idx = event.currentTarget.name.split("-")[1];
       const isChecked = event.currentTarget.checked;
@@ -862,9 +785,9 @@ class OverlayConfig extends FormApplication {
       bold: false,
       fontFamily: "Arial, sans-serif",
       fontColor: "#000000",
-      fontStroke: false,           // Add text stroke property
-      fontStrokeColor: "#000000",  // Add stroke color
-      fontStrokeWidth: 1,          // Add stroke width
+      fontStroke: false,           
+      fontStrokeColor: "#000000",  
+      fontStrokeWidth: 1,          
       addLabel: false,
       order: 0,
       animation: "none",
@@ -907,7 +830,7 @@ class OverlayConfig extends FormApplication {
       fontStroke: false,
       fontStrokeColor: "#000000",
       fontStrokeWidth: 1,
-      addLabel: false, // Add this line
+      addLabel: false, 
       order: 0,
       animation: "none",
       animationDelay: 0,
@@ -917,12 +840,10 @@ class OverlayConfig extends FormApplication {
       entranceDelay: 0
     };
 
-    // Increment the order of all existing items
     for (let i = 0; i < current.length; i++) {
       current[i].order = current[i].order + 1;
     }
     
-    // Add the new item to the beginning of the array
     current.unshift(newItem);
     
     layouts[activeLayout] = current;
@@ -948,7 +869,7 @@ class OverlayConfig extends FormApplication {
       fontStroke: false,
       fontStrokeColor: "#000000",
       fontStrokeWidth: 1,
-      order: 0, // Set order to 0 (top of list)
+      order: 0, 
       animation: "none",
       animationDelay: 0,
       animationDuration: 1.5,
@@ -957,12 +878,10 @@ class OverlayConfig extends FormApplication {
       entranceDelay: 0
     };
     
-    // Increment the order of all existing items
     for (let i = 0; i < current.length; i++) {
       current[i].order = current[i].order + 1;
     }
-    
-    // Add the new item to the beginning of the array
+
     current.unshift(newItem);
     
     layouts[activeLayout] = current;
@@ -1014,7 +933,6 @@ class OverlayConfig extends FormApplication {
 
     const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
   
-    // For non-premium users, enforce "none" for all animations
     if (!isPremium) {
       for (let key in formData) {
         if (key.startsWith("animation-") || key.startsWith("entranceAnimation-")) {
@@ -1077,13 +995,11 @@ class OverlayConfig extends FormApplication {
         case "order": newItems[rowIndex].order = Number(val) || 0; break;
 
         case "animation":
-          // Override animation for non-premium users
           newItems[rowIndex].animation = isPremium ? val : "none"; 
           break;
         case "animationDelay": newItems[rowIndex].animationDelay = Number(val) || 0; break;
         case "animationDuration": newItems[rowIndex].animationDuration = Number(val) || 1.5; break;
         case "entranceAnimation":
-          // Override entrance animation for non-premium users
           newItems[rowIndex].entranceAnimation = isPremium ? val : "none"; 
           break;
         case "entranceDuration": newItems[rowIndex].entranceDuration = Number(val) || 0.5; break;
@@ -1099,9 +1015,6 @@ class OverlayConfig extends FormApplication {
 }
 
 
-// -----------------------------------------
-// 4) "Open Overlay" Button Form
-// -----------------------------------------
 class OverlayWindowOpener extends FormApplication {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
@@ -1127,20 +1040,16 @@ class OverlayWindowOpener extends FormApplication {
   }
 
   async _updateObject(event, formData) {
-    // Not used.
+
   }
 }
 
-// -----------------------------------------
-// 5) openOverlayWindow() - Single-Click without Application framework
-// -----------------------------------------
+
 function openOverlayWindow() {
-  // If a window is already open, close it
   if (window.overlayWindow && !window.overlayWindow.closed) {
     window.overlayWindow.close();
   }
 
-  // Create a new window
   const overlayWindow = window.open(
     "",
     "FoundryStreamOverlayWindow",
@@ -1154,7 +1063,6 @@ function openOverlayWindow() {
   
   const bg = game.settings.get(MODULE_ID, "backgroundColour");
   
-  // Create the initial HTML structure with CSS for animations
   overlayWindow.document.write(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1205,14 +1113,11 @@ function openOverlayWindow() {
   
   overlayWindow.document.close();
   
-  // Store window reference
   window.overlayWindow = overlayWindow;
   
-  // Now update the content
   updateOverlayWindow();
 }
 
-// Function to update the overlay window content
 function updateOverlayWindow() {
   if (!window.overlayWindow || window.overlayWindow.closed) {
     return;
@@ -1223,22 +1128,15 @@ function updateOverlayWindow() {
   const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
   const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
   
-  // Update background color
   window.overlayWindow.document.body.style.backgroundColor = bg;
   
-  // Get the container
   const container = window.overlayWindow.document.getElementById("overlay-container");
   if (!container) return;
   
-  // Clear existing content
   container.innerHTML = "";
   
-  // Get the overlay data directly
   const items = (layouts[activeLayout] || []).map(item => {
-    // Get animation properties - we'll handle them differently
-    
-    // For premium users, use the saved animation settings
-    // For non-premium users, force animations to "none"
+
     let animation = isPremium ? (item.animation || "none") : "none";
     let entranceAnimation = isPremium ? (item.entranceAnimation || "none") : "none";
     
@@ -1286,12 +1184,10 @@ function updateOverlayWindow() {
         entranceDelay
       };
     } else {
-      // Dynamic data items
       const actor = game.actors.get(item.actorId);
       if (!actor) return null;
       if (item.hide) return null;
       
-      // Enhanced data processing
       let textValue;
       if (item.dataPath === "name") {
         textValue = actor.name;
@@ -1300,7 +1196,6 @@ function updateOverlayWindow() {
         const maxHP = foundry.utils.getProperty(actor, 'system.attributes.hp.max');
         textValue = `${currentHP} / ${maxHP}`;
       } else if (item.dataPath === "system.details.class") {
-        // Let's try alternative paths that might contain class info
         const classVal = foundry.utils.getProperty(actor, 'system.details.class');
         const classNameVal = foundry.utils.getProperty(actor, 'system.details.className');
         const classesVal = foundry.utils.getProperty(actor, 'system.details.classes');
@@ -1310,7 +1205,6 @@ function updateOverlayWindow() {
         } else if (classNameVal) {
           textValue = classNameVal;
         } else if (classesVal && typeof classesVal === 'object') {
-          // Try to extract class name from a classes object
           const classNames = Object.keys(classesVal);
           if (classNames.length > 0) {
             textValue = classNames.join('/');
@@ -1318,7 +1212,6 @@ function updateOverlayWindow() {
             textValue = 'N/A';
           }
         } else {
-          // As a last resort, inspect the actor data structure to find class info
           console.log("Actor data structure:", actor);
           textValue = 'N/A';
         }
@@ -1328,7 +1221,6 @@ function updateOverlayWindow() {
         textValue = foundry.utils.getProperty(actor, item.dataPath);
       }
       
-      // Check if label should be added
       if (item.addLabel) {
         const labelMap = {
           "name": "Name",
@@ -1379,24 +1271,19 @@ function updateOverlayWindow() {
     }
   }).filter(Boolean);
   
-  // Sort items in ascending order
   items.sort((a, b) => a.order - b.order);
-  // Compute renderOrder so that items at the top of the config list appear in front
   const max = items.length;
   items.forEach((item, index) => {
     item.renderOrder = max - index;
   });
   
-  // Create and append items to the container
   for (const item of items) {
     if (item.type === "image") {
       const img = window.overlayWindow.document.createElement("img");
       
-      // Only apply entrance animation first
       const hasEntrance = item.entranceAnimation !== "none";
       const hasContinuous = item.animation !== "none";
       
-      // Start with entrance animation only if it exists
       if (hasEntrance) {
         img.className = `overlay-item ${item.entranceAnimation}`;
       } else if (hasContinuous) {
@@ -1407,7 +1294,6 @@ function updateOverlayWindow() {
       
       img.src = item.imagePath;
       
-      // Set positioning styles
       img.style.cssText = `
         position: absolute;
         top: ${item.top}px;
@@ -1416,24 +1302,18 @@ function updateOverlayWindow() {
         z-index: ${item.renderOrder};
       `;
       
-      // Set animation properties based on which animation is active
       if (hasEntrance) {
         img.style.animationDelay = `${item.entranceDelay}s`;
         img.style.animationDuration = `${item.entranceDuration}s`;
         
-        // Add event listener to switch to continuous animation after entrance completes
         if (hasContinuous) {
           img.addEventListener('animationend', () => {
-            // First, remove the entrance animation class
             img.className = "overlay-item";
             
-            // Force a reflow to ensure the animation restarts
             void img.offsetWidth;
             
-            // Then add the continuous animation class
             img.className = `overlay-item ${item.animation}`;
             
-            // Set the animation properties explicitly
             img.style.animationDelay = `${item.animationDelay}s`;
             img.style.animationDuration = `${item.animationDuration}s`;
           }, {once: true});
@@ -1445,10 +1325,8 @@ function updateOverlayWindow() {
       
       container.appendChild(img);
     } else {
-      // Text items (both static and data)
       const div = window.overlayWindow.document.createElement("div");
       
-      // Same animation logic as for images
       const hasEntrance = item.entranceAnimation !== "none";
       const hasContinuous = item.animation !== "none";
       
@@ -1460,13 +1338,11 @@ function updateOverlayWindow() {
         div.className = "overlay-item";
       }
       
-      // Add text-stroked class if stroke is enabled
       if (item.fontStroke) {
         div.classList.add('text-stroked');
         div.style.setProperty('--stroke-color', item.fontStrokeColor);
       }
       
-      // Set positioning and styling
       let styleText = `
         position: absolute;
         top: ${item.top}px;
@@ -1478,7 +1354,6 @@ function updateOverlayWindow() {
         ${item.bold ? 'font-weight: bold;' : ''}
       `;
       
-      // Add text stroke styling if enabled
       if (item.fontStroke) {
         styleText += `
           -webkit-text-stroke: ${item.fontStrokeWidth}px ${item.fontStrokeColor};
@@ -1489,30 +1364,24 @@ function updateOverlayWindow() {
       
       div.style.cssText = styleText;
       
-      // Set animation properties
       if (hasEntrance) {
         div.style.animationDelay = `${item.entranceDelay}s`;
         div.style.animationDuration = `${item.entranceDuration}s`;
         
-        // Switch to continuous animation after entrance
         if (hasContinuous) {
           div.addEventListener('animationend', () => {
-            // First, remove the entrance animation class
             div.className = "overlay-item";
             if (item.fontStroke) {
               div.classList.add('text-stroked');
             }
             
-            // Force a reflow to ensure the animation restarts
             void div.offsetWidth;
             
-            // Then add the continuous animation class
             div.className = `overlay-item ${item.animation}`;
             if (item.fontStroke) {
               div.classList.add('text-stroked');
             }
             
-            // Set the animation properties explicitly
             div.style.animationDelay = `${item.animationDelay}s`;
             div.style.animationDuration = `${item.animationDuration}s`;
           }, {once: true});
@@ -1527,7 +1396,6 @@ function updateOverlayWindow() {
     }
   }
   
-  // Add promotional footer for non-premium users
   if (!isPremium) {
     const promoFooter = window.overlayWindow.document.createElement("div");
     promoFooter.style.cssText = `
@@ -1544,23 +1412,18 @@ function updateOverlayWindow() {
   }
 }
 
-// -----------------------------------------
-// 7) Update overlay on actor changes
-// -----------------------------------------
+
 Hooks.on("updateActor", (actor, update, options, userId) => {
   updateOverlayWindow();
 });
 
-// When activeLayout is updated, update the overlay if it's open
 Hooks.on("updateSetting", (namespace, key, value, options, userId) => {
   if (namespace === MODULE_ID && (key === "activeLayout" || key === "layouts")) {
     updateOverlayWindow();
   }
 });
 
-// -----------------------------------------
-// 8) Manage Layouts Class
-// -----------------------------------------
+
 class ManageLayouts extends FormApplication {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
@@ -1592,17 +1455,14 @@ class ManageLayouts extends FormApplication {
   async _onCreateNewLayout(event) {
     event.preventDefault();
     
-    // Check if premium
     const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
     
-    // For non-premium users, restrict creating multiple layouts
     const layouts = game.settings.get(MODULE_ID, "layouts") || {};
     if (!isPremium && Object.keys(layouts).length > 0) {
       ui.notifications.warn("Multiple layouts require premium activation. Please consider supporting on Patreon.");
       return;
     }
     
-    // Continue with normal functionality for premium users
     const layoutName = prompt("Enter a new layout name:");
     if (!layoutName) return;
     if (layouts[layoutName]) {
@@ -1696,9 +1556,7 @@ class ManageLayouts extends FormApplication {
 }
 
 
-// -----------------------------------------
-// 9) Slideshow Configuration
-// -----------------------------------------
+
 class SlideshowConfig extends FormApplication {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
@@ -1741,10 +1599,8 @@ class SlideshowConfig extends FormApplication {
 
   async _onAddSelectedItem(event) {
     event.preventDefault();
-    // Get the selected layout from the dropdown.
     const selectedLayout = $(event.currentTarget).closest("form").find("#new-layout-dropdown").val();
     const data = game.settings.get(MODULE_ID, "slideshow") || { list: [], random: false };
-    // Add the selected layout with a default 10-second duration.
     data.list.push({ layout: selectedLayout, duration: 10 });
     await game.settings.set(MODULE_ID, "slideshow", data);
     this.render();
@@ -1781,19 +1637,15 @@ class SlideshowConfig extends FormApplication {
     }
   }
 
-  // Start slideshow using a recursive setTimeout.
-  // Modify the _onStartSlideshow method in the SlideshowConfig class
   async _onStartSlideshow(event) {
     event.preventDefault();
 
-    // Check if premium
     const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
     if (!isPremium) {
       ui.notifications.warn("Slideshow feature requires premium activation. Please consider supporting on Patreon.");
       return;
     }
       
-    // Get the current slideshow settings
     const slideshow = game.settings.get(MODULE_ID, "slideshow") || { 
       list: [], 
       random: false,
@@ -1808,12 +1660,10 @@ class SlideshowConfig extends FormApplication {
       return;
     }
     
-    // Ensure overlay window is open and valid
     if (!window.overlayWindow || window.overlayWindow.closed) {
       openOverlayWindow();
     }
     
-    // Additional check to ensure the window is properly initialized
     const checkWindowValidity = () => {
       const windowValid = window.overlayWindow 
         && !window.overlayWindow.closed 
@@ -1833,7 +1683,6 @@ class SlideshowConfig extends FormApplication {
       return windowValid && containerValid;
     };
     
-    // Wait a short time for the window to initialize
     const waitForWindow = (timeout = 5000) => {
       return new Promise((resolve, reject) => {
         const startTime = Date.now();
@@ -1850,24 +1699,19 @@ class SlideshowConfig extends FormApplication {
     };
     
     try {
-      // Wait for window to be ready
       await waitForWindow();
       
-      // Stop any existing slideshow
       this._onStopSlideshow(null);
       
-      // Set up slideshow state
       window.foundryStreamSlideshowRunning = true;
       window.foundryStreamSlideshowIndex = 0;
       
       const runSlide = async () => {
-        // Extensive logging for debugging
         console.log("Slideshow run started", {
           running: window.foundryStreamSlideshowRunning,
           windowValid: checkWindowValidity()
         });
         
-        // Exit if slideshow was stopped or window is invalid
         if (!window.foundryStreamSlideshowRunning || !checkWindowValidity()) {
           console.log("Slideshow stopped due to invalid window or stopped state");
           this._onStopSlideshow(null);
@@ -1887,7 +1731,6 @@ class SlideshowConfig extends FormApplication {
           return;
         }
         
-        // Determine which layout to show
         let currentItem;
         let nextIndex;
         
@@ -1897,12 +1740,10 @@ class SlideshowConfig extends FormApplication {
         } else {
           nextIndex = window.foundryStreamSlideshowIndex;
           currentItem = currentSlideshow.list[nextIndex];
-          // Increment index, wrapping around to start
           window.foundryStreamSlideshowIndex = 
             (window.foundryStreamSlideshowIndex + 1) % currentSlideshow.list.length;
         }
         
-        // Get the container
         const container = window.overlayWindow.document.getElementById("overlay-container");
         if (!container) {
           console.error("Overlay container not found!");
@@ -1910,53 +1751,42 @@ class SlideshowConfig extends FormApplication {
           return;
         }
         
-        // Get transition settings
         const transition = currentSlideshow.transition || "none";
         const transitionDuration = currentSlideshow.transitionDuration || 0.5;
         
         try {
-          // Save current layout name to compare
           const currentLayoutName = game.settings.get(MODULE_ID, "activeLayout");
           const nextLayoutName = currentItem.layout;
           
           console.log(`Transitioning from ${currentLayoutName} to ${nextLayoutName}`);
           
-          // Only transition if we're changing to a different layout
           if (currentLayoutName !== nextLayoutName) {
-            // Temporarily set the new layout to generate content
             await game.settings.set(MODULE_ID, "activeLayout", nextLayoutName);
             
-            // Force a window update to generate the new content
             updateOverlayWindow();
             
-            // Capture the generated content
             const tempDiv = window.overlayWindow.document.createElement('div');
             tempDiv.innerHTML = container.innerHTML;
             
             console.log("Generated content:", tempDiv.innerHTML);
             
-            // Revert to the original layout for transition
             await game.settings.set(MODULE_ID, "activeLayout", currentLayoutName);
             updateOverlayWindow();
             
-            // Execute transition
             if (transition !== "none" && LAYOUT_TRANSITIONS[transition]) {
               try {
                 console.log(`Executing ${transition} transition`);
                 await LAYOUT_TRANSITIONS[transition].execute(container, transitionDuration, tempDiv.innerHTML);
               } catch (transitionError) {
                 console.error("Transition error:", transitionError);
-                // Fallback to direct content change
                 container.innerHTML = tempDiv.innerHTML;
               }
             }
             
-            // Finally set the new layout
             await game.settings.set(MODULE_ID, "activeLayout", nextLayoutName);
             updateOverlayWindow();
           }
           
-          // Schedule next slide
           window.foundryStreamSlideshowTimeout = setTimeout(
             () => runSlide(), 
             currentItem.duration * 1000
@@ -1967,7 +1797,6 @@ class SlideshowConfig extends FormApplication {
         }
       };
       
-      // Start the first slide
       await runSlide();
       
       ui.notifications.info("Slideshow started!");
@@ -1977,7 +1806,6 @@ class SlideshowConfig extends FormApplication {
       this._onStopSlideshow(null);
     }
   }
-  // Fixed _onStopSlideshow method to handle null event
   _onStopSlideshow(event) {
     if (event) event.preventDefault();
     
@@ -1999,7 +1827,6 @@ class SlideshowConfig extends FormApplication {
     
     console.log("Slideshow form data:", formData);
     
-    // Process formData keys in the format layout-0, duration-0, etc.
     const data = { 
       list: [], 
       random: false,
@@ -2008,7 +1835,6 @@ class SlideshowConfig extends FormApplication {
     };
     const temp = {};
     
-    // First, collect all form data into temporary objects
     for (let [key, value] of Object.entries(formData)) {
       const [field, index] = key.split("-");
       if (index !== undefined) {
@@ -2017,9 +1843,7 @@ class SlideshowConfig extends FormApplication {
       }
     }
     
-    // Then, process each item
     for (let key in temp) {
-      // Make sure we have layout information
       if (temp[key].layout) {
         data.list.push({
           layout: temp[key].layout,
@@ -2028,14 +1852,12 @@ class SlideshowConfig extends FormApplication {
       }
     }
     
-    // Process the random checkbox and transition settings
     data.random = formData.random === "on";
     data.transition = formData.transition || "none";
     data.transitionDuration = Number(formData.transitionDuration) || 0.5;
     
     console.log("Processed slideshow data:", data);
     
-    // Save the data
     await game.settings.set(MODULE_ID, "slideshow", data);
     ui.notifications.info("Slideshow configuration saved.");
   }
