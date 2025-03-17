@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.1.1] - 2025-03-17
+### Added
+- Duplicate layout functionality for easily creating variations of existing layouts
+- Layout name length validation to prevent issues with excessively long names
+- Premium feature messaging in the layout manager interface
+
+### Fixed
+- Issue with layout deletion not working properly for certain layouts
+- Text animation issues when using centered text alignment
+- Image animation functionality restored
+- Improved import/export process for layout configurations
+- Enhanced error handling and user feedback throughout the interface
+
+### Improved
+- More robust JSON handling for layout import/export
+- Better visual feedback for premium vs. free features
+- Additional safeguards when manipulating layout data
+
 ## [3.1.0] - 2025-03-20
 ### Added
 - Text centering functionality for all text elements, that way when HP for example updates from double or triple to single digits, it stays centered on the location it was placed.

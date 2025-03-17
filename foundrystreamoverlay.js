@@ -1241,7 +1241,6 @@ function updateOverlayWindow() {
   container.innerHTML = "";
   
   const items = (layouts[activeLayout] || []).map(item => {
-
     let animation = isPremium ? (item.animation || "none") : "none";
     let entranceAnimation = isPremium ? (item.entranceAnimation || "none") : "none";
     
@@ -1440,6 +1439,7 @@ function updateOverlayWindow() {
       const hasEntrance = item.entranceAnimation !== "none";
       const hasContinuous = item.animation !== "none";
       
+      // For images, use specific animation classes that don't have the translateX(-50%)
       if (hasEntrance) {
         img.className = `overlay-item ${item.entranceAnimation}`;
       } else if (hasContinuous) {
@@ -1467,6 +1467,10 @@ function updateOverlayWindow() {
             img.className = "overlay-item";
             
             void img.offsetWidth;
+            
+            // For images, we need to detect if the animation has an img- prefix version
+            const imgAnimation = document.querySelector(`.img-${item.animation}`) ? 
+                                `img-${item.animation}` : item.animation;
             
             img.className = `overlay-item ${item.animation}`;
             
@@ -1510,6 +1514,7 @@ function updateOverlayWindow() {
         ${item.bold ? 'font-weight: bold;' : ''}
         text-align: center;
         min-width: 80px;
+        transform-origin: center;
         transform: translateX(-50%);
       `;
       
@@ -1529,13 +1534,16 @@ function updateOverlayWindow() {
         
         if (hasContinuous) {
           div.addEventListener('animationend', () => {
+            // Reset the class but keep essential classes
             div.className = "overlay-item";
             if (item.fontStroke) {
               div.classList.add('text-stroked');
             }
             
+            // Force reflow
             void div.offsetWidth;
             
+            // Apply the continuous animation
             div.className = `overlay-item ${item.animation}`;
             if (item.fontStroke) {
               div.classList.add('text-stroked');
@@ -1598,7 +1606,13 @@ class ManageLayouts extends FormApplication {
   getData() {
     const layouts = game.settings.get(MODULE_ID, "layouts") || {};
     const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
-    return { layouts, activeLayout };
+    const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
+    
+    return { 
+      layouts, 
+      activeLayout,
+      isPremium
+    };
   }
 
   activateListeners(html) {
@@ -1606,6 +1620,7 @@ class ManageLayouts extends FormApplication {
     html.find(".create-new-layout").click(this._onCreateNewLayout.bind(this));
     html.find(".activate-layout").click(this._onActivate.bind(this));
     html.find(".rename-layout").click(this._onRename.bind(this));
+    html.find(".duplicate-layout").click(this._onDuplicate.bind(this));
     html.find(".delete-layout").click(this._onDelete.bind(this));
     html.find(".export-layout").click(this._onExport.bind(this));
     html.find(".import-layout").click(this._onImport.bind(this));
@@ -1615,19 +1630,50 @@ class ManageLayouts extends FormApplication {
     event.preventDefault();
     
     const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
-    
     const layouts = game.settings.get(MODULE_ID, "layouts") || {};
-    if (!isPremium && Object.keys(layouts).length > 0) {
-      ui.notifications.warn("Multiple layouts require premium activation. Please consider supporting on Patreon.");
+    const layoutCount = Object.keys(layouts).length;
+    
+    if (!isPremium && layoutCount > 0) {
+      // Create a dialog to inform about premium feature
+      new Dialog({
+        title: "Premium Feature",
+        content: `
+          <h3><i class="fas fa-gem" style="color:#FF424D;"></i> Premium Feature Required</h3>
+          <p>Multiple layouts require premium activation.</p>
+          <p>With premium, you can create unlimited layouts, use animations, and access the slideshow feature!</p>
+        `,
+        buttons: {
+          upgrade: {
+            icon: '<i class="fab fa-patreon"></i>',
+            label: "Upgrade on Patreon",
+            callback: () => window.open("https://www.patreon.com/c/jenzelta", "_blank")
+          },
+          cancel: {
+            icon: '<i class="fas fa-times"></i>',
+            label: "Close"
+          }
+        },
+        default: "cancel",
+        width: 400
+      }).render(true);
       return;
     }
     
+    // Continue with creating a new layout
     const layoutName = prompt("Enter a new layout name:");
     if (!layoutName) return;
+
+    const maxNameLength = 50; // Adjust this value as needed
+    if (layoutName.length > maxNameLength) {
+      ui.notifications.error(`Layout name too long. Maximum length is ${maxNameLength} characters.`);
+      return;
+    }
+    
     if (layouts[layoutName]) {
       ui.notifications.warn("That layout already exists.");
       return;
     }
+    
     layouts[layoutName] = [];
     await game.settings.set(MODULE_ID, "layouts", layouts);
     ui.notifications.info(`Layout "${layoutName}" created.`);
@@ -1647,6 +1693,12 @@ class ManageLayouts extends FormApplication {
     const oldName = event.currentTarget.dataset.layout;
     let newName = prompt("Enter a new name for this layout:", oldName);
     if (!newName || newName === oldName) return;
+
+    const maxNameLength = 50;
+    if (newName.length > maxNameLength) {
+      ui.notifications.error(`Layout name too long. Maximum length is ${maxNameLength} characters.`);
+      return;
+    }
     const layouts = game.settings.get(MODULE_ID, "layouts") || {};
     if (layouts[newName]) {
       ui.notifications.warn("A layout with that name already exists.");
@@ -1665,51 +1717,224 @@ class ManageLayouts extends FormApplication {
   async _onDelete(event) {
     event.preventDefault();
     const layoutName = event.currentTarget.dataset.layout;
+    console.log("Deleting layout:", layoutName); // Debug logging
+    
     if (layoutName === "Default") {
       ui.notifications.warn("Cannot delete the Default layout.");
       return;
     }
+    
     if (!confirm(`Are you sure you want to delete layout: ${layoutName}?`)) return;
-    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
-    delete layouts[layoutName];
-    const activeLayout = game.settings.get(MODULE_ID, "activeLayout");
-    if (activeLayout === layoutName) {
-      await game.settings.set(MODULE_ID, "activeLayout", "Default");
+    
+    try {
+      const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+      
+      if (!layouts[layoutName]) {
+        ui.notifications.warn(`Layout "${layoutName}" not found.`);
+        return;
+      }
+      
+      delete layouts[layoutName];
+      
+      // Check if this was the active layout and reset to Default if needed
+      const activeLayout = game.settings.get(MODULE_ID, "activeLayout");
+      if (activeLayout === layoutName) {
+        await game.settings.set(MODULE_ID, "activeLayout", "Default");
+        ui.notifications.info(`Active layout reset to Default.`);
+      }
+      
+      await game.settings.set(MODULE_ID, "layouts", layouts);
+      ui.notifications.info(`Layout "${layoutName}" deleted.`);
+      this.render();
+    } catch (error) {
+      console.error("Failed to delete layout:", error);
+      ui.notifications.error(`Failed to delete layout: ${error.message}`);
     }
-    await game.settings.set(MODULE_ID, "layouts", layouts);
-    this.render();
   }
 
   async _onExport(event) {
     event.preventDefault();
     const layoutName = event.currentTarget.dataset.layout;
     const layouts = game.settings.get(MODULE_ID, "layouts") || {};
-    const data = JSON.stringify(layouts[layoutName], null, 2);
-    const blob = new Blob([data], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${layoutName}-layout.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    
+    try {
+      // Create a clean copy of the layout data to avoid reference issues
+      const layoutData = JSON.parse(JSON.stringify(layouts[layoutName]));
+      
+      // Generate formatted JSON with proper spacing
+      const data = JSON.stringify(layoutData, null, 2);
+      
+      // Create a dialog to show the JSON with copy button
+      const dialog = new Dialog({
+        title: `Export Layout: ${layoutName}`,
+        content: `
+          <div>
+            <p>Copy this JSON to save your layout or click "Download" to save as a file:</p>
+            <textarea id="export-json" rows="15" style="width:100%; font-family: monospace; white-space: pre; overflow-x: auto;">${data}</textarea>
+          </div>
+        `,
+        buttons: {
+          copy: {
+            icon: '<i class="fas fa-copy"></i>',
+            label: "Copy to Clipboard",
+            callback: () => {
+              const textarea = document.getElementById('export-json');
+              textarea.select();
+              document.execCommand('copy');
+              ui.notifications.info("Layout JSON copied to clipboard");
+            }
+          },
+          download: {
+            icon: '<i class="fas fa-download"></i>',
+            label: "Download JSON",
+            callback: () => {
+              // Create blob and trigger download
+              const blob = new Blob([data], { type: "application/json" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `${layoutName}-layout.json`;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              URL.revokeObjectURL(url);
+            }
+          },
+          close: {
+            icon: '<i class="fas fa-times"></i>',
+            label: "Close"
+          }
+        },
+        default: "copy",
+        width: 600,
+        height: 400
+      });
+      
+      dialog.render(true);
+    } catch (error) {
+      console.error("Export error:", error);
+      ui.notifications.error(`Failed to export layout: ${error.message}`);
+    }
   }
 
   async _onImport(event) {
     event.preventDefault();
     const layoutName = prompt("Enter the name for the imported layout:");
     if (!layoutName) return;
-    const json = prompt("Paste the JSON for the layout:");
+    
+    // Create a text area for pasting the JSON to handle special characters better
+    const dialog = new Dialog({
+      title: "Import Layout JSON",
+      content: `
+        <form>
+          <div class="form-group">
+            <label>Paste the JSON for the layout:</label>
+            <textarea id="import-json" rows="10" style="width:100%"></textarea>
+          </div>
+        </form>
+      `,
+      buttons: {
+        import: {
+          icon: '<i class="fas fa-file-import"></i>',
+          label: "Import",
+          callback: async (html) => {
+            try {
+              const json = html.find("#import-json").val().trim();
+              
+              // Normalize the JSON string by removing any potential invisible characters
+              const normalizedJson = json
+                .replace(/[\u0000-\u001F\u007F-\u009F\u00AD\u0600-\u0604\u070F\u17B4\u17B5\u200B-\u200F\u2028-\u202F\u2060-\u206F\uFEFF\uFFF0-\uFFFF]/g, "")
+                .replace(/\\"/g, '"')  // Handle escaped quotes that might be double-escaped
+                .replace(/\\\\/g, '\\'); // Handle double backslashes
+              
+              // Try to parse the JSON
+              let importedLayout;
+              try {
+                importedLayout = JSON.parse(normalizedJson);
+              } catch (parseError) {
+                console.error("Parse error:", parseError);
+                // Try a more lenient approach if strict parsing fails
+                importedLayout = eval('(' + normalizedJson + ')');
+              }
+              
+              // Validate that we got an array
+              if (!Array.isArray(importedLayout)) {
+                throw new Error("Imported JSON is not a valid layout array");
+              }
+              
+              // Update the layouts
+              const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+              layouts[layoutName] = importedLayout;
+              await game.settings.set(MODULE_ID, "layouts", layouts);
+              ui.notifications.info(`Imported layout: ${layoutName}`);
+              this.render();
+            } catch (e) {
+              console.error("Import error:", e);
+              ui.notifications.error(`Import failed: ${e.message}`);
+            }
+          }
+        },
+        cancel: {
+          icon: '<i class="fas fa-times"></i>',
+          label: "Cancel"
+        }
+      },
+      default: "import",
+      width: 400
+    });
+    
+    dialog.render(true);
+  }
+
+  async _onDuplicate(event) {
+    event.preventDefault();
+    const originalLayoutName = event.currentTarget.dataset.layout;
+    console.log("Duplicating layout:", originalLayoutName); // Debug logging
+    
     try {
-      const importedLayout = JSON.parse(json);
       const layouts = game.settings.get(MODULE_ID, "layouts") || {};
-      layouts[layoutName] = importedLayout;
+      
+      if (!layouts[originalLayoutName]) {
+        ui.notifications.error(`Layout "${originalLayoutName}" not found.`);
+        return;
+      }
+      
+      // Generate a new name for the duplicated layout
+      let baseName = originalLayoutName;
+      let copyNumber = 1;
+      let newLayoutName = `${baseName} (Copy)`;
+      
+      // Check if the name already exists and increment the copy number if needed
+      while (layouts[newLayoutName]) {
+        copyNumber++;
+        newLayoutName = `${baseName} (Copy ${copyNumber})`;
+      }
+      
+      // Allow the user to customize the name
+      const customName = prompt("Enter a name for the duplicated layout:", newLayoutName);
+      if (!customName) return; // User canceled
+
+      const maxNameLength = 50; // Adjust this value as needed
+      if (customName.length > maxNameLength) {
+        ui.notifications.error(`Layout name too long. Maximum length is ${maxNameLength} characters.`);
+        return;
+      }
+      
+      if (layouts[customName]) {
+        ui.notifications.warn("A layout with that name already exists.");
+        return;
+      }
+      
+      // Create a deep copy of the layout to avoid reference issues
+      layouts[customName] = JSON.parse(JSON.stringify(layouts[originalLayoutName]));
+      
+      // Save the new layout
       await game.settings.set(MODULE_ID, "layouts", layouts);
-      ui.notifications.info(`Imported layout: ${layoutName}`);
+      ui.notifications.info(`Layout "${originalLayoutName}" duplicated as "${customName}".`);
       this.render();
-    } catch (e) {
-      ui.notifications.error("Invalid JSON.");
+    } catch (error) {
+      console.error("Duplication error:", error);
+      ui.notifications.error(`Failed to duplicate layout: ${error.message}`);
     }
   }
 }
