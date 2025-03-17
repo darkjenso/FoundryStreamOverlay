@@ -257,6 +257,11 @@ Hooks.once("init", () => {
     return (arg1 === arg2) ? options.fn(this) : options.inverse(this);
   });
 
+
+  Handlebars.registerHelper("eq", function(a, b) {
+    return a === b;
+  });
+
   Handlebars.registerHelper("ifNotDefault", function(value, options) {
     if (value !== "Default") {
       return options.fn(this);
@@ -277,6 +282,18 @@ Hooks.once("init", () => {
       }
     }
   });
+
+  // Add to module settings
+game.settings.register(MODULE_ID, "enableTriggeredAnimations", {
+  name: "Enable Triggered Animations",
+  hint: "Automatically play animations when HP changes, etc.",
+  scope: "client",
+  config: true,
+  type: Boolean,
+  default: true
+});
+
+
 
 game.settings.register(MODULE_ID, "activationKey", {
   name: "Premium Activation Key",
@@ -725,6 +742,17 @@ class OverlayConfig extends FormApplication {
         opacity: 0;
         transition: opacity 0.3s;
       }
+      
+      .animation-indicator {
+        display: inline-block;
+        margin-left: 5px;
+        color: #4CAF50;
+      }
+      
+      .manage-animations {
+        width: 100%;
+        text-align: center;
+      }
     `;
     document.head.appendChild(styleElem);
   }
@@ -738,6 +766,9 @@ class OverlayConfig extends FormApplication {
     const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
     const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
     const rows = (layouts[activeLayout] || []).map((item, idx) => {
+      // Check if this item has animations configured
+      const hasAnimations = !!(item.animations && item.animations.length > 0);
+      
       return {
         idx,
         type: item.type || "data", 
@@ -763,7 +794,8 @@ class OverlayConfig extends FormApplication {
         animationDuration: item.animationDuration || 1.5,
         entranceAnimation: item.entranceAnimation || "none",
         entranceDuration: item.entranceDuration || 0.5,
-        entranceDelay: item.entranceDelay || 0
+        entranceDelay: item.entranceDelay || 0,
+        hasAnimations // Add this flag for the template
       };
     });
     const dataPathChoices = POSSIBLE_DATA_PATHS;
@@ -780,10 +812,12 @@ class OverlayConfig extends FormApplication {
     html.find('input, select').on('change', this._onFieldChange.bind(this));
     
     if (!isPremium) {
-      html.find("select[name^='animation-']").each(function() {
-        $(this).find("option:not([value='none'])").prop("disabled", true);
-        $(this).val("none");
-      });
+      // Disable animations manager button
+      html.find(".manage-animations").prop('disabled', true);
+      html.find(".manage-animations").after(
+        '<div class="premium-note" style="color:#aa5555;font-size:0.8em;margin-top:5px;">Premium feature</div>'
+      );
+    
       
       html.find("select[name^='entranceAnimation-']").each(function() {
         $(this).find("option:not([value='none'])").prop("disabled", true);
@@ -811,6 +845,22 @@ class OverlayConfig extends FormApplication {
       
       this.render();
     });
+
+    html.find('.toggle-extras-column').click(function() {
+      const $button = $(this);
+      const $icon = $button.find('i');
+      const $extrasColumns = html.find('.extras-column');
+      
+      if ($extrasColumns.first().find('.extras-content').is(':visible')) {
+        // Hide extras
+        $extrasColumns.find('.extras-content').slideUp(200);
+        $icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+      } else {
+        // Show extras
+        $extrasColumns.find('.extras-content').slideDown(200);
+        $icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+      }
+    });
     
     html.find(".add-row").click(this._onAddRow.bind(this));
     html.find(".add-image").click(this._onAddImage.bind(this));
@@ -818,6 +868,9 @@ class OverlayConfig extends FormApplication {
     html.on("click", ".remove-row", this._onRemoveRow.bind(this));
     html.find(".move-up").click(this._onMoveUp.bind(this));
     html.find(".move-down").click(this._onMoveDown.bind(this));
+    
+    // Add this line to handle the animation manager button clicks
+    html.find(".manage-animations").click(this._onManageAnimations.bind(this));
     
     html.find(".file-picker").off("click").click(e => {
       const idx = $(e.currentTarget).data("index");
@@ -848,6 +901,26 @@ class OverlayConfig extends FormApplication {
         optionsDiv.slideUp(200);
       }
     });
+  }
+
+  // Add this method to handle opening the animation manager
+  _onManageAnimations(event) {
+    event.preventDefault();
+    const index = Number(event.currentTarget.dataset.index);
+    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const item = layouts[activeLayout][index];
+    
+    // Initialize animations array if it doesn't exist
+    if (!item.animations) {
+      item.animations = [];
+    }
+    
+    // Create and render the animation manager
+    const manager = new AnimationManager(item, index, this);
+    manager.render(true);
+    
+    console.log("Opening Animation Manager for item", item);
   }
 
   // New method to handle auto-saving on field changes
@@ -911,7 +984,8 @@ class OverlayConfig extends FormApplication {
       animationDuration: 1.5,
       entranceAnimation: "none",
       entranceDuration: 0.5,
-      entranceDelay: 0
+      entranceDelay: 0,
+      animations: [] // Initialize empty animations array
     };
 
     for (let i = 0; i < current.length; i++) {
@@ -944,7 +1018,8 @@ class OverlayConfig extends FormApplication {
       animationDuration: 1.5,
       entranceAnimation: "none",
       entranceDuration: 0.5,
-      entranceDelay: 0
+      entranceDelay: 0,
+      animations: [] // Initialize empty animations array
     };
 
     for (let i = 0; i < current.length; i++) {
@@ -982,7 +1057,8 @@ class OverlayConfig extends FormApplication {
       animationDuration: 1.5,
       entranceAnimation: "none",
       entranceDuration: 0.5,
-      entranceDelay: 0
+      entranceDelay: 0,
+      animations: [] // Initialize empty animations array
     };
     
     for (let i = 0; i < current.length; i++) {
@@ -1076,7 +1152,8 @@ class OverlayConfig extends FormApplication {
           animationDuration: 1.5,
           entranceAnimation: "none",
           entranceDuration: 0.5,
-          entranceDelay: 0
+          entranceDelay: 0,
+          animations: [] // Initialize empty animations array
         };
       }
       switch (field) {
@@ -1112,8 +1189,19 @@ class OverlayConfig extends FormApplication {
         default: break;
       }
     }
+    
+    // Preserve existing animations from items
     const layouts = game.settings.get(MODULE_ID, "layouts") || {};
     const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const currentItems = layouts[activeLayout] || [];
+    
+    // Copy animations from existing items to new items
+    newItems.forEach((item, index) => {
+      if (currentItems[index] && currentItems[index].animations) {
+        item.animations = currentItems[index].animations;
+      }
+    });
+    
     layouts[activeLayout] = newItems;
     await game.settings.set(MODULE_ID, "layouts", layouts);
   }
@@ -1238,9 +1326,13 @@ function updateOverlayWindow() {
   const container = window.overlayWindow.document.getElementById("overlay-container");
   if (!container) return;
   
+  // Clear window storage for element references
+  window.overlayAnimatedElements = {};
+  
   container.innerHTML = "";
   
   const items = (layouts[activeLayout] || []).map(item => {
+    // Legacy properties (for backward compatibility)
     let animation = isPremium ? (item.animation || "none") : "none";
     let entranceAnimation = isPremium ? (item.entranceAnimation || "none") : "none";
     
@@ -1248,6 +1340,9 @@ function updateOverlayWindow() {
     const animationDuration = item.animationDuration || 1.5;
     const entranceDuration = item.entranceDuration || 0.5;
     const entranceDelay = item.entranceDelay || 0;
+    
+    // Add animations array property 
+    const animations = isPremium ? (item.animations || []) : [];
     
     if (item.type === "image") {
       return {
@@ -1263,7 +1358,9 @@ function updateOverlayWindow() {
         animationDuration,
         entranceAnimation,
         entranceDuration,
-        entranceDelay
+        entranceDelay,
+        animations, // Add animations property
+        actorId: item.actorId || null // Add actorId for trigger animations
       };
     } else if (item.type === "static") {
       return {
@@ -1285,7 +1382,9 @@ function updateOverlayWindow() {
         animationDuration,
         entranceAnimation,
         entranceDuration,
-        entranceDelay
+        entranceDelay,
+        animations, // Add animations property
+        actorId: item.actorId || null // Add actorId for trigger animations
       };
     } else {
       const actor = game.actors.get(item.actorId);
@@ -1421,7 +1520,8 @@ function updateOverlayWindow() {
         animationDuration,
         entranceAnimation,
         entranceDuration,
-        entranceDelay
+        entranceDelay,
+        animations // Add animations property
       };
     }
   }).filter(Boolean);
@@ -1436,18 +1536,8 @@ function updateOverlayWindow() {
     if (item.type === "image") {
       const img = window.overlayWindow.document.createElement("img");
       
-      const hasEntrance = item.entranceAnimation !== "none";
-      const hasContinuous = item.animation !== "none";
-      
-      // For images, use specific animation classes that don't have the translateX(-50%)
-      if (hasEntrance) {
-        img.className = `overlay-item ${item.entranceAnimation}`;
-      } else if (hasContinuous) {
-        img.className = `overlay-item ${item.animation}`;
-      } else {
-        img.className = "overlay-item";
-      }
-      
+      // Start with just the overlay-item class
+      img.className = "overlay-item";
       img.src = item.imagePath;
       
       img.style.cssText = `
@@ -1458,45 +1548,49 @@ function updateOverlayWindow() {
         z-index: ${item.renderOrder};
       `;
       
-      if (hasEntrance) {
-        img.style.animationDelay = `${item.entranceDelay}s`;
-        img.style.animationDuration = `${item.entranceDuration}s`;
+      // Apply animations using the new system
+      if (isPremium && item.animations && item.animations.length > 0) {
+        renderItemWithAnimations(item, img);
+      } 
+      // Fallback to legacy animation system
+      else if (isPremium) {
+        const hasEntrance = item.entranceAnimation !== "none";
+        const hasContinuous = item.animation !== "none";
         
-        if (hasContinuous) {
-          img.addEventListener('animationend', () => {
-            img.className = "overlay-item";
-            
-            void img.offsetWidth;
-            
-            // For images, we need to detect if the animation has an img- prefix version
-            const imgAnimation = document.querySelector(`.img-${item.animation}`) ? 
-                                `img-${item.animation}` : item.animation;
-            
-            img.className = `overlay-item ${item.animation}`;
-            
-            img.style.animationDelay = `${item.animationDelay}s`;
-            img.style.animationDuration = `${item.animationDuration}s`;
-          }, {once: true});
+        if (hasEntrance) {
+          img.classList.add(item.entranceAnimation);
+          img.style.animationDelay = `${item.entranceDelay}s`;
+          img.style.animationDuration = `${item.entranceDuration}s`;
+          
+          if (hasContinuous) {
+            img.addEventListener('animationend', () => {
+              img.className = "overlay-item";
+              
+              void img.offsetWidth;
+              
+              // For images, we need to detect if the animation has an img- prefix version
+              const imgAnimation = window.overlayWindow.document.querySelector(`.img-${item.animation}`) ? 
+                               `img-${item.animation}` : item.animation;
+              
+              img.className = `overlay-item ${item.animation}`;
+              
+              img.style.animationDelay = `${item.animationDelay}s`;
+              img.style.animationDuration = `${item.animationDuration}s`;
+            }, {once: true});
+          }
+        } else if (hasContinuous) {
+          img.classList.add(item.animation);
+          img.style.animationDelay = `${item.animationDelay}s`;
+          img.style.animationDuration = `${item.animationDuration}s`;
         }
-      } else if (hasContinuous) {
-        img.style.animationDelay = `${item.animationDelay}s`;
-        img.style.animationDuration = `${item.animationDuration}s`;
       }
       
       container.appendChild(img);
     } else {
       const div = window.overlayWindow.document.createElement("div");
       
-      const hasEntrance = item.entranceAnimation !== "none";
-      const hasContinuous = item.animation !== "none";
-      
-      if (hasEntrance) {
-        div.className = `overlay-item ${item.entranceAnimation}`;
-      } else if (hasContinuous) {
-        div.className = `overlay-item ${item.animation}`;
-      } else {
-        div.className = "overlay-item";
-      }
+      // Start with just the overlay-item class
+      div.className = "overlay-item";
       
       if (item.fontStroke) {
         div.classList.add('text-stroked');
@@ -1527,38 +1621,50 @@ function updateOverlayWindow() {
       }
       
       div.style.cssText = styleText;
+      div.textContent = item.type === "static" ? item.content : item.data;
       
-      if (hasEntrance) {
-        div.style.animationDelay = `${item.entranceDelay}s`;
-        div.style.animationDuration = `${item.entranceDuration}s`;
+      // Apply animations using the new system
+      if (isPremium && item.animations && item.animations.length > 0) {
+        renderItemWithAnimations(item, div);
+      } 
+      // Fallback to legacy animation system
+      else if (isPremium) {
+        const hasEntrance = item.entranceAnimation !== "none";
+        const hasContinuous = item.animation !== "none";
         
-        if (hasContinuous) {
-          div.addEventListener('animationend', () => {
-            // Reset the class but keep essential classes
-            div.className = "overlay-item";
-            if (item.fontStroke) {
-              div.classList.add('text-stroked');
-            }
-            
-            // Force reflow
-            void div.offsetWidth;
-            
-            // Apply the continuous animation
-            div.className = `overlay-item ${item.animation}`;
-            if (item.fontStroke) {
-              div.classList.add('text-stroked');
-            }
-            
-            div.style.animationDelay = `${item.animationDelay}s`;
-            div.style.animationDuration = `${item.animationDuration}s`;
-          }, {once: true});
+        if (hasEntrance) {
+          div.classList.add(item.entranceAnimation);
+          div.style.animationDelay = `${item.entranceDelay}s`;
+          div.style.animationDuration = `${item.entranceDuration}s`;
+          
+          if (hasContinuous) {
+            div.addEventListener('animationend', () => {
+              // Reset the class but keep essential classes
+              div.className = "overlay-item";
+              if (item.fontStroke) {
+                div.classList.add('text-stroked');
+              }
+              
+              // Force reflow
+              void div.offsetWidth;
+              
+              // Apply the continuous animation
+              div.className = `overlay-item ${item.animation}`;
+              if (item.fontStroke) {
+                div.classList.add('text-stroked');
+              }
+              
+              div.style.animationDelay = `${item.animationDelay}s`;
+              div.style.animationDuration = `${item.animationDuration}s`;
+            }, {once: true});
+          }
+        } else if (hasContinuous) {
+          div.classList.add(item.animation);
+          div.style.animationDelay = `${item.animationDelay}s`;
+          div.style.animationDuration = `${item.animationDuration}s`;
         }
-      } else if (hasContinuous) {
-        div.style.animationDelay = `${item.animationDelay}s`;
-        div.style.animationDuration = `${item.animationDuration}s`;
       }
       
-      div.textContent = item.type === "static" ? item.content : item.data;
       container.appendChild(div);
     }
   }
@@ -1581,13 +1687,16 @@ function updateOverlayWindow() {
 
 
 Hooks.on("updateActor", (actor, update, options, userId) => {
-  updateOverlayWindow();
-});
-
-Hooks.on("updateSetting", (namespace, key, value, options, userId) => {
-  if (namespace === MODULE_ID && (key === "activeLayout" || key === "layouts")) {
-    updateOverlayWindow();
+  // Check for relevant changes to trigger animations
+  if (foundry.utils.hasProperty(update, "system.attributes.hp")) {
+    triggerAnimationsByEvent(actor.id, "hpChange", {
+      oldValue: actor._source.system.attributes.hp.value,
+      newValue: actor.system.attributes.hp.value
+    });
   }
+  
+  // Always update overlay window
+  updateOverlayWindow();
 });
 
 
@@ -2245,4 +2354,549 @@ class SlideshowConfig extends FormApplication {
     await game.settings.set(MODULE_ID, "slideshow", data);
     ui.notifications.info("Slideshow configuration saved.");
   }
+}
+
+class AnimationManager extends FormApplication {
+  static get defaultOptions() {
+    return foundry.utils.mergeObject(super.defaultOptions, {
+      title: "Animation Manager",
+      id: "foundrystreamoverlay-animation-manager",
+      template: `modules/${MODULE_ID}/templates/animation-manager.html`,
+      width: 700,
+      height: "auto",
+      tabs: [{navSelector: ".tabs", contentSelector: ".content", initial: "continuous"}]
+    });
+  }
+  
+  constructor(item, itemIndex, parentConfig) {
+    super();
+    const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
+    
+    if (!isPremium) {
+      // Show a dialog explaining premium features
+      new Dialog({
+        title: "Premium Feature",
+        content: `
+          <h3><i class="fas fa-gem" style="color:#FF424D;"></i> Premium Feature</h3>
+          <p>The Animation Manager is a premium feature.</p>
+          <p>Unlock animations, entrance effects, and more by supporting on Patreon!</p>
+        `,
+        buttons: {
+          patreon: {
+            icon: '<i class="fab fa-patreon"></i>',
+            label: "Support on Patreon",
+            callback: () => window.open("https://www.patreon.com/c/jenzelta", "_blank")
+          },
+          close: {
+            icon: '<i class="fas fa-times"></i>',
+            label: "Close"
+          }
+        },
+        default: "close"
+      }).render(true);
+      
+      // Prevent further initialization
+      return null;
+    }
+    
+    this.item = item;
+    this.itemIndex = itemIndex;
+    this.parentConfig = parentConfig;
+  }
+  
+  getData() {
+    // Animation options separated by type
+    return {
+      item: this.item,
+      continuousAnimations: [
+        {id: "none", name: "None"},
+        {id: "hover", name: "Hover Up/Down"},
+        {id: "glitch", name: "Glitch"},
+        {id: "heartbeat", name: "Heartbeat"},
+        {id: "rotate", name: "Rotate"},
+        {id: "wiggle", name: "Wiggle"},
+        {id: "pulse", name: "Pulse"},
+        {id: "slide", name: "Slide"},
+        {id: "flash", name: "Flash"},
+        {id: "shake", name: "Shake"},
+        {id: "shimmer", name: "Shimmer"},
+        {id: "floatSway", name: "Float Sway"},
+        {id: "textGlow", name: "Text Glow"},
+        {id: "breathe", name: "Breathe"},
+        {id: "colorShift", name: "Color Shift"},
+        {id: "jitter", name: "Jitter"},
+        {id: "emphasis", name: "Emphasis"},
+        {id: "ripple", name: "Ripple"},
+        {id: "blinkingCursor", name: "Blinking Cursor"},
+        {id: "backdropPulse", name: "Backdrop Pulse"}
+      ],
+      entranceAnimations: [
+        {id: "none", name: "None"},
+        {id: "fadeIn", name: "Fade In"},
+        {id: "slideInRight", name: "Slide In Right"},
+        {id: "slideInLeft", name: "Slide In Left"},
+        {id: "slideInUp", name: "Slide Up"},
+        {id: "slideInDown", name: "Slide Down"},
+        {id: "bounceIn", name: "Bounce In"},
+        {id: "flipIn", name: "Flip In"},
+        {id: "zoomIn", name: "Zoom In"},
+        {id: "typewriter", name: "Typewriter"},
+        {id: "dropIn", name: "Drop In"},
+        {id: "splitReveal", name: "Split Reveal"},
+        {id: "fadeOutIn", name: "Fade Out-In"}
+      ],
+      triggerAnimations: [
+        {id: "none", name: "None"},
+        {id: "hpDamage", name: "HP Damage"},
+        {id: "hpHealing", name: "HP Healing"},
+        {id: "criticalHit", name: "Critical Hit"},
+        {id: "levelUp", name: "Level Up"}
+      ],
+      activeAnimations: this.item.animations || [],
+      isPremium: game.settings.get(MODULE_ID, "isPremium") || false
+    };
+  }
+  
+  activateListeners(html) {
+    super.activateListeners(html);
+    
+    // Use the provided html parameter, not a global variable
+    html.find(".add-animation").click(this._onAddAnimation.bind(this));
+    html.find(".remove-animation").click(this._onRemoveAnimation.bind(this));
+    
+    html.find("#set-entrance-animation").click(this._onSetEntranceAnimation.bind(this));
+
+    // Handle tab changes
+    html.find('.tabs .item').click(ev => {
+      const tab = $(ev.currentTarget).data('tab');
+      this._tabs[0].activate(tab);
+    });
+    
+    // Handle condition type changes
+    html.find("#trigger-event").change(this._onTriggerEventChange.bind(this, html));
+    html.find("#hp-comparison").change(this._onHPComparisonChange.bind(this, html));
+  }
+
+  async _onSetEntranceAnimation(event) {
+    event.preventDefault();
+    const form = $(event.currentTarget).closest('form');
+    
+    const animation = form.find("#entrance-animation-select").val();
+    const duration = Number(form.find("#entrance-duration").val()) || 0.5;
+    const delay = Number(form.find("#entrance-delay").val()) || 0;
+    
+    // Update the item directly
+    this.item.entranceAnimation = animation;
+    this.item.entranceDuration = duration;
+    this.item.entranceDelay = delay;
+    
+    // Save the changes
+    await this._saveItemAnimations();
+    
+    // Provide feedback
+    ui.notifications.info("Entrance animation updated");
+    
+    // Re-render the form
+    this.render();
+  }
+  
+  _onTriggerEventChange(html, event) {
+    const eventType = $(event.currentTarget).val();
+    html.find('.trigger-condition').hide();
+    html.find(`.${eventType}-condition`).show();
+  }
+  
+  _onHPComparisonChange(html, event) {
+    const comparison = $(event.currentTarget).val();
+    if (comparison === "threshold") {
+      html.find('.threshold-value').slideDown(200);
+    } else {
+      html.find('.threshold-value').slideUp(200);
+    }
+  }
+  
+  async _onAddAnimation(event) {
+    event.preventDefault();
+    
+    // Get the html element where the form is located
+    const html = $(event.currentTarget).closest('form');
+    
+    // Get the animation type based on which tab/button was clicked
+    const type = $(event.currentTarget).data('type');
+    
+    // Get the selected animation based on the type
+    const animation = html.find(`#${type}-animation`).val();
+    
+    if (!animation || animation === "none") return;
+    
+    let triggerCondition = null;
+    if (type === "trigger") {
+      const eventType = html.find("#trigger-event").val();
+      
+      if (eventType === "hpChange") {
+        const comparison = html.find("#hp-comparison").val();
+        triggerCondition = {
+          event: eventType,
+          comparison: comparison
+        };
+        
+        if (comparison === "threshold") {
+          triggerCondition.threshold = Number(html.find("#hp-threshold").val()) || 0;
+        }
+      } else {
+        triggerCondition = { event: eventType };
+      }
+    }
+    
+    // Create the new animation entry
+    const newAnimation = {
+      type: type,
+      animation: animation,
+      delay: 0,
+      duration: type === "entrance" ? 0.5 : 1.5,
+      triggerCondition: triggerCondition
+    };
+    
+    // Add to the animations array
+    const activeAnimations = this.item.animations || [];
+    activeAnimations.push(newAnimation);
+    
+    // Update the item and re-render
+    this.item.animations = activeAnimations;
+    
+    // Save to the module settings
+    await this._saveItemAnimations();
+    
+    // Re-render the form
+    this.render();
+  }
+  
+  async _onRemoveAnimation(event) {
+    event.preventDefault();
+    const type = $(event.currentTarget).data('type');
+    const index = Number($(event.currentTarget).data('index'));
+    
+    // Get all animations of the specified type
+    const typeAnimations = this.item.animations.filter(a => a.type === type);
+    
+    // Find the overall index of the animation to remove
+    const animations = this.item.animations;
+    let removeIndex = -1;
+    let typeCount = 0;
+    
+    for (let i = 0; i < animations.length; i++) {
+      if (animations[i].type === type) {
+        if (typeCount === index) {
+          removeIndex = i;
+          break;
+        }
+        typeCount++;
+      }
+    }
+    
+    if (removeIndex >= 0) {
+      // Remove the animation
+      this.item.animations.splice(removeIndex, 1);
+      
+      // Save and re-render
+      await this._saveItemAnimations();
+      this.render();
+    }
+  }
+  
+  async _saveItemAnimations() {
+    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    
+    // Update the item in the layout
+    layouts[activeLayout][this.itemIndex].animations = this.item.animations;
+    
+    // Save to settings
+    await game.settings.set(MODULE_ID, "layouts", layouts);
+    
+    // Update the parent if it exists
+    if (this.parentConfig) {
+      this.parentConfig.render();
+    }
+    
+    // Update the overlay if it's open
+    if (window.overlayWindow && !window.overlayWindow.closed) {
+      updateOverlayWindow();
+    }
+  }
+  
+  async _updateObject(event, formData) {
+    // Process form data to update animations
+    // Extract animation durations and delays from form data
+    for (const [key, value] of Object.entries(formData)) {
+      const parts = key.split('.');
+      if (parts.length === 3) {  // Format: type.index.property
+        const type = parts[0];
+        const index = Number(parts[1]);
+        const property = parts[2];
+        
+        // Find the animation in our array
+        const animations = this.item.animations || [];
+        let targetIndex = -1;
+        let typeCount = 0;
+        
+        for (let i = 0; i < animations.length; i++) {
+          if (animations[i].type === type) {
+            if (typeCount === index) {
+              targetIndex = i;
+              break;
+            }
+            typeCount++;
+          }
+        }
+        
+        if (targetIndex >= 0) {
+          // Update the property
+          this.item.animations[targetIndex][property] = Number(value);
+        }
+      }
+    }
+    
+    // Save changes
+    await this._saveItemAnimations();
+  }
+}
+
+function renderItemWithAnimations(item, element) {
+  const animations = item.animations || [];
+  
+  // Get continuous animations
+  const continuousAnims = animations.filter(a => a.type === "continuous" && a.animation !== "none");
+  
+  // If there are multiple animations, use a custom approach
+  if (continuousAnims.length > 1) {
+    // Add a special attribute to track animations
+    element.setAttribute('data-animations', JSON.stringify(continuousAnims.map(a => a.animation)));
+    
+    // Add a single class for multiple animations
+    element.classList.add('multi-animated');
+    
+    // Insert a style element in the overlay window for this specific element
+    const styleId = `style-${Math.random().toString(36).substring(2, 9)}`;
+    element.setAttribute('data-style-id', styleId);
+    
+    const styleEl = window.overlayWindow.document.createElement('style');
+    styleEl.id = styleId;
+    
+    // Create keyframes that combine all animations
+    let combinedKeyframes = '';
+    let transformProperties = [];
+    
+    // Add effects based on the animation types
+    if (continuousAnims.some(a => a.animation === 'hover')) {
+      transformProperties.push('translateY(-5px)');
+    }
+    if (continuousAnims.some(a => a.animation === 'jitter')) {
+      transformProperties.push('translate(1px, 1px)');
+    }
+    if (continuousAnims.some(a => a.animation === 'emphasis')) {
+      transformProperties.push('scale(1.1)');
+    }
+    if (continuousAnims.some(a => a.animation === 'wiggle')) {
+      transformProperties.push('rotate(3deg)');
+    }
+    
+    // Create a custom animation for this element
+    styleEl.textContent = `
+      @keyframes combined-${styleId} {
+        0% { transform: translateX(-50%); }
+        50% { transform: translateX(-50%) ${transformProperties.join(' ')}; }
+        100% { transform: translateX(-50%); }
+      }
+      
+      [data-style-id="${styleId}"] {
+        animation: combined-${styleId} 2s infinite ease-in-out;
+      }
+    `;
+    
+    window.overlayWindow.document.head.appendChild(styleEl);
+  }
+  // Otherwise, use the standard approach for a single animation
+  else if (continuousAnims.length === 1) {
+    const anim = continuousAnims[0];
+    element.classList.add(anim.animation);
+    element.style.animationDelay = `${anim.delay}s`;
+    element.style.animationDuration = `${anim.duration}s`;
+  }
+  
+  // Handle entrance animations separately
+  const entranceAnims = animations.filter(a => a.type === "entrance" && a.animation !== "none");
+  if (entranceAnims.length > 0) {
+    const entranceAnim = entranceAnims[0];
+    element.classList.add(entranceAnim.animation);
+    element.style.animationDelay = `${entranceAnim.delay}s`;
+    element.style.animationDuration = `${entranceAnim.duration}s`;
+    
+    // Set up transition to continuous animations
+    element.addEventListener('animationend', () => {
+      element.classList.remove(entranceAnim.animation);
+    }, { once: true });
+  }
+}
+
+function applyAllContinuousAnimations(animations, element) {
+  if (!animations.length) return;
+  
+  // For multiple animations, we need to create custom animation properties
+  if (animations.length > 1) {
+    // Add all animation classes
+    animations.forEach(anim => {
+      element.classList.add(anim.animation);
+    });
+    
+    // Build a combined animation property
+    const animationNames = animations.map(anim => anim.animation).join(", ");
+    const animationDurations = animations.map(anim => `${anim.duration}s`).join(", ");
+    const animationDelays = animations.map(anim => `${anim.delay}s`).join(", ");
+    const animationIterationCounts = animations.map(() => "infinite").join(", ");
+    
+    // Apply combined animations
+    element.style.animationName = animationNames;
+    element.style.animationDuration = animationDurations;
+    element.style.animationDelay = animationDelays;
+    element.style.animationIterationCount = animationIterationCounts;
+    element.style.animationFillMode = "forwards";
+  } else if (animations.length === 1) {
+    // For a single animation, use the simpler approach
+    const anim = animations[0];
+    element.classList.add(anim.animation);
+    element.style.animationDelay = `${anim.delay}s`;
+    element.style.animationDuration = `${anim.duration}s`;
+  }
+}
+
+function triggerHPAnimation(actorId, animationType, oldValue, newValue) {
+  if (!window.overlayWindow || window.overlayWindow.closed) return;
+  
+  const container = window.overlayWindow.document.getElementById("overlay-container");
+  if (!container) return;
+  
+  // Find HP elements associated with this actor
+  const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+  const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+  const items = layouts[activeLayout] || [];
+  
+  // Find HP items for this actor
+  const hpItems = items.filter(item => 
+    item.type === "data" && 
+    item.actorId === actorId && 
+    (item.dataPath.includes("hp") || item.dataPath === "system.attributes.hp.value")
+  );
+  
+  if (!hpItems.length) return;
+  
+  // Apply temporary animation class to these elements
+  const doc = window.overlayWindow.document;
+  const elements = Array.from(doc.querySelectorAll(".overlay-item"));
+  
+  hpItems.forEach(hpItem => {
+    // Find matching element in the DOM
+    const matchingElement = elements.find(el => {
+      // Compare position or other attributes to identify the right element
+      return el.style.top === `${hpItem.top}px` && 
+             el.style.left === `${hpItem.left}px` &&
+             el.textContent.includes(String(newValue));
+    });
+    
+    if (matchingElement) {
+      // Remove any existing triggered animations
+      matchingElement.classList.remove("hp-damage", "hp-healing");
+      
+      // Force reflow
+      void matchingElement.offsetWidth;
+      
+      // Add new animation class
+      matchingElement.classList.add(`hp-${animationType}`);
+      
+      // Add data for potential effects based on damage amount
+      const changeAmount = Math.abs(newValue - oldValue);
+      matchingElement.dataset.changeAmount = changeAmount;
+      
+      // Remove the class after animation completes
+      setTimeout(() => {
+        matchingElement.classList.remove(`hp-${animationType}`);
+        delete matchingElement.dataset.changeAmount;
+      }, 2000); // Adjust based on animation duration
+    }
+  });
+}
+
+function triggerAnimationsByEvent(actorId, eventType, context) {
+  // Use global event handling setting
+  const enableTriggeredAnimations = game.settings.get(MODULE_ID, "enableTriggeredAnimations");
+  if (!enableTriggeredAnimations) return;
+
+  if (!window.overlayAnimatedElements || !window.overlayAnimatedElements[actorId]) return;
+  
+  const elements = window.overlayAnimatedElements[actorId];
+  
+  elements.forEach(({element, item}) => {
+    // Check for animations in the animations array
+    const animations = item.animations || [];
+    const triggerAnims = animations.filter(a => a.type === "trigger" && a.triggerCondition?.event === eventType);
+    
+    triggerAnims.forEach(anim => {
+      // Check if the trigger condition is met
+      if (eventType === "hpChange") {
+        const meetsCondition = evaluateTriggerCondition(anim.triggerCondition, context);
+        if (meetsCondition) {
+          applyTriggeredAnimation(element, anim);
+        }
+      }
+    });
+  });
+}
+
+function evaluateTriggerCondition(condition, context) {
+  if (!condition) return false;
+  
+  switch(condition.event) {
+    case "hpChange":
+      if (condition.comparison === "decrease" && context.newValue < context.oldValue) return true;
+      if (condition.comparison === "increase" && context.newValue > context.oldValue) return true;
+      if (condition.comparison === "threshold" && context.newValue <= condition.threshold) return true;
+      break;
+    // Other event types...
+  }
+  
+  return false;
+}
+
+function applyTriggeredAnimation(element, animation) {
+  // Store original class list
+  const originalClasses = [...element.classList];
+  
+  // Add trigger animation class and any extra effects based on animation type
+  element.classList.add(animation.animation);
+  
+  switch (animation.animation) {
+    case "hpDamage":
+      element.style.color = "#ff3333";
+      break;
+    case "hpDamageShake":
+      element.style.color = "#ff3333";
+      break;
+    case "hpDamagePulse":
+      element.style.color = "#ff3333";
+      break;
+    case "hpDamageFadeOut":
+      element.style.color = "#ff3333";
+      break;
+    case "hpHealing":
+      element.style.color = "#33ff33";
+      break;
+  }
+  
+  // Remove after duration
+  setTimeout(() => {
+    // Reset to original classes
+    element.className = originalClasses.join(' ');
+    // Reset any inline styles we added
+    element.style.color = "";
+  }, animation.duration * 1000);
 }

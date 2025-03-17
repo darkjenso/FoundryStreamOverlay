@@ -1,0 +1,257 @@
+<form>
+    <div class="animation-manager">
+      <nav class="tabs">
+        <a class="item" data-tab="continuous">Continuous</a>
+        <a class="item" data-tab="entrance">Entrance</a>
+        <a class="item" data-tab="trigger">Triggered</a>
+      </nav>
+      
+      <div class="content">
+        <!-- Continuous Animations Tab -->
+        <div class="tab" data-tab="continuous">
+          <h3>Continuous Animations</h3>
+          <p class="hint">These animations play continuously while the overlay is visible.</p>
+          
+          <!-- Animation list -->
+          <table class="animations-list">
+            <thead>
+              <tr>
+                <th>Animation</th>
+                <th>Duration (s)</th>
+                <th>Delay (s)</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#each activeAnimations}}
+              {{#if (eq this.type "continuous")}}
+              <tr>
+                <td>{{this.animation}}</td>
+                <td><input type="number" name="continuous.{{@index}}.duration" value="{{this.duration}}" step="0.1" min="0.1"></td>
+                <td><input type="number" name="continuous.{{@index}}.delay" value="{{this.delay}}" step="0.1" min="0"></td>
+                <td><button type="button" class="remove-animation" data-type="continuous" data-index="{{@index}}">Remove</button></td>
+              </tr>
+              {{/if}}
+              {{/each}}
+            </tbody>
+          </table>
+          
+          <!-- Add new animation -->
+          <div class="add-animation-form">
+            <select id="continuous-animation">
+              {{#each continuousAnimations}}
+              <option value="{{this.id}}">{{this.name}}</option>
+              {{/each}}
+            </select>
+            <button type="button" class="add-animation" data-type="continuous">Add Animation</button>
+          </div>
+        </div>
+        
+
+        <!-- Entrance Animations Tab -->
+        <div class="tab" data-tab="entrance">
+            <h3>Entrance Animation</h3>
+            <p class="hint">This animation plays once when the overlay first appears.</p>
+            
+            <div class="entrance-animation-selector">
+            <select id="entrance-animation-select">
+                {{#each entranceAnimations}}
+                <option value="{{this.id}}" {{#if (eq ../item.entranceAnimation this.id)}}selected{{/if}}>{{this.name}}</option>
+                {{/each}}
+            </select>
+            
+            <div class="entrance-params">
+                <label>Duration (s):</label>
+                <input type="number" id="entrance-duration" value="{{item.entranceDuration}}" step="0.1" min="0.1">
+                
+                <label>Delay (s):</label>
+                <input type="number" id="entrance-delay" value="{{item.entranceDelay}}" step="0.1" min="0">
+            </div>
+            
+            <button type="button" id="set-entrance-animation">Set Entrance Animation</button>
+            </div>
+        </div>
+        
+        <!-- Trigger Animations Tab -->
+        <!-- Trigger Animations Tab -->
+        <div class="tab" data-tab="trigger">
+            <h3>Triggered Animations</h3>
+            <p class="hint">These animations play when specific game events occur.</p>
+            
+            <!-- Animation list -->
+            <table class="animations-list">
+            <thead>
+                <tr>
+                <th>Animation</th>
+                <th>Trigger Event</th>
+                <th>Condition</th>
+                <th>Duration (s)</th>
+                <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each activeAnimations}}
+                {{#if (eq this.type "trigger")}}
+                <tr>
+                <td>{{this.animation}}</td>
+                <td>{{this.triggerCondition.event}}</td>
+                <td>
+                    {{#if (eq this.triggerCondition.event "hpChange")}}
+                    {{this.triggerCondition.comparison}}
+                    {{#if (eq this.triggerCondition.comparison "threshold")}}
+                    &lt;= {{this.triggerCondition.threshold}}
+                    {{/if}}
+                    {{/if}}
+                </td>
+                <td><input type="number" name="trigger.{{@index}}.duration" value="{{this.duration}}" step="0.1" min="0.1"></td>
+                <td><button type="button" class="remove-animation" data-type="trigger" data-index="{{@index}}">Remove</button></td>
+                </tr>
+                {{/if}}
+                {{/each}}
+            </tbody>
+            </table>
+            
+            <!-- Add new animation -->
+            <div class="add-animation-form">
+            <div class="form-group">
+                <label>Animation:</label>
+                <select id="trigger-animation">
+                {{#each triggerAnimations}}
+                <option value="{{this.id}}">{{this.name}}</option>
+                {{/each}}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Trigger Event:</label>
+                <select id="trigger-event">
+                <option value="hpChange">HP Changes</option>
+                <option value="levelUp">Level Up</option>
+                <option value="criticalHit">Critical Hit</option>
+                <option value="statusEffect">Status Effect Applied</option>
+                </select>
+            </div>
+            
+            <div id="trigger-condition-container">
+                <!-- Conditional inputs based on selected event type -->
+                <div class="trigger-condition hpChange-condition">
+                <label>Condition:</label>
+                <select id="hp-comparison">
+                    <option value="decrease">HP Decreases</option>
+                    <option value="increase">HP Increases</option>
+                    <option value="threshold">HP Below Threshold</option>
+                </select>
+                
+                <div class="threshold-value" style="display: none;">
+                    <label>Threshold:</label>
+                    <input type="number" id="hp-threshold" value="0" min="0">
+                </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Duration (s):</label>
+                <input type="number" id="trigger-duration" value="1.5" step="0.1" min="0.1">
+            </div>
+            
+            <button type="button" class="add-animation" data-type="trigger">Add Trigger</button>
+            </div>
+        </div>
+        <!-- Premium status indicator -->
+        {{#unless isPremium}}
+        <div class="premium-notice">
+          <i class="fas fa-lock"></i> Some animations require premium activation.
+          <a href="https://www.patreon.com/c/jenzelta" target="_blank">Support on Patreon</a> to unlock all animations.
+        </div>
+        {{/unless}}
+      </div>
+      
+      <div class="form-footer">
+        <button type="submit">Save Changes</button>
+        <button type="button" class="cancel-button">Cancel</button>
+      </div>
+    </div>
+    
+    <style>
+      .animation-manager {
+        margin: 0.5em;
+      }
+      
+      .tabs {
+        display: flex;
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 1em;
+      }
+      
+      .tabs .item {
+        padding: 0.5em 1em;
+        cursor: pointer;
+        border: 1px solid transparent;
+        border-bottom: none;
+        margin-right: 0.25em;
+      }
+      
+      .tabs .item.active {
+        background-color: #f0f0f0;
+        border-color: #ddd;
+        border-radius: 3px 3px 0 0;
+      }
+      
+      .hint {
+        font-style: italic;
+        color: #666;
+        margin-bottom: 1em;
+      }
+      
+      .animations-list {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1em;
+      }
+      
+      .animations-list th, .animations-list td {
+        padding: 0.5em;
+        border-bottom: 1px solid #eee;
+        text-align: left;
+      }
+      
+      .add-animation-form {
+        margin-top: 1em;
+        padding: 1em;
+        background-color: #f5f5f5;
+        border-radius: 4px;
+      }
+      
+      .add-animation-form select, 
+      .add-animation-form input {
+        margin-right: 0.5em;
+        padding: 0.25em;
+      }
+      
+      .premium-notice {
+        margin-top: 1em;
+        padding: 0.5em;
+        background-color: #fff8e1;
+        border: 1px solid #ffe082;
+        border-radius: 4px;
+        text-align: center;
+      }
+      
+      .form-footer {
+        margin-top: 1em;
+        padding-top: 1em;
+        border-top: 1px solid #ddd;
+        text-align: right;
+      }
+      
+      .trigger-condition {
+        margin-top: 0.5em;
+        margin-bottom: 0.5em;
+      }
+      
+      .threshold-value {
+        margin-top: 0.5em;
+        display: inline-block;
+      }
+    </style>
+  </form>

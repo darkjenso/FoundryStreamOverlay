@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.0] - 2025-03-17
+
+### Added
+- New Animation Manager interface for creating complex animations and multiple animations
+ - Ability to add multiple animations to a single overlay item
+ - Support for different types of animations:
+   - Continuous animations (ongoing effects)
+   - Entrance animations (one-time effects when item appears)
+   - Trigger-based animations (activated by specific events) *new*
+
+### Trigger-Based Animations - Still testing -
+- Introduced dynamic animations triggered by game events
+- HP Change Animations
+ - Animations can now be triggered when:
+   - HP decreases
+   - HP increases
+   - HP falls below a specific threshold
+- Added specific animation effects for HP changes
+ - Damage animations with color and movement effects
+ - Healing animations with positive color indicators
+- Animation trigger for status effects
+
+### Improvements
+
+- Simplified overlay configuration interface
+
+
+### Bug Fixes
+- Improved stability of animation rendering
+- Enhanced compatibility with different character sheets
+
 ## [3.1.1] - 2025-03-17
 ### Added
 - Duplicate layout functionality for easily creating variations of existing layouts
