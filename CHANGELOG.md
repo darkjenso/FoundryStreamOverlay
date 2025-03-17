@@ -28,10 +28,8 @@ All notable changes to this project will be documented in this file.
 
 - Simplified overlay configuration interface
 
-
 ### Bug Fixes
 - Improved stability of animation rendering
-- Enhanced compatibility with different character sheets
 
 ## [3.1.1] - 2025-03-17
 ### Added
