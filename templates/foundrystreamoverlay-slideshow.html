@@ -51,14 +51,14 @@
     <label style="margin-left: 1em;">Duration:</label>
     <input type="number" step="0.1" name="transitionDuration" value="{{transitionDuration}}" style="width:60px;"> seconds
   </div>
-  <!-- Dropdown and add button on one line -->
-  <div style="margin-top: 1em; display: flex; align-items: center;">
-    <select id="new-layout-dropdown" style="margin-right: 0.5em;">
+  <div style="margin-top: 1em;">
+    <label for="new-layout-dropdown">Select Layout:</label>
+    <select id="new-layout-dropdown" style="width: 100%; margin-bottom: 0.5em;">
       {{#each availableLayouts}}
         <option value="{{this}}">{{this}}</option>
       {{/each}}
     </select>
-    <button type="button" class="add-selected-item">Add Selected Layout</button>
+    <button type="button" class="add-selected-item" style="width: 100%;">Add Selected Layout to Slideshow</button>
   </div>
 
   <!-- Start/Stop slideshow buttons on one line with icons -->

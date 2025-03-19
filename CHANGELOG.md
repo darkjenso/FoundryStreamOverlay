@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.1] - 2025-03-19
+
+### Bug Fixes
+- Accidentally uploaded a earlier test  file causing only one font to appear. 
+-  Working through bugs to get triggered animations working. still ongoing
+
 ## [3.2.0] - 2025-03-17
 
 ### Added
@@ -27,6 +33,7 @@ All notable changes to this project will be documented in this file.
 ### Improvements
 
 - Simplified overlay configuration interface
+
 
 ### Bug Fixes
 - Improved stability of animation rendering

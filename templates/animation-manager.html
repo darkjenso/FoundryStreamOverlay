@@ -73,7 +73,6 @@
         </div>
         
         <!-- Trigger Animations Tab -->
-        <!-- Trigger Animations Tab -->
         <div class="tab" data-tab="trigger">
             <h3>Triggered Animations</h3>
             <p class="hint">These animations play when specific game events occur.</p>
@@ -85,6 +84,7 @@
                 <th>Animation</th>
                 <th>Trigger Event</th>
                 <th>Condition</th>
+                <th>Target Actor</th>
                 <th>Duration (s)</th>
                 <th>Actions</th>
                 </tr>
@@ -103,6 +103,17 @@
                     {{/if}}
                     {{/if}}
                 </td>
+                <td>
+                    {{#if this.triggerCondition.targetActor}}
+                    {{#if this.targetActorName}}
+                    {{this.targetActorName}}
+                    {{else}}
+                    Target Actor ID: {{this.triggerCondition.targetActor}}
+                    {{/if}}
+                    {{else}}
+                    This Item's Actor
+                    {{/if}}
+                </td>
                 <td><input type="number" name="trigger.{{@index}}.duration" value="{{this.duration}}" step="0.1" min="0.1"></td>
                 <td><button type="button" class="remove-animation" data-type="trigger" data-index="{{@index}}">Remove</button></td>
                 </tr>
@@ -113,48 +124,76 @@
             
             <!-- Add new animation -->
             <div class="add-animation-form">
-            <div class="form-group">
-                <label>Animation:</label>
-                <select id="trigger-animation">
-                {{#each triggerAnimations}}
-                <option value="{{this.id}}">{{this.name}}</option>
-                {{/each}}
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label>Trigger Event:</label>
-                <select id="trigger-event">
-                <option value="hpChange">HP Changes</option>
-                <option value="levelUp">Level Up</option>
-                <option value="criticalHit">Critical Hit</option>
-                <option value="statusEffect">Status Effect Applied</option>
-                </select>
-            </div>
-            
-            <div id="trigger-condition-container">
-                <!-- Conditional inputs based on selected event type -->
-                <div class="trigger-condition hpChange-condition">
-                <label>Condition:</label>
-                <select id="hp-comparison">
-                    <option value="decrease">HP Decreases</option>
-                    <option value="increase">HP Increases</option>
-                    <option value="threshold">HP Below Threshold</option>
-                </select>
+                <div class="form-group">
+                    <label>Animation:</label>
+                    <select id="trigger-animation">
+                    {{#each triggerAnimations}}
+                    <option value="{{this.id}}">{{this.name}}</option>
+                    {{/each}}
+                    </select>
+                </div>
                 
-                <div class="threshold-value" style="display: none;">
-                    <label>Threshold:</label>
-                    <input type="number" id="hp-threshold" value="0" min="0">
+                <div class="form-group">
+                    <label>Trigger Event:</label>
+                    <select id="trigger-event">
+                    <option value="hpChange">HP Changes</option>
+                    <option value="levelUp">Level Up</option>
+                    <option value="criticalHit">Critical Hit</option>
+                    <option value="statusEffect">Status Effect Applied</option>
+                    </select>
                 </div>
+                
+                <div class="form-group">
+                    <label>Target Actor:</label>
+                    <select id="trigger-actor">
+                        {{#if item.actorId}}
+                        <option value="">This Item's Actor</option>
+                        {{else}}
+                        <option value="">Select Actor</option>
+                        {{/if}}
+                        
+                        <!-- We'll populate this dropdown with JavaScript instead -->
+                    </select>
                 </div>
-            </div>
-            
-            <div class="form-group">
-                <label>Duration (s):</label>
-                <input type="number" id="trigger-duration" value="1.5" step="0.1" min="0.1">
-            </div>
-            
-            <button type="button" class="add-animation" data-type="trigger">Add Trigger</button>
+                
+                <div class="form-group">
+                    <label>Target Stat:</label>
+                    <select id="trigger-stat">
+                        <option value="hp">HP</option>
+                        <option value="ac">AC</option>
+                        <option value="level">Level</option>
+                        <option value="custom">Custom Path</option>
+                    </select>
+                    
+                    <div id="custom-stat-path" style="display: none; margin-top: 5px;">
+                        <label>Custom Data Path:</label>
+                        <input type="text" id="custom-data-path" placeholder="system.attributes.hp.value">
+                    </div>
+                </div>
+                
+                <div id="trigger-condition-container">
+                    <!-- Conditional inputs based on selected event type -->
+                    <div class="trigger-condition hpChange-condition">
+                    <label>Condition:</label>
+                    <select id="hp-comparison">
+                        <option value="decrease">HP Decreases</option>
+                        <option value="increase">HP Increases</option>
+                        <option value="threshold">HP Below Threshold</option>
+                    </select>
+                    
+                    <div class="threshold-value" style="display: none;">
+                        <label>Threshold:</label>
+                        <input type="number" id="hp-threshold" value="0" min="0">
+                    </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Duration (s):</label>
+                    <input type="number" id="trigger-duration" value="1.5" step="0.1" min="0.1">
+                </div>
+                
+                <button type="button" class="add-animation" data-type="trigger">Add Trigger</button>
             </div>
         </div>
         <!-- Premium status indicator -->
@@ -252,6 +291,16 @@
       .threshold-value {
         margin-top: 0.5em;
         display: inline-block;
+      }
+      
+      .form-group {
+        margin-bottom: 0.8em;
+      }
+      
+      .form-group label {
+        display: block;
+        margin-bottom: 0.3em;
+        font-weight: 500;
       }
     </style>
   </form>

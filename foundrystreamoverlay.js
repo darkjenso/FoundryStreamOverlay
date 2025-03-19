@@ -1312,6 +1312,9 @@ function openOverlayWindow() {
 }
 
 function updateOverlayWindow() {
+  // Initialize the overlayAnimatedElements container
+  window.overlayAnimatedElements = {};
+  
   if (!window.overlayWindow || window.overlayWindow.closed) {
     return;
   }
@@ -1325,9 +1328,6 @@ function updateOverlayWindow() {
   
   const container = window.overlayWindow.document.getElementById("overlay-container");
   if (!container) return;
-  
-  // Clear window storage for element references
-  window.overlayAnimatedElements = {};
   
   container.innerHTML = "";
   
@@ -1533,6 +1533,8 @@ function updateOverlayWindow() {
   });
   
   for (const item of items) {
+    let element; // Define the element variable
+    
     if (item.type === "image") {
       const img = window.overlayWindow.document.createElement("img");
       
@@ -1547,6 +1549,8 @@ function updateOverlayWindow() {
         width: ${item.imageSize}px;
         z-index: ${item.renderOrder};
       `;
+      
+      element = img; // Assign the img element
       
       // Apply animations using the new system
       if (isPremium && item.animations && item.animations.length > 0) {
@@ -1623,6 +1627,8 @@ function updateOverlayWindow() {
       div.style.cssText = styleText;
       div.textContent = item.type === "static" ? item.content : item.data;
       
+      element = div; // Assign the div element
+      
       // Apply animations using the new system
       if (isPremium && item.animations && item.animations.length > 0) {
         renderItemWithAnimations(item, div);
@@ -1666,6 +1672,17 @@ function updateOverlayWindow() {
       }
       
       container.appendChild(div);
+    }
+    
+    // Store references to elements for actor-based animations
+    if (item.actorId) {
+      if (!window.overlayAnimatedElements[item.actorId]) {
+        window.overlayAnimatedElements[item.actorId] = [];
+      }
+      window.overlayAnimatedElements[item.actorId].push({
+        element: element,
+        item: item
+      });
     }
   }
   
@@ -2368,6 +2385,22 @@ class AnimationManager extends FormApplication {
     });
   }
   
+
+  _renderInner(data) {
+    // Log the context data being passed to the template
+    console.log("Animation Manager template data:", data);
+    console.log("Actors available:", data.allActors?.length || 0);
+    if (data.allActors?.length > 0) {
+      console.log("First actor:", data.allActors[0]);
+    } else {
+      console.log("No actors found in data");
+    }
+    
+    // Continue with normal rendering
+    return super._renderInner(data);
+  }
+
+
   constructor(item, itemIndex, parentConfig) {
     super();
     const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
@@ -2405,9 +2438,13 @@ class AnimationManager extends FormApplication {
   }
   
   getData() {
+    // Get all actors for the target actor dropdown
+    const allActors = game.actors.contents.filter(a => a.type === "character" || a.hasPlayerOwner);
+    
     // Animation options separated by type
     return {
       item: this.item,
+      allActors: allActors, // Add actors list for the dropdown
       continuousAnimations: [
         {id: "none", name: "None"},
         {id: "hover", name: "Hover Up/Down"},
@@ -2450,7 +2487,17 @@ class AnimationManager extends FormApplication {
         {id: "hpDamage", name: "HP Damage"},
         {id: "hpHealing", name: "HP Healing"},
         {id: "criticalHit", name: "Critical Hit"},
-        {id: "levelUp", name: "Level Up"}
+        {id: "levelUp", name: "Level Up"},
+        // Add all the continuous animations as options too
+        {id: "hover", name: "Hover Up/Down"},
+        {id: "glitch", name: "Glitch"},
+        {id: "heartbeat", name: "Heartbeat"},
+        {id: "rotate", name: "Rotate"},
+        {id: "wiggle", name: "Wiggle"},
+        {id: "pulse", name: "Pulse"},
+        {id: "shake", name: "Shake"},
+        {id: "shimmer", name: "Shimmer"},
+        {id: "flash", name: "Flash"}
       ],
       activeAnimations: this.item.animations || [],
       isPremium: game.settings.get(MODULE_ID, "isPremium") || false
@@ -2459,6 +2506,58 @@ class AnimationManager extends FormApplication {
   
   activateListeners(html) {
     super.activateListeners(html);
+
+    console.log("Animation Manager activating listeners");
+    console.log("Actor dropdown:", html.find('#trigger-actor').length > 0 ? "found" : "not found");
+  
+    const options = html.find('#trigger-actor option');
+    console.log("Actor dropdown options:", options.length);
+    options.each(function() {
+      console.log(`Option: ${$(this).text()} (${$(this).val()})`);
+    });
+
+    const actorDropdown = html.find('#trigger-actor');
+    if (actorDropdown.length) {
+      console.log("Populating actor dropdown");
+      
+      // Get all actors
+      const actors = game.actors.contents.filter(a => a.type === "character" || a.hasPlayerOwner);
+      
+      // Add actor options
+      actors.forEach(actor => {
+        actorDropdown.append(new Option(actor.name, actor.id));
+      });
+      
+      console.log(`Added ${actors.length} actors to dropdown`);
+    } else {
+      console.error("Actor dropdown not found in template!");
+    }
+    
+    // Use the provided html parameter, not a global variable
+    html.find(".add-animation").click(this._onAddAnimation.bind(this));
+    html.find(".remove-animation").click(this._onRemoveAnimation.bind(this));
+    
+    html.find("#set-entrance-animation").click(this._onSetEntranceAnimation.bind(this));
+  
+    // Handle tab changes
+    html.find('.tabs .item').click(ev => {
+      const tab = $(ev.currentTarget).data('tab');
+      this._tabs[0].activate(tab);
+    });
+    
+    // Handle condition type changes
+    html.find("#trigger-event").change(this._onTriggerEventChange.bind(this, html));
+    html.find("#hp-comparison").change(this._onHPComparisonChange.bind(this, html));
+    
+    // Show/hide custom stat path field
+    html.find("#trigger-stat").change(function() {
+      if ($(this).val() === "custom") {
+        html.find("#custom-stat-path").slideDown(200);
+      } else {
+        html.find("#custom-stat-path").slideUp(200);
+      }
+    });
+  
     
     // Use the provided html parameter, not a global variable
     html.find(".add-animation").click(this._onAddAnimation.bind(this));
@@ -2475,6 +2574,34 @@ class AnimationManager extends FormApplication {
     // Handle condition type changes
     html.find("#trigger-event").change(this._onTriggerEventChange.bind(this, html));
     html.find("#hp-comparison").change(this._onHPComparisonChange.bind(this, html));
+    
+    // Show/hide custom stat path field
+    html.find("#trigger-stat").change(function() {
+      if ($(this).val() === "custom") {
+        html.find("#custom-stat-path").slideDown(200);
+      } else {
+        html.find("#custom-stat-path").slideUp(200);
+      }
+    });
+  }
+  
+  _onTriggerEventChange(html, event) {
+    const eventType = $(event.currentTarget).val();
+    
+    // Hide all trigger-specific conditions
+    html.find('.trigger-condition').hide();
+    
+    // Show the specific condition for this event type
+    html.find(`.${eventType}-condition`).show();
+  }
+  
+  _onHPComparisonChange(html, event) {
+    const comparison = $(event.currentTarget).val();
+    if (comparison === "threshold") {
+      html.find('.threshold-value').slideDown(200);
+    } else {
+      html.find('.threshold-value').slideUp(200);
+    }
   }
 
   async _onSetEntranceAnimation(event) {
@@ -2500,21 +2627,6 @@ class AnimationManager extends FormApplication {
     this.render();
   }
   
-  _onTriggerEventChange(html, event) {
-    const eventType = $(event.currentTarget).val();
-    html.find('.trigger-condition').hide();
-    html.find(`.${eventType}-condition`).show();
-  }
-  
-  _onHPComparisonChange(html, event) {
-    const comparison = $(event.currentTarget).val();
-    if (comparison === "threshold") {
-      html.find('.threshold-value').slideDown(200);
-    } else {
-      html.find('.threshold-value').slideUp(200);
-    }
-  }
-  
   async _onAddAnimation(event) {
     event.preventDefault();
     
@@ -2532,19 +2644,39 @@ class AnimationManager extends FormApplication {
     let triggerCondition = null;
     if (type === "trigger") {
       const eventType = html.find("#trigger-event").val();
+      const targetActor = html.find("#trigger-actor").val() || null;  // Get the target actor
+      const targetStat = html.find("#trigger-stat").val();
+      let dataPath = "";
+      
+      // Set the data path based on the selected stat
+      switch (targetStat) {
+        case "hp":
+          dataPath = "system.attributes.hp.value";
+          break;
+        case "ac":
+          dataPath = "system.attributes.ac.value";
+          break;
+        case "level":
+          dataPath = "system.details.level";
+          break;
+        case "custom":
+          dataPath = html.find("#custom-data-path").val();
+          break;
+      }
+      
+      triggerCondition = {
+        event: eventType,
+        targetActor: targetActor,  // Store the target actor
+        dataPath: dataPath
+      };
       
       if (eventType === "hpChange") {
         const comparison = html.find("#hp-comparison").val();
-        triggerCondition = {
-          event: eventType,
-          comparison: comparison
-        };
+        triggerCondition.comparison = comparison;
         
         if (comparison === "threshold") {
           triggerCondition.threshold = Number(html.find("#hp-threshold").val()) || 0;
         }
-      } else {
-        triggerCondition = { event: eventType };
       }
     }
     
@@ -2553,7 +2685,7 @@ class AnimationManager extends FormApplication {
       type: type,
       animation: animation,
       delay: 0,
-      duration: type === "entrance" ? 0.5 : 1.5,
+      duration: Number(html.find(`#${type}-duration`).val()) || (type === "entrance" ? 0.5 : 1.5),
       triggerCondition: triggerCondition
     };
     
@@ -2665,80 +2797,169 @@ class AnimationManager extends FormApplication {
 function renderItemWithAnimations(item, element) {
   const animations = item.animations || [];
   
+  // Store reference to this element for the item's actorId
+  if (item.actorId) {
+    if (!window.overlayAnimatedElements[item.actorId]) {
+      window.overlayAnimatedElements[item.actorId] = [];
+    }
+    window.overlayAnimatedElements[item.actorId].push({
+      element: element,
+      item: item
+    });
+  }
+  
   // Get continuous animations
   const continuousAnims = animations.filter(a => a.type === "continuous" && a.animation !== "none");
   
-  // If there are multiple animations, use a custom approach
-  if (continuousAnims.length > 1) {
-    // Add a special attribute to track animations
-    element.setAttribute('data-animations', JSON.stringify(continuousAnims.map(a => a.animation)));
-    
-    // Add a single class for multiple animations
-    element.classList.add('multi-animated');
-    
-    // Insert a style element in the overlay window for this specific element
-    const styleId = `style-${Math.random().toString(36).substring(2, 9)}`;
-    element.setAttribute('data-style-id', styleId);
-    
-    const styleEl = window.overlayWindow.document.createElement('style');
-    styleEl.id = styleId;
-    
-    // Create keyframes that combine all animations
-    let combinedKeyframes = '';
-    let transformProperties = [];
-    
-    // Add effects based on the animation types
-    if (continuousAnims.some(a => a.animation === 'hover')) {
-      transformProperties.push('translateY(-5px)');
-    }
-    if (continuousAnims.some(a => a.animation === 'jitter')) {
-      transformProperties.push('translate(1px, 1px)');
-    }
-    if (continuousAnims.some(a => a.animation === 'emphasis')) {
-      transformProperties.push('scale(1.1)');
-    }
-    if (continuousAnims.some(a => a.animation === 'wiggle')) {
-      transformProperties.push('rotate(3deg)');
-    }
-    
-    // Create a custom animation for this element
-    styleEl.textContent = `
-      @keyframes combined-${styleId} {
-        0% { transform: translateX(-50%); }
-        50% { transform: translateX(-50%) ${transformProperties.join(' ')}; }
-        100% { transform: translateX(-50%); }
-      }
-      
-      [data-style-id="${styleId}"] {
-        animation: combined-${styleId} 2s infinite ease-in-out;
-      }
-    `;
-    
-    window.overlayWindow.document.head.appendChild(styleEl);
-  }
-  // Otherwise, use the standard approach for a single animation
-  else if (continuousAnims.length === 1) {
-    const anim = continuousAnims[0];
-    element.classList.add(anim.animation);
-    element.style.animationDelay = `${anim.delay}s`;
-    element.style.animationDuration = `${anim.duration}s`;
-  }
-  
   // Handle entrance animations separately
   const entranceAnims = animations.filter(a => a.type === "entrance" && a.animation !== "none");
+  
   if (entranceAnims.length > 0) {
     const entranceAnim = entranceAnims[0];
+    
+    // Apply entrance animation
     element.classList.add(entranceAnim.animation);
     element.style.animationDelay = `${entranceAnim.delay}s`;
     element.style.animationDuration = `${entranceAnim.duration}s`;
+    element.style.animationIterationCount = "1";
+    element.style.animationFillMode = "forwards";
     
-    // Set up transition to continuous animations
+    // Set up transition to continuous animations after entrance completes
     element.addEventListener('animationend', () => {
+      // Remove entrance animation class
       element.classList.remove(entranceAnim.animation);
+      
+      // Reset animation properties
+      element.style.animationName = "";
+      element.style.animationDelay = "";
+      element.style.animationDuration = "";
+      element.style.animationIterationCount = "";
+      element.style.animationFillMode = "";
+      
+      // Force reflow to ensure animation restarts
+      void element.offsetWidth;
+      
+      // Apply continuous animations if any exist
+      if (continuousAnims.length > 0) {
+        applyAllContinuousAnimations(continuousAnims, element);
+      }
     }, { once: true });
+  } 
+  // If no entrance animation but there are continuous animations, apply them immediately
+  else if (continuousAnims.length > 0) {
+    applyAllContinuousAnimations(continuousAnims, element);
   }
 }
 
+function applyAllContinuousAnimations(animations, element) {
+  if (!animations.length) return;
+  
+  console.log("Applying continuous animations:", animations);
+  
+  // Multiple animations need a special approach
+  if (animations.length > 1) {
+    // Add a special attribute to track animations
+    element.setAttribute('data-animations', JSON.stringify(animations.map(a => a.animation)));
+    
+    // For multi-element types, we need different animation handling
+    if (element.tagName.toLowerCase() === 'img') {
+      // For images
+      applyMultipleImageAnimations(animations, element);
+    } else {
+      // For text and other elements
+      applyMultipleTextAnimations(animations, element);
+    }
+  } else if (animations.length === 1) {
+    // For a single animation, use the simpler approach
+    const anim = animations[0];
+    element.classList.add(anim.animation);
+    element.style.animationDelay = `${anim.delay}s`;
+    element.style.animationDuration = `${anim.duration}s`;
+    element.style.animationIterationCount = "infinite";
+  }
+}
+
+function applyMultipleTextAnimations(animations, element) {
+  // Insert a style element in the overlay window for this specific element
+  const styleId = `style-${Math.random().toString(36).substring(2, 9)}`;
+  element.setAttribute('data-style-id', styleId);
+  
+  const styleEl = window.overlayWindow.document.createElement('style');
+  styleEl.id = styleId;
+  
+  // Create keyframes that combine all animations
+  let transformProperties = [];
+  
+  // Add effects based on the animation types
+  if (animations.some(a => a.animation === 'hover')) {
+    transformProperties.push('translateY(-5px)');
+  }
+  if (animations.some(a => a.animation === 'jitter')) {
+    transformProperties.push('translate(1px, 1px)');
+  }
+  if (animations.some(a => a.animation === 'emphasis')) {
+    transformProperties.push('scale(1.1)');
+  }
+  if (animations.some(a => a.animation === 'wiggle')) {
+    transformProperties.push('rotate(3deg)');
+  }
+  
+  // Create a custom animation for this element
+  styleEl.textContent = `
+    @keyframes combined-${styleId} {
+      0% { transform: translateX(-50%); }
+      50% { transform: translateX(-50%) ${transformProperties.join(' ')}; }
+      100% { transform: translateX(-50%); }
+    }
+    
+    [data-style-id="${styleId}"] {
+      animation: combined-${styleId} 2s infinite ease-in-out;
+    }
+  `;
+  
+  window.overlayWindow.document.head.appendChild(styleEl);
+}
+
+function applyMultipleImageAnimations(animations, element) {
+  // Insert a style element in the overlay window for this specific element
+  const styleId = `style-${Math.random().toString(36).substring(2, 9)}`;
+  element.setAttribute('data-style-id', styleId);
+  
+  const styleEl = window.overlayWindow.document.createElement('style');
+  styleEl.id = styleId;
+  
+  // Create keyframes that combine all animations
+  let transformProperties = [];
+  
+  // Add effects based on the animation types
+  if (animations.some(a => a.animation === 'hover')) {
+    transformProperties.push('translateY(-5px)');
+  }
+  if (animations.some(a => a.animation === 'jitter')) {
+    transformProperties.push('translate(1px, 1px)');
+  }
+  if (animations.some(a => a.animation === 'emphasis')) {
+    transformProperties.push('scale(1.1)');
+  }
+  if (animations.some(a => a.animation === 'wiggle')) {
+    transformProperties.push('rotate(3deg)');
+  }
+  
+  // Create a custom animation for this element - no translateX(-50%) for images
+  styleEl.textContent = `
+    @keyframes combined-${styleId} {
+      0% { transform: translate(0, 0); }
+      50% { transform: ${transformProperties.join(' ')}; }
+      100% { transform: translate(0, 0); }
+    }
+    
+    [data-style-id="${styleId}"] {
+      animation: combined-${styleId} 2s infinite ease-in-out;
+    }
+  `;
+  
+  window.overlayWindow.document.head.appendChild(styleEl);
+}
 function applyAllContinuousAnimations(animations, element) {
   if (!animations.length) return;
   
@@ -2826,33 +3047,244 @@ function triggerHPAnimation(actorId, animationType, oldValue, newValue) {
   });
 }
 
+// Updated triggerAnimationsByEvent function
 function triggerAnimationsByEvent(actorId, eventType, context) {
+  console.log("Attempting to trigger animations for event", eventType, "on actor", actorId, "context", context);
+  
   // Use global event handling setting
   const enableTriggeredAnimations = game.settings.get(MODULE_ID, "enableTriggeredAnimations");
-  if (!enableTriggeredAnimations) return;
+  if (!enableTriggeredAnimations) {
+    console.log("Triggered animations are disabled in settings");
+    return;
+  }
 
-  if (!window.overlayAnimatedElements || !window.overlayAnimatedElements[actorId]) return;
+  // Check if we have any animated elements at all
+  if (!window.overlayAnimatedElements) {
+    console.log("No animated elements found");
+    return;
+  }
   
-  const elements = window.overlayAnimatedElements[actorId];
+  // Loop through all animated elements
+  let animationsApplied = 0;
   
-  elements.forEach(({element, item}) => {
-    // Check for animations in the animations array
-    const animations = item.animations || [];
-    const triggerAnims = animations.filter(a => a.type === "trigger" && a.triggerCondition?.event === eventType);
-    
-    triggerAnims.forEach(anim => {
-      // Check if the trigger condition is met
-      if (eventType === "hpChange") {
+  // Process all items with animations
+  // We need to check ALL elements, not just those for this actor
+  for (const [elemActorId, elements] of Object.entries(window.overlayAnimatedElements)) {
+    elements.forEach(({element, item}) => {
+      // Get the animations array from the item
+      const animations = item.animations || [];
+      
+      // Filter for trigger animations that match this event
+      const triggerAnims = animations.filter(a => {
+        // Basic check - is this a trigger animation for this event type?
+        if (a.type !== "trigger" || a.triggerCondition?.event !== eventType) return false;
+        
+        // Target check - does this animation target the actor that triggered the event?
+        if (a.triggerCondition.targetActor) {
+          // If a specific target actor is defined, it must match
+          return a.triggerCondition.targetActor === actorId;
+        } else if (item.actorId) {
+          // If no specific target but the item has an actor, use that
+          return item.actorId === actorId;
+        } else {
+          // If no targets specified at all, don't match
+          return false;
+        }
+      });
+      
+      if (triggerAnims.length > 0) {
+        console.log(`Found ${triggerAnims.length} matching trigger animations for actor ${actorId} on element:`, element);
+      }
+      
+      // Apply matching animations
+      triggerAnims.forEach(anim => {
+        // Check if the trigger condition is met
         const meetsCondition = evaluateTriggerCondition(anim.triggerCondition, context);
         if (meetsCondition) {
+          console.log("Condition met, applying animation", anim.animation);
           applyTriggeredAnimation(element, anim);
+          animationsApplied++;
+        } else {
+          console.log("Condition not met for animation", anim.animation);
         }
-      }
+      });
     });
-  });
+  }
+  
+  console.log(`Applied ${animationsApplied} animations in total`);
+  
+  // Also trigger the HP-specific animation if this is an HP change (for backward compatibility)
+  if (eventType === "hpChange") {
+    const direction = context.newValue < context.oldValue ? "damage" : "healing";
+    triggerHPAnimation(actorId, direction, context.oldValue, context.newValue);
+  }
 }
 
+// Improved version of evaluateTriggerCondition
 function evaluateTriggerCondition(condition, context) {
+  console.log("Evaluating trigger condition", condition, "with context", context);
+  
+  if (!condition) return false;
+  
+  // Map of event types to their condition checks
+  const conditionChecks = {
+    "hpChange": () => {
+      if (condition.comparison === "decrease" && context.newValue < context.oldValue) return true;
+      if (condition.comparison === "increase" && context.newValue > context.oldValue) return true;
+      if (condition.comparison === "threshold" && context.newValue <= condition.threshold) return true;
+      return false;
+    },
+    
+    "statChange": () => {
+      // For future implementation of general stat changes
+      const oldValue = context.oldValue || 0;
+      const newValue = context.newValue || 0;
+      
+      if (condition.comparison === "decrease" && newValue < oldValue) return true;
+      if (condition.comparison === "increase" && newValue > oldValue) return true;
+      if (condition.comparison === "threshold" && newValue <= (condition.threshold || 0)) return true;
+      return false;
+    },
+    
+    "levelUp": () => {
+      return (context.newValue > context.oldValue);
+    },
+    
+    "criticalHit": () => {
+      return context.isCritical === true;
+    },
+    
+    "statusEffect": () => {
+      return context.statusEffect !== undefined;
+    }
+  };
+  
+  // Use the appropriate check for this event type
+  if (conditionChecks[condition.event]) {
+    return conditionChecks[condition.event]();
+  }
+  
+  return false;
+}
+
+// Enhanced applyTriggeredAnimation with support for all animation types
+function applyTriggeredAnimation(element, animation) {
+  console.log("Applying triggered animation", animation, "to element", element);
+  
+  // Store original properties to restore later
+  const originalStyles = {
+    color: element.style.color,
+    animationName: element.style.animationName,
+    animationDuration: element.style.animationDuration,
+    animationDelay: element.style.animationDelay,
+    animationIterationCount: element.style.animationIterationCount
+  };
+  
+  // Keep track of added classes to remove later
+  const addedClasses = [];
+  
+  // Remove any existing triggered animation classes
+  element.classList.remove("hp-damage", "hp-healing");
+  
+  // Apply the specific animation class
+  if (animation.animation) {
+    element.classList.add(animation.animation);
+    addedClasses.push(animation.animation);
+  }
+  
+  // Animation-specific effects
+  switch (animation.animation) {
+    case "hpDamage":
+      element.classList.add("hp-damage");
+      element.style.color = "#ff3333"; // Red for damage
+      addedClasses.push("hp-damage");
+      break;
+      
+    case "hpHealing":
+      element.classList.add("hp-healing");
+      element.style.color = "#33ff33"; // Green for healing
+      addedClasses.push("hp-healing");
+      break;
+      
+    default:
+      // For standard animations, set animation properties
+      if (window.standardAnimations && window.standardAnimations.includes(animation.animation)) {
+        // Set the animation to run only once with the specified duration
+        element.style.animationName = animation.animation;
+        element.style.animationDuration = `${animation.duration || 1.5}s`;
+        element.style.animationDelay = "0s";
+        element.style.animationIterationCount = "1";
+        element.style.animationFillMode = "forwards";
+      }
+      break;
+  }
+  
+  // Force a reflow to ensure animation plays
+  void element.offsetWidth;
+  
+  // Schedule cleanup after animation duration
+  const duration = animation.duration || 1.5;
+  setTimeout(() => {
+    // Remove added classes
+    addedClasses.forEach(cls => element.classList.remove(cls));
+    
+    // Restore original styles
+    for (const [prop, value] of Object.entries(originalStyles)) {
+      if (value) element.style[prop] = value;
+    }
+    
+    console.log("Animation complete, element restored");
+  }, duration * 1000);
+}
+
+// Create standard animation list for reference
+window.standardAnimations = [
+  "hover", "glitch", "heartbeat", "rotate", "wiggle", "pulse", "slide",
+  "flash", "shake", "shimmer", "floatSway", "textGlow", "breathe",
+  "colorShift", "jitter", "emphasis", "ripple", "blinkingCursor", "backdropPulse"
+];
+
+// Update the actor hook to send more context in trigger events
+Hooks.on("updateActor", (actor, update, options, userId) => {
+  // Check for HP changes
+  if (foundry.utils.hasProperty(update, "system.attributes.hp")) {
+    const oldValue = actor._source.system.attributes.hp.value || 0;
+    const newValue = actor.system.attributes.hp.value || 0;
+    
+    console.log(`HP changed for actor ${actor.id}: ${oldValue} → ${newValue}`);
+    
+    // Trigger animations based on HP change
+    triggerAnimationsByEvent(actor.id, "hpChange", {
+      oldValue: oldValue,
+      newValue: newValue,
+      dataPath: "system.attributes.hp.value"
+    });
+  }
+  
+  // Check for level changes
+  if (foundry.utils.hasProperty(update, "system.details.level")) {
+    const oldValue = actor._source.system.details.level || 0;
+    const newValue = actor.system.details.level || 0;
+    
+    console.log(`Level changed for actor ${actor.id}: ${oldValue} → ${newValue}`);
+    
+    // Trigger animations based on level change
+    triggerAnimationsByEvent(actor.id, "levelUp", {
+      oldValue: oldValue,
+      newValue: newValue,
+      dataPath: "system.details.level"
+    });
+  }
+  
+  // Add more property checks here for other stats you want to monitor
+  
+  // Always update overlay window
+  updateOverlayWindow();
+});
+
+function evaluateTriggerCondition(condition, context) {
+  console.log("Evaluating trigger condition", condition, "with context", context);
+  
   if (!condition) return false;
   
   switch(condition.event) {
@@ -2861,42 +3293,65 @@ function evaluateTriggerCondition(condition, context) {
       if (condition.comparison === "increase" && context.newValue > context.oldValue) return true;
       if (condition.comparison === "threshold" && context.newValue <= condition.threshold) return true;
       break;
-    // Other event types...
+    
+    case "statChange":
+      // For future implementation of general stat changes
+      break;
+      
+    case "levelUp":
+      if (context.newValue > context.oldValue) return true;
+      break;
+      
+    case "criticalHit":
+      return context.isCritical === true;
+      
+    case "statusEffect":
+      return context.statusEffect !== undefined;
   }
   
   return false;
 }
-
 function applyTriggeredAnimation(element, animation) {
-  // Store original class list
+  console.log("Applying triggered animation", animation, "to element", element);
+  
+  // Remove any existing animation classes from previous triggers
+  element.classList.remove("hp-damage", "hp-healing");
+  
+  // Store original properties to restore later
+  const originalColor = element.style.color;
   const originalClasses = [...element.classList];
   
-  // Add trigger animation class and any extra effects based on animation type
+  // Apply the specific animation class
   element.classList.add(animation.animation);
   
+  // Animation-specific effects
   switch (animation.animation) {
     case "hpDamage":
-      element.style.color = "#ff3333";
-      break;
-    case "hpDamageShake":
-      element.style.color = "#ff3333";
-      break;
-    case "hpDamagePulse":
-      element.style.color = "#ff3333";
-      break;
-    case "hpDamageFadeOut":
-      element.style.color = "#ff3333";
+      element.classList.add("hp-damage");
+      element.style.color = "#ff3333"; // Red for damage
       break;
     case "hpHealing":
-      element.style.color = "#33ff33";
+      element.classList.add("hp-healing");
+      element.style.color = "#33ff33"; // Green for healing
+      break;
+    default:
+      // If it's a standard animation from the continuous list, apply that
+      if (window.standardAnimations && window.standardAnimations.includes(animation.animation)) {
+        element.classList.add(animation.animation);
+      }
       break;
   }
   
-  // Remove after duration
+  // Force a reflow to ensure animation plays
+  void element.offsetWidth;
+  
+  // Schedule cleanup after animation duration
+  const duration = animation.duration || 1.5;
   setTimeout(() => {
-    // Reset to original classes
-    element.className = originalClasses.join(' ');
-    // Reset any inline styles we added
-    element.style.color = "";
-  }, animation.duration * 1000);
+    // Reset to original state
+    element.classList = originalClasses.join(' ');
+    element.style.color = originalColor;
+    
+    console.log("Animation complete, element restored");
+  }, duration * 1000);
 }
