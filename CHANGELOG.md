@@ -1,8 +1,13 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+## [3.3.0] - 2025-03-20
 
-## [3.2.1] - 2025-03-20
+### New Premium Feature
+- Multiple Green Screens
+ - Premium users can now create multiple green screens and place different layouts or slideshows on as needed.
+
+## [3.2.2] - 2025-03-20
 
 ### New
 - Added a "custom" data field for other details to be tracked or from other game systems. Unsure if working, will need testing.
