@@ -270,6 +270,22 @@ Hooks.once("init", () => {
     return "";
   });
 
+  game.settings.register(MODULE_ID, "overlayWindows", {
+    name: "Overlay Windows",
+    hint: "Configurations for multiple overlay windows",
+    scope: "client",
+    config: false,
+    type: Object,
+    default: {
+      "main": { 
+        id: "main", 
+        name: "Main Overlay",
+        activeLayout: "Default",
+        slideshowActive: false
+      }
+    }
+  });
+
   game.settings.register(MODULE_ID, "backgroundColour", {
     name: "Background Colour",
     hint: "Chroma key colour for the overlay background.",
@@ -413,6 +429,15 @@ function validateActivationKey(key) {
     onChange: () => {
       updateOverlayWindow();
     }
+  });
+
+  game.settings.registerMenu(MODULE_ID, "windowManager", {
+    name: "Manage Overlay Windows",
+    label: "Multiple Windows",
+    hint: "Create and manage multiple overlay windows (Premium feature)",
+    icon: "fas fa-desktop",
+    type: OverlayWindowManager,
+    restricted: false
   });
 
   game.settings.registerMenu(MODULE_ID, "overlayConfigMenu", {
@@ -1275,14 +1300,22 @@ class OverlayWindowOpener extends FormApplication {
 }
 
 
-function openOverlayWindow() {
-  if (window.overlayWindow && !window.overlayWindow.closed) {
-    window.overlayWindow.close();
+
+function openOverlayWindow(windowId = "main") {
+  // Store window references globally
+  window.overlayWindows = window.overlayWindows || {};
+
+  // Close existing window if open
+  if (window.overlayWindows && window.overlayWindows[windowId] && !window.overlayWindows[windowId].closed) {
+    window.overlayWindows[windowId].close();
   }
 
+  const windows = game.settings.get(MODULE_ID, "overlayWindows");
+  const windowConfig = windows[windowId] || windows.main;
+  
   const overlayWindow = window.open(
     "",
-    "FoundryStreamOverlayWindow",
+    `FoundryStreamOverlay_${windowId}`,
     "width=800,height=600,resizable=yes"
   );
   
@@ -1337,39 +1370,47 @@ function openOverlayWindow() {
   </style>
 </head>
 <body>
-  <div id="overlay-container"></div>
+  <div id="overlay-container" data-window-id="${windowId}"></div>
 </body>
 </html>`);
   
   overlayWindow.document.close();
   
-  window.overlayWindow = overlayWindow;
+  // Store reference to this specific window
+  window.overlayWindows[windowId] = overlayWindow;
   
-  updateOverlayWindow();
+  // For backward compatibility, also set the legacy global reference
+  if (windowId === "main") {
+    window.overlayWindow = overlayWindow;
+  }
+  
+  updateOverlayWindow(windowId);
 }
 
-function updateOverlayWindow() {
-  // Initialize the overlayAnimatedElements container
-  window.overlayAnimatedElements = {};
+function updateOverlayWindow(windowId = "main") {
+  window.overlayAnimatedElements = window.overlayAnimatedElements || {};
   
-  if (!window.overlayWindow || window.overlayWindow.closed) {
+  const overlayWindow = window.overlayWindows?.[windowId];
+  if (!overlayWindow || overlayWindow.closed) {
     return;
   }
   
+  const windows = game.settings.get(MODULE_ID, "overlayWindows");
+  const windowConfig = windows[windowId] || windows.main;
+  
   const bg = game.settings.get(MODULE_ID, "backgroundColour");
   const layouts = game.settings.get(MODULE_ID, "layouts") || {};
-  const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+  const activeLayout = windowConfig.activeLayout || "Default";
   const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
   
-  window.overlayWindow.document.body.style.backgroundColor = bg;
+  overlayWindow.document.body.style.backgroundColor = bg;
   
-  const container = window.overlayWindow.document.getElementById("overlay-container");
+  const container = overlayWindow.document.getElementById("overlay-container");
   if (!container) return;
   
   container.innerHTML = "";
   
   const items = (layouts[activeLayout] || []).map(item => {
-    // Legacy properties (for backward compatibility)
     let animation = isPremium ? (item.animation || "none") : "none";
     let entranceAnimation = isPremium ? (item.entranceAnimation || "none") : "none";
     
@@ -1378,7 +1419,6 @@ function updateOverlayWindow() {
     const entranceDuration = item.entranceDuration || 0.5;
     const entranceDelay = item.entranceDelay || 0;
     
-    // Add animations array property 
     const animations = isPremium ? (item.animations || []) : [];
     
     if (item.type === "image") {
@@ -1396,8 +1436,8 @@ function updateOverlayWindow() {
         entranceAnimation,
         entranceDuration,
         entranceDelay,
-        animations, // Add animations property
-        actorId: item.actorId || null // Add actorId for trigger animations
+        animations,
+        actorId: item.actorId || null
       };
     } else if (item.type === "static") {
       return {
@@ -1420,8 +1460,8 @@ function updateOverlayWindow() {
         entranceAnimation,
         entranceDuration,
         entranceDelay,
-        animations, // Add animations property
-        actorId: item.actorId || null // Add actorId for trigger animations
+        animations,
+        actorId: item.actorId || null
       };
     } else {
       const actor = game.actors.get(item.actorId);
@@ -1436,37 +1476,30 @@ function updateOverlayWindow() {
         const maxHP = foundry.utils.getProperty(actor, 'system.attributes.hp.max');
         textValue = `${currentHP} / ${maxHP}`;
       } else if (item.dataPath === "system.details.class") {
-        // Try finding classes in items collection first
         const classItems = actor.items?.filter(item => item.type === "class");
       
         if (classItems && classItems.length > 0) {
           if (classItems.length === 1) {
-            // For single class, just show the class name without level
             textValue = classItems[0].name;
           } else {
-            // For multiclass, show all classes with levels
             textValue = classItems.map(item => {
               const level = foundry.utils.getProperty(item, 'system.levels') || "";
               return `${item.name} ${level}`.trim();
             }).join('/');
           }
         } else {
-          // If no class items, try the standard properties
           const classesVal = foundry.utils.getProperty(actor, 'system.classes');
           const detailClassesVal = foundry.utils.getProperty(actor, 'system.details.classes');
           const classVal = foundry.utils.getProperty(actor, 'system.details.class');
           const classNameVal = foundry.utils.getProperty(actor, 'system.details.className');
           
-          // Try checking system.classes first (more common in newer versions)
           if (classesVal && typeof classesVal === 'object') {
             const classEntries = Object.entries(classesVal);
             
             if (classEntries.length > 0) {
               if (classEntries.length === 1) {
-                // Single class - just show the name
                 textValue = classEntries[0][0];
               } else {
-                // Multiclass - show names with levels
                 textValue = classEntries.map(([className, classData]) => {
                   const level = classData.levels || "";
                   return `${className} ${level}`.trim();
@@ -1476,16 +1509,13 @@ function updateOverlayWindow() {
               textValue = 'N/A';
             }
           } 
-          // Then try system.details.classes
           else if (detailClassesVal && typeof detailClassesVal === 'object') {
             const classEntries = Object.entries(detailClassesVal);
             
             if (classEntries.length > 0) {
               if (classEntries.length === 1) {
-                // Single class - just show the name
                 textValue = classEntries[0][0];
               } else {
-                // Multiclass - show names with levels
                 textValue = classEntries.map(([className, classData]) => {
                   const level = classData.levels || "";
                   return `${className} ${level}`.trim();
@@ -1495,7 +1525,6 @@ function updateOverlayWindow() {
               textValue = 'N/A';
             }
           } 
-          // Finally try direct class properties
           else if (classVal) {
             textValue = classVal;
           } else if (classNameVal) {
@@ -1510,7 +1539,6 @@ function updateOverlayWindow() {
                    foundry.utils.getProperty(actor, 'system.race') || 'N/A';
 
       }else if (item.dataPath === "custom" && item.customPath) {
-        // Use the custom data path
         textValue = foundry.utils.getProperty(actor, item.customPath);
         if (textValue === null || textValue === undefined) textValue = "N/A";
       }
@@ -1564,7 +1592,7 @@ function updateOverlayWindow() {
         entranceAnimation,
         entranceDuration,
         entranceDelay,
-        animations // Add animations property
+        animations
       };
     }
   }).filter(Boolean);
@@ -1576,12 +1604,11 @@ function updateOverlayWindow() {
   });
   
   for (const item of items) {
-    let element; // Define the element variable
+    let element;
     
     if (item.type === "image") {
-      const img = window.overlayWindow.document.createElement("img");
+      const img = overlayWindow.document.createElement("img");
       
-      // Start with just the overlay-item class
       img.className = "overlay-item";
       img.src = item.imagePath;
       
@@ -1593,13 +1620,11 @@ function updateOverlayWindow() {
         z-index: ${item.renderOrder};
       `;
       
-      element = img; // Assign the img element
+      element = img;
       
-      // Apply animations using the new system
       if (isPremium && item.animations && item.animations.length > 0) {
-        renderItemWithAnimations(item, img);
+        renderItemWithAnimations(item, img, overlayWindow);
       } 
-      // Fallback to legacy animation system
       else if (isPremium) {
         const hasEntrance = item.entranceAnimation !== "none";
         const hasContinuous = item.animation !== "none";
@@ -1615,8 +1640,7 @@ function updateOverlayWindow() {
               
               void img.offsetWidth;
               
-              // For images, we need to detect if the animation has an img- prefix version
-              const imgAnimation = window.overlayWindow.document.querySelector(`.img-${item.animation}`) ? 
+              const imgAnimation = overlayWindow.document.querySelector(`.img-${item.animation}`) ? 
                                `img-${item.animation}` : item.animation;
               
               img.className = `overlay-item ${item.animation}`;
@@ -1634,9 +1658,8 @@ function updateOverlayWindow() {
       
       container.appendChild(img);
     } else {
-      const div = window.overlayWindow.document.createElement("div");
+      const div = overlayWindow.document.createElement("div");
       
-      // Start with just the overlay-item class
       div.className = "overlay-item";
       
       if (item.fontStroke) {
@@ -1670,13 +1693,11 @@ function updateOverlayWindow() {
       div.style.cssText = styleText;
       div.textContent = item.type === "static" ? item.content : item.data;
       
-      element = div; // Assign the div element
+      element = div;
       
-      // Apply animations using the new system
       if (isPremium && item.animations && item.animations.length > 0) {
-        renderItemWithAnimations(item, div);
+        renderItemWithAnimations(item, div, overlayWindow);
       } 
-      // Fallback to legacy animation system
       else if (isPremium) {
         const hasEntrance = item.entranceAnimation !== "none";
         const hasContinuous = item.animation !== "none";
@@ -1688,16 +1709,13 @@ function updateOverlayWindow() {
           
           if (hasContinuous) {
             div.addEventListener('animationend', () => {
-              // Reset the class but keep essential classes
               div.className = "overlay-item";
               if (item.fontStroke) {
                 div.classList.add('text-stroked');
               }
               
-              // Force reflow
               void div.offsetWidth;
               
-              // Apply the continuous animation
               div.className = `overlay-item ${item.animation}`;
               if (item.fontStroke) {
                 div.classList.add('text-stroked');
@@ -1717,20 +1735,20 @@ function updateOverlayWindow() {
       container.appendChild(div);
     }
     
-    // Store references to elements for actor-based animations
     if (item.actorId) {
       if (!window.overlayAnimatedElements[item.actorId]) {
         window.overlayAnimatedElements[item.actorId] = [];
       }
       window.overlayAnimatedElements[item.actorId].push({
         element: element,
-        item: item
+        item: item,
+        windowId: windowId
       });
     }
   }
   
   if (!isPremium) {
-    const promoFooter = window.overlayWindow.document.createElement("div");
+    const promoFooter = overlayWindow.document.createElement("div");
     promoFooter.style.cssText = `
       position: absolute;
       bottom: 5px;
@@ -1743,8 +1761,10 @@ function updateOverlayWindow() {
     promoFooter.innerHTML = `Made by Jen. <a href="https://www.patreon.com/c/jenzelta" target="_blank" style="color:#FF424D;">Support on Patreon for premium features</a>`;
     container.appendChild(promoFooter);
   }
-
   
+  if (windowId === "main" && window.overlayWindow) {
+    window.overlayWindow.document.body.style.backgroundColor = bg;
+  }
 }
 
 
@@ -2129,16 +2149,24 @@ class SlideshowConfig extends FormApplication {
       list: [], 
       random: false,
       transition: "none",
-      transitionDuration: 0.5
+      transitionDuration: 0.5,
+      targetWindow: "main"
     };
     const layouts = game.settings.get(MODULE_ID, "layouts") || {};
     const availableLayouts = Object.keys(layouts);
+    
+    const windows = game.settings.get(MODULE_ID, "overlayWindows") || {
+      "main": { id: "main", name: "Main Overlay" }
+    };
+    
     return {
       slideshowItems: slideshow.list,
       availableLayouts,
+      windows,
       random: slideshow.random,
       transition: slideshow.transition,
-      transitionDuration: slideshow.transitionDuration
+      transitionDuration: slideshow.transitionDuration,
+      targetWindow: slideshow.targetWindow || "main"
     };
   }
 
@@ -2155,7 +2183,11 @@ class SlideshowConfig extends FormApplication {
   async _onAddSelectedItem(event) {
     event.preventDefault();
     const selectedLayout = $(event.currentTarget).closest("form").find("#new-layout-dropdown").val();
-    const data = game.settings.get(MODULE_ID, "slideshow") || { list: [], random: false };
+    const data = game.settings.get(MODULE_ID, "slideshow") || { 
+      list: [], 
+      random: false,
+      targetWindow: "main" 
+    };
     data.list.push({ layout: selectedLayout, duration: 10 });
     await game.settings.set(MODULE_ID, "slideshow", data);
     this.render();
@@ -2164,7 +2196,11 @@ class SlideshowConfig extends FormApplication {
   async _onRemoveItem(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
-    const data = game.settings.get(MODULE_ID, "slideshow") || { list: [], random: false };
+    const data = game.settings.get(MODULE_ID, "slideshow") || { 
+      list: [], 
+      random: false,
+      targetWindow: "main" 
+    };
     data.list.splice(index, 1);
     await game.settings.set(MODULE_ID, "slideshow", data);
     this.render();
@@ -2173,7 +2209,11 @@ class SlideshowConfig extends FormApplication {
   async _onMoveUp(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
-    const data = game.settings.get(MODULE_ID, "slideshow") || { list: [], random: false };
+    const data = game.settings.get(MODULE_ID, "slideshow") || { 
+      list: [], 
+      random: false,
+      targetWindow: "main" 
+    };
     if (index > 0) {
       [data.list[index - 1], data.list[index]] = [data.list[index], data.list[index - 1]];
       await game.settings.set(MODULE_ID, "slideshow", data);
@@ -2184,7 +2224,11 @@ class SlideshowConfig extends FormApplication {
   async _onMoveDown(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
-    const data = game.settings.get(MODULE_ID, "slideshow") || { list: [], random: false };
+    const data = game.settings.get(MODULE_ID, "slideshow") || { 
+      list: [], 
+      random: false,
+      targetWindow: "main" 
+    };
     if (index < data.list.length - 1) {
       [data.list[index], data.list[index + 1]] = [data.list[index + 1], data.list[index]];
       await game.settings.set(MODULE_ID, "slideshow", data);
@@ -2205,7 +2249,8 @@ class SlideshowConfig extends FormApplication {
       list: [], 
       random: false,
       transition: "none",
-      transitionDuration: 0.5
+      transitionDuration: 0.5,
+      targetWindow: "main"
     };
     
     console.log("Starting slideshow with settings:", slideshow);
@@ -2215,21 +2260,25 @@ class SlideshowConfig extends FormApplication {
       return;
     }
     
-    if (!window.overlayWindow || window.overlayWindow.closed) {
-      openOverlayWindow();
+    const windowId = slideshow.targetWindow || "main";
+    const targetWindow = window.overlayWindows?.[windowId];
+    
+    if (!targetWindow || targetWindow.closed) {
+      openOverlayWindow(windowId);
     }
     
     const checkWindowValidity = () => {
-      const windowValid = window.overlayWindow 
-        && !window.overlayWindow.closed 
-        && window.overlayWindow.document;
+      const windowValid = window.overlayWindows 
+        && window.overlayWindows[windowId] 
+        && !window.overlayWindows[windowId].closed 
+        && window.overlayWindows[windowId].document;
       
-      const containerValid = windowValid && window.overlayWindow.document.getElementById('overlay-container');
+      const containerValid = windowValid && window.overlayWindows[windowId].document.getElementById('overlay-container');
       
       if (!windowValid || !containerValid) {
         console.error("Window validity check failed:", {
-          windowExists: !!window.overlayWindow,
-          windowClosed: window.overlayWindow?.closed,
+          windowExists: !!window.overlayWindows && !!window.overlayWindows[windowId],
+          windowClosed: window.overlayWindows?.[windowId]?.closed,
           documentExists: windowValid,
           containerExists: containerValid
         });
@@ -2260,10 +2309,12 @@ class SlideshowConfig extends FormApplication {
       
       window.foundryStreamSlideshowRunning = true;
       window.foundryStreamSlideshowIndex = 0;
+      window.foundryStreamSlideshowWindow = windowId;
       
       const runSlide = async () => {
         console.log("Slideshow run started", {
           running: window.foundryStreamSlideshowRunning,
+          windowId: window.foundryStreamSlideshowWindow,
           windowValid: checkWindowValidity()
         });
         
@@ -2277,7 +2328,8 @@ class SlideshowConfig extends FormApplication {
           list: [], 
           random: false,
           transition: "none",
-          transitionDuration: 0.5
+          transitionDuration: 0.5,
+          targetWindow: "main"
         };
         
         if (currentSlideshow.list.length === 0) {
@@ -2299,7 +2351,8 @@ class SlideshowConfig extends FormApplication {
             (window.foundryStreamSlideshowIndex + 1) % currentSlideshow.list.length;
         }
         
-        const container = window.overlayWindow.document.getElementById("overlay-container");
+        const overlayWindow = window.overlayWindows[windowId];
+        const container = overlayWindow.document.getElementById("overlay-container");
         if (!container) {
           console.error("Overlay container not found!");
           this._onStopSlideshow(null);
@@ -2310,23 +2363,27 @@ class SlideshowConfig extends FormApplication {
         const transitionDuration = currentSlideshow.transitionDuration || 0.5;
         
         try {
-          const currentLayoutName = game.settings.get(MODULE_ID, "activeLayout");
+          const windows = game.settings.get(MODULE_ID, "overlayWindows");
+          const windowConfig = windows[windowId] || windows.main;
+          const currentLayoutName = windowConfig.activeLayout;
           const nextLayoutName = currentItem.layout;
           
-          console.log(`Transitioning from ${currentLayoutName} to ${nextLayoutName}`);
+          console.log(`Transitioning from ${currentLayoutName} to ${nextLayoutName} in window ${windowId}`);
           
           if (currentLayoutName !== nextLayoutName) {
-            await game.settings.set(MODULE_ID, "activeLayout", nextLayoutName);
+            windows[windowId].activeLayout = nextLayoutName;
+            await game.settings.set(MODULE_ID, "overlayWindows", windows);
             
-            updateOverlayWindow();
+            updateOverlayWindow(windowId);
             
-            const tempDiv = window.overlayWindow.document.createElement('div');
+            const tempDiv = overlayWindow.document.createElement('div');
             tempDiv.innerHTML = container.innerHTML;
             
             console.log("Generated content:", tempDiv.innerHTML);
             
-            await game.settings.set(MODULE_ID, "activeLayout", currentLayoutName);
-            updateOverlayWindow();
+            windows[windowId].activeLayout = currentLayoutName;
+            await game.settings.set(MODULE_ID, "overlayWindows", windows);
+            updateOverlayWindow(windowId);
             
             if (transition !== "none" && LAYOUT_TRANSITIONS[transition]) {
               try {
@@ -2338,8 +2395,9 @@ class SlideshowConfig extends FormApplication {
               }
             }
             
-            await game.settings.set(MODULE_ID, "activeLayout", nextLayoutName);
-            updateOverlayWindow();
+            windows[windowId].activeLayout = nextLayoutName;
+            await game.settings.set(MODULE_ID, "overlayWindows", windows);
+            updateOverlayWindow(windowId);
           }
           
           window.foundryStreamSlideshowTimeout = setTimeout(
@@ -2354,13 +2412,14 @@ class SlideshowConfig extends FormApplication {
       
       await runSlide();
       
-      ui.notifications.info("Slideshow started!");
+      ui.notifications.info(`Slideshow started on ${windowId === "main" ? "Main Window" : "Window " + windowId}!`);
     } catch (initError) {
       console.error("Slideshow initialization error:", initError);
-      ui.notifications.error("Failed to start slideshow. Please open the overlay window first.");
+      ui.notifications.error(`Failed to start slideshow. Please open window ${windowId} first.`);
       this._onStopSlideshow(null);
     }
   }
+
   _onStopSlideshow(event) {
     if (event) event.preventDefault();
     
@@ -2371,6 +2430,7 @@ class SlideshowConfig extends FormApplication {
     
     window.foundryStreamSlideshowRunning = false;
     window.foundryStreamSlideshowIndex = 0;
+    window.foundryStreamSlideshowWindow = null;
     
     if (event) {
       ui.notifications.info("Slideshow stopped.");
@@ -2386,7 +2446,8 @@ class SlideshowConfig extends FormApplication {
       list: [], 
       random: false,
       transition: "none",
-      transitionDuration: 0.5
+      transitionDuration: 0.5,
+      targetWindow: formData.targetWindow || "main"
     };
     const temp = {};
     
@@ -3399,4 +3460,192 @@ function applyTriggeredAnimation(element, animation) {
     
     console.log("Animation complete, element restored");
   }, duration * 1000);
+}
+
+class OverlayWindowManager extends FormApplication {
+  static get defaultOptions() {
+    return foundry.utils.mergeObject(super.defaultOptions, {
+      title: "Manage Overlay Windows",
+      id: "foundrystreamoverlay-window-manager",
+      template: `modules/${MODULE_ID}/templates/window-manager.html`,
+      width: 600,
+      height: "auto",
+      closeOnSubmit: false
+    });
+  }
+  
+  getData() {
+    const windows = game.settings.get(MODULE_ID, "overlayWindows");
+    return { windows };
+  }
+  
+  activateListeners(html) {
+    super.activateListeners(html);
+    html.find(".create-new-window").click(this._onCreateWindow.bind(this));
+    html.find(".open-window").click(this._onOpenWindow.bind(this));
+    html.find(".configure-window").click(this._onConfigureWindow.bind(this));
+    html.find(".remove-window").click(this._onRemoveWindow.bind(this));
+  }
+  
+  async _onCreateWindow(event) {
+    event.preventDefault();
+    
+    const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
+    const windows = game.settings.get(MODULE_ID, "overlayWindows");
+    
+    if (!isPremium && Object.keys(windows).length > 1) {
+      new Dialog({
+        title: "Premium Feature",
+        content: `
+          <h3><i class="fas fa-gem" style="color:#FF424D;"></i> Premium Feature Required</h3>
+          <p>Multiple overlay windows require premium activation.</p>
+          <p>With premium, you can create multiple windows, each with their own layouts or slideshows!</p>
+        `,
+        buttons: {
+          upgrade: {
+            icon: '<i class="fab fa-patreon"></i>',
+            label: "Upgrade on Patreon",
+            callback: () => window.open("https://www.patreon.com/c/jenzelta", "_blank")
+          },
+          cancel: {
+            icon: '<i class="fas fa-times"></i>',
+            label: "Close"
+          }
+        },
+        default: "cancel",
+        width: 400
+      }).render(true);
+      return;
+    }
+    
+    const windowName = await Dialog.prompt({
+      title: "New Overlay Window",
+      content: `<p>Enter a name for the new overlay window:</p>
+                <input type="text" name="windowName" value="New Overlay" data-dtype="String">`,
+      callback: html => html.find('input[name="windowName"]').val()
+    });
+    
+    if (!windowName) return;
+    
+    const windowId = Date.now().toString(36);
+    
+    windows[windowId] = {
+      id: windowId,
+      name: windowName,
+      activeLayout: "Default",
+      slideshowActive: false
+    };
+    
+    await game.settings.set(MODULE_ID, "overlayWindows", windows);
+    this.render();
+  }
+  
+  async _onOpenWindow(event) {
+    event.preventDefault();
+    const windowId = event.currentTarget.dataset.window;
+    openOverlayWindow(windowId);
+  }
+  
+  async _onConfigureWindow(event) {
+    event.preventDefault();
+    const windowId = event.currentTarget.dataset.window;
+    new OverlayWindowConfig(windowId).render(true);
+  }
+  
+  async _onRemoveWindow(event) {
+    event.preventDefault();
+    const windowId = event.currentTarget.dataset.window;
+    
+    if (windowId === "main") {
+      ui.notifications.warn("Cannot remove the main overlay window");
+      return;
+    }
+    
+    const confirmed = await Dialog.confirm({
+      title: "Remove Overlay Window",
+      content: "Are you sure you want to remove this overlay window?"
+    });
+    
+    if (!confirmed) return;
+    
+    const windows = game.settings.get(MODULE_ID, "overlayWindows");
+    delete windows[windowId];
+    await game.settings.set(MODULE_ID, "overlayWindows", windows);
+    
+    // Close the window if it's open
+    if (window.overlayWindows && window.overlayWindows[windowId]) {
+      window.overlayWindows[windowId].close();
+      delete window.overlayWindows[windowId];
+    }
+    
+    this.render();
+  }
+}
+
+class OverlayWindowConfig extends FormApplication {
+  constructor(windowId) {
+    super();
+    this.windowId = windowId;
+  }
+  
+  static get defaultOptions() {
+    return foundry.utils.mergeObject(super.defaultOptions, {
+      title: "Configure Overlay Window",
+      id: "foundrystreamoverlay-window-config",
+      template: `modules/${MODULE_ID}/templates/window-config.html`,
+      width: 500,
+      height: "auto",
+      closeOnSubmit: false
+    });
+  }
+  
+  getData() {
+    const windows = game.settings.get(MODULE_ID, "overlayWindows");
+    const windowConfig = windows[this.windowId];
+    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    const slideshows = this._getSlideshowOptions();
+    
+    return { 
+      windowId: this.windowId,
+      windowConfig, 
+      layouts,
+      slideshows,
+      isPremium: game.settings.get(MODULE_ID, "isPremium")
+    };
+  }
+  
+  _getSlideshowOptions() {
+    // Create fake slideshow options - you'll need to implement actual slideshow presets
+    return [
+      { id: "none", name: "No Slideshow" },
+      { id: "main", name: "Main Slideshow" }
+    ];
+  }
+  
+  activateListeners(html) {
+    super.activateListeners(html);
+    html.find("input, select").on("change", this._onSettingChange.bind(this));
+    html.find(".open-window").click(this._onOpenWindow.bind(this));
+  }
+  
+  async _onSettingChange(event) {
+    const windows = game.settings.get(MODULE_ID, "overlayWindows");
+    const field = event.currentTarget.name;
+    const value = event.currentTarget.type === "checkbox" 
+      ? event.currentTarget.checked 
+      : event.currentTarget.value;
+    
+    windows[this.windowId][field] = value;
+    await game.settings.set(MODULE_ID, "overlayWindows", windows);
+    
+    // Update the window if it's open
+    if (window.overlayWindows && window.overlayWindows[this.windowId]) {
+      updateOverlayWindow(this.windowId);
+    }
+  }
+  
+  async _onOpenWindow(event) {
+    event.preventDefault();
+    openOverlayWindow(this.windowId);
+  }
 }

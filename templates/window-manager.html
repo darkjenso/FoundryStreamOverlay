@@ -1,0 +1,39 @@
+<form>
+  <h2>Manage Overlay Windows</h2>
+  <table style="width: 100%; text-align: left;">
+    <thead>
+      <tr>
+        <th>Window Name</th>
+        <th>Current Layout</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each windows}}
+      <tr>
+        <td>{{this.name}}</td>
+        <td>{{this.activeLayout}}</td>
+        <td>
+          <button type="button" class="open-window" data-window="{{this.id}}">Open</button>
+          <button type="button" class="configure-window" data-window="{{this.id}}">Configure</button>
+          {{#if (ne this.id "main")}}
+            <button type="button" class="remove-window" data-window="{{this.id}}">Remove</button>
+          {{/if}}
+        </td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  <div style="margin-top:1em; text-align:center;">
+    <button type="button" class="create-new-window">Create New Window</button>
+  </div>
+  
+  {{#unless isPremium}}
+  <div style="margin-top:1.5em; padding-top:1em; border-top:1px solid #ddd; text-align:center; font-size:0.9em; color:#666;">
+    <div style="margin-bottom:0.5em;"><i class="fas fa-info-circle"></i> Multiple overlay windows are a premium feature</div>
+    <a href="https://www.patreon.com/c/jenzelta" target="_blank" style="display:inline-block; background-color:#FF424D; color:white; padding:0.3em 0.8em; border-radius:4px; text-decoration:none;">
+      <i class="fab fa-patreon"></i> Support on Patreon
+    </a>
+  </div>
+  {{/unless}}
+</form>

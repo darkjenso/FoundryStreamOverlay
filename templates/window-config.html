@@ -1,0 +1,37 @@
+<form>
+  <h2>Configure Window: {{windowConfig.name}}</h2>
+  
+  <div class="form-group">
+    <label>Window Name:</label>
+    <input type="text" name="name" value="{{windowConfig.name}}">
+  </div>
+  
+  <div class="form-group">
+    <label>Display Layout:</label>
+    <select name="activeLayout">
+      {{#each layouts}}
+        <option value="{{@key}}" {{#if (eq ../windowConfig.activeLayout @key)}}selected{{/if}}>{{@key}}</option>
+      {{/each}}
+    </select>
+  </div>
+  
+  <div class="form-group">
+    <label>
+      <input type="checkbox" name="slideshowActive" {{#if windowConfig.slideshowActive}}checked{{/if}}>
+      Enable Slideshow
+    </label>
+  </div>
+  
+  <div class="form-group" {{#unless windowConfig.slideshowActive}}style="display:none"{{/unless}}>
+    <label>Slideshow Configuration:</label>
+    <select name="slideshowId">
+      {{#each slideshows}}
+        <option value="{{this.id}}" {{#if (eq ../windowConfig.slideshowId this.id)}}selected{{/if}}>{{this.name}}</option>
+      {{/each}}
+    </select>
+  </div>
+  
+  <div style="margin-top:1em; text-align:center;">
+    <button type="button" class="open-window">Open Window</button>
+  </div>
+</form>

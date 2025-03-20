@@ -17,7 +17,7 @@
           <button type="button" class="move-down" data-index="{{@index}}">↓</button>
         </td>
         <td>
-          <!-- Add this hidden input to include the layout name in form data -->
+      
           <input type="hidden" name="layout-{{@index}}" value="{{this.layout}}">
           {{this.layout}}
         </td>
@@ -32,7 +32,7 @@
     </tbody>
   </table>
 
-  <!-- Random checkbox -->
+
   <div style="margin: 1em 0;">
     <label>
       <input type="checkbox" name="random" {{#if random}}checked{{/if}}>
@@ -60,8 +60,19 @@
     </select>
     <button type="button" class="add-selected-item" style="width: 100%;">Add Selected Layout to Slideshow</button>
   </div>
+  
+  <div style="margin: 1em 0;">
+    <label>Target Window:</label>
+    <select name="targetWindow">
+      {{#each windows}}
+        <option value="{{this.id}}" {{#ifEquals ../targetWindow this.id}}selected{{/ifEquals}}>
+          {{this.name}}
+        </option>
+      {{/each}}
+    </select>
+    <p class="hint" style="font-style: italic; color: #666; margin-top: 0.2em;">Select which overlay window will display this slideshow</p>
+  </div>
 
-  <!-- Start/Stop slideshow buttons on one line with icons -->
   <div style="margin-top: 1em; display: flex; align-items: center; justify-content: center;">
     <button type="button" class="start-slideshow" style="margin-right: 1em;">
       <i class="fas fa-play"></i> Start
