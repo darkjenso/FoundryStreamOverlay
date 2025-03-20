@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [3.2.1] - 2025-03-19
 
+### New
+- Added a "custom" data field for other details to be tracked or from other game systems. Unsure if working, will need testing.
+
+## [3.2.1] - 2025-03-19
+
 ### Bug Fixes
 - Accidentally uploaded a earlier test  file causing only one font to appear. 
 -  Working through bugs to get triggered animations working. still ongoing
