@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ### New Premium Feature
 - Multiple Green Screens
- - Premium users can now create multiple green screens and place different layouts or slideshows on as needed.
+   - Premium users can now create multiple green screens and place different layouts or slideshows on as needed.
 
 ## [3.2.2] - 2025-03-20
 
