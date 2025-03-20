@@ -65,6 +65,60 @@
                   </option>
                 {{/each}}
               </select>
+              <div class="custom-path-input" data-index="{{this.idx}}" style="{{#ifEquals this.dataPath 'custom'}}display:block;{{else}}display:none;{{/ifEquals}}">
+                <input type="text" name="customPath-{{this.idx}}" value="{{this.customPath}}" placeholder="e.g., system.resources.power.value">
+                <small>Enter the exact data path to access the character data</small>
+              </div>
+                  <div class="custom-path-help">
+                    <i class="fas fa-question-circle"></i>
+                    <div class="help-tooltip">
+                      <p>To find the data path:</p>
+                      <ol>
+                        <li>Right-click on an actor and select "Export Data"</li>
+                        <li>Look through the JSON data for the value you want</li>
+                        <li>Enter the path to that value (e.g., "system.resources.spell.value")</li>
+                      </ol>
+                      <p>Common paths by system:</p>
+                      <ul>
+                        <li>PF2e Speed: "system.attributes.speed.value"</li>
+                        <li>Alien RPG Stress: "system.general.stress.value"</li>
+                        <li>Savage Worlds Bennies: "system.bennies.value"</li>
+                      </ul>
+                    </div>
+                  </div>
+                  
+                  <style>
+                    .custom-path-help {
+                      position: relative;
+                      display: inline-block;
+                      margin-left: 5px;
+                    }
+                    
+                    .custom-path-help i {
+                      cursor: help;
+                      color: #666;
+                    }
+                    
+                    .help-tooltip {
+                      display: none;
+                      position: absolute;
+                      bottom: 25px;
+                      left: 0;
+                      width: 300px;
+                      background: #f9f9f9;
+                      border: 1px solid #ddd;
+                      border-radius: 4px;
+                      padding: 8px;
+                      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                      z-index: 1000;
+                    }
+                    
+                    .custom-path-help:hover .help-tooltip {
+                      display: block;
+                    }
+                  </style>
+
+                </div>
               <br>
               <label>
                 <input type="checkbox" name="addLabel-{{this.idx}}" {{#if this.addLabel}}checked{{/if}}>
