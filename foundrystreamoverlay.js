@@ -219,7 +219,8 @@ const POSSIBLE_DATA_PATHS = [
   { label: "CON Score", path: "system.abilities.con.value" },
   { label: "INT Score", path: "system.abilities.int.value" },
   { label: "WIS Score", path: "system.abilities.wis.value" },
-  { label: "CHA Score", path: "system.abilities.cha.value" }
+  { label: "CHA Score", path: "system.abilities.cha.value" },
+  { label: "Other/Custom Path...", path: "custom" }
 ];
 
 function validateActivationKey(key) {
@@ -803,6 +804,8 @@ class OverlayConfig extends FormApplication {
     return { rows, allActors, dataPathChoices, activeLayout, layouts };
   }
 
+
+  
   activateListeners(html) {
     super.activateListeners(html);
     
@@ -899,6 +902,18 @@ class OverlayConfig extends FormApplication {
         optionsDiv.slideDown(200);
       } else {
         optionsDiv.slideUp(200);
+      }
+    });
+
+
+    html.find('select[name^="dataPath-"]').change(function() {
+      const index = this.name.split('-')[1];
+      const customPathInput = html.find(`.custom-path-input[data-index="${index}"]`);
+      
+      if (this.value === 'custom') {
+        customPathInput.slideDown(200);
+      } else {
+        customPathInput.slideUp(200);
       }
     });
   }
@@ -1122,17 +1137,22 @@ class OverlayConfig extends FormApplication {
         }
       }
     }
-
+  
     const newItems = [];
     for (let [key, val] of Object.entries(formData)) {
-      const [field, idx] = key.split("-");
-      if (!idx) continue;
+      const parts = key.split("-");
+      if (parts.length < 2) continue;
+      
+      const field = parts[0];
+      const idx = parts[1];
       const rowIndex = Number(idx);
+      
       if (!newItems[rowIndex]) {
         newItems[rowIndex] = {
           type: "data",
           actorId: "",
           dataPath: "name",
+          customPath: "",  // Add default customPath property
           top: 0,
           left: 0,
           hide: false,
@@ -1156,10 +1176,16 @@ class OverlayConfig extends FormApplication {
           animations: [] // Initialize empty animations array
         };
       }
+      
       switch (field) {
         case "type": newItems[rowIndex].type = val; break;
         case "actorId": newItems[rowIndex].actorId = val; break;
-        case "dataPath": newItems[rowIndex].dataPath = val; break;
+        case "dataPath": 
+          newItems[rowIndex].dataPath = val; 
+          break;
+        case "customPath": 
+          newItems[rowIndex].customPath = val; 
+          break;
         case "content": newItems[rowIndex].content = val; break;
         case "top": newItems[rowIndex].top = Number(val) || 0; break;
         case "left": newItems[rowIndex].left = Number(val) || 0; break;
@@ -1175,7 +1201,6 @@ class OverlayConfig extends FormApplication {
         case "imagePath": newItems[rowIndex].imagePath = val; break;
         case "imageSize": newItems[rowIndex].imageSize = Number(val) || 100; break;
         case "order": newItems[rowIndex].order = Number(val) || 0; break;
-
         case "animation":
           newItems[rowIndex].animation = isPremium ? val : "none"; 
           break;
@@ -1189,6 +1214,18 @@ class OverlayConfig extends FormApplication {
         default: break;
       }
     }
+    
+    // Special handling after all fields are processed
+    newItems.forEach(item => {
+      // If this is a custom path, get the data from the customPath field
+      if (item.dataPath === 'custom' && item.customPath) {
+        // Store the custom path but keep dataPath as 'custom' for the UI
+        item.customPath = item.customPath.trim();
+      } else {
+        // Clear customPath if not using a custom data path
+        item.customPath = '';
+      }
+    });
     
     // Preserve existing animations from items
     const layouts = game.settings.get(MODULE_ID, "layouts") || {};
@@ -1471,7 +1508,13 @@ function updateOverlayWindow() {
       } else if (item.dataPath === "system.details.race") {
         textValue = foundry.utils.getProperty(actor, 'system.details.race') || 
                    foundry.utils.getProperty(actor, 'system.race') || 'N/A';
-      } else {
+
+      }else if (item.dataPath === "custom" && item.customPath) {
+        // Use the custom data path
+        textValue = foundry.utils.getProperty(actor, item.customPath);
+        if (textValue === null || textValue === undefined) textValue = "N/A";
+      }
+       else {
         textValue = foundry.utils.getProperty(actor, item.dataPath);
       }
       
@@ -1700,6 +1743,8 @@ function updateOverlayWindow() {
     promoFooter.innerHTML = `Made by Jen. <a href="https://www.patreon.com/c/jenzelta" target="_blank" style="color:#FF424D;">Support on Patreon for premium features</a>`;
     container.appendChild(promoFooter);
   }
+
+  
 }
 
 
