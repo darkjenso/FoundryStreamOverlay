@@ -821,7 +821,7 @@ class OverlayConfig extends FormApplication {
         entranceAnimation: item.entranceAnimation || "none",
         entranceDuration: item.entranceDuration || 0.5,
         entranceDelay: item.entranceDelay || 0,
-        hasAnimations // Add this flag for the template
+        hasAnimations 
       };
     });
     const dataPathChoices = POSSIBLE_DATA_PATHS;
@@ -836,11 +836,9 @@ class OverlayConfig extends FormApplication {
     
     const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
     
-    // Add auto-save functionality to all inputs, selects, and checkboxes
     html.find('input, select').on('change', this._onFieldChange.bind(this));
     
     if (!isPremium) {
-      // Disable animations manager button
       html.find(".manage-animations").prop('disabled', true);
       html.find(".manage-animations").after(
         '<div class="premium-note" style="color:#aa5555;font-size:0.8em;margin-top:5px;">Premium feature</div>'
@@ -880,11 +878,9 @@ class OverlayConfig extends FormApplication {
       const $extrasColumns = html.find('.extras-column');
       
       if ($extrasColumns.first().find('.extras-content').is(':visible')) {
-        // Hide extras
         $extrasColumns.find('.extras-content').slideUp(200);
         $icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
       } else {
-        // Show extras
         $extrasColumns.find('.extras-content').slideDown(200);
         $icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
       }
@@ -897,7 +893,6 @@ class OverlayConfig extends FormApplication {
     html.find(".move-up").click(this._onMoveUp.bind(this));
     html.find(".move-down").click(this._onMoveDown.bind(this));
     
-    // Add this line to handle the animation manager button clicks
     html.find(".manage-animations").click(this._onManageAnimations.bind(this));
     
     html.find(".file-picker").off("click").click(e => {
@@ -907,7 +902,6 @@ class OverlayConfig extends FormApplication {
         current: "",
         callback: path => {
           html.find(`input[name="imagePath-${idx}"]`).val(path);
-          // Trigger auto-save after file selection
           html.find(`input[name="imagePath-${idx}"]`).trigger('change');
         }
       }).render(true);
@@ -943,7 +937,6 @@ class OverlayConfig extends FormApplication {
     });
   }
 
-  // Add this method to handle opening the animation manager
   _onManageAnimations(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
@@ -951,44 +944,35 @@ class OverlayConfig extends FormApplication {
     const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
     const item = layouts[activeLayout][index];
     
-    // Initialize animations array if it doesn't exist
     if (!item.animations) {
       item.animations = [];
     }
     
-    // Create and render the animation manager
     const manager = new AnimationManager(item, index, this);
     manager.render(true);
     
     console.log("Opening Animation Manager for item", item);
   }
 
-  // New method to handle auto-saving on field changes
   async _onFieldChange(event) {
-    // Get form data
     const form = $(event.currentTarget).closest('form');
     const formData = new FormDataExtended(form[0]).object;
     
-    // Call _updateObject to save changes
     await this._updateObject(event, formData);
     
-    // Update the overlay window if it's open
     if (window.overlayWindow && !window.overlayWindow.closed) {
       updateOverlayWindow();
     }
     
-    // Show brief feedback
     this._showAutoSaveFeedback();
   }
   
   _showAutoSaveFeedback() {
-    // Remove existing feedback if present
     $('.auto-save-feedback').remove();
     
     const flashFeedback = $(`<div class="auto-save-feedback">Auto-saved</div>`);
     $('body').append(flashFeedback);
     
-    // Show and hide with animation
     window.setTimeout(() => {
       flashFeedback.css('opacity', 1);
       window.setTimeout(() => {
@@ -1025,7 +1009,7 @@ class OverlayConfig extends FormApplication {
       entranceAnimation: "none",
       entranceDuration: 0.5,
       entranceDelay: 0,
-      animations: [] // Initialize empty animations array
+      animations: [] 
     };
 
     for (let i = 0; i < current.length; i++) {
@@ -1059,7 +1043,7 @@ class OverlayConfig extends FormApplication {
       entranceAnimation: "none",
       entranceDuration: 0.5,
       entranceDelay: 0,
-      animations: [] // Initialize empty animations array
+      animations: [] 
     };
 
     for (let i = 0; i < current.length; i++) {
@@ -1098,7 +1082,7 @@ class OverlayConfig extends FormApplication {
       entranceAnimation: "none",
       entranceDuration: 0.5,
       entranceDelay: 0,
-      animations: [] // Initialize empty animations array
+      animations: [] 
     };
     
     for (let i = 0; i < current.length; i++) {
@@ -1177,7 +1161,7 @@ class OverlayConfig extends FormApplication {
           type: "data",
           actorId: "",
           dataPath: "name",
-          customPath: "",  // Add default customPath property
+          customPath: "",  
           top: 0,
           left: 0,
           hide: false,
@@ -1198,7 +1182,7 @@ class OverlayConfig extends FormApplication {
           entranceAnimation: "none",
           entranceDuration: 0.5,
           entranceDelay: 0,
-          animations: [] // Initialize empty animations array
+          animations: [] 
         };
       }
       
@@ -1240,24 +1224,18 @@ class OverlayConfig extends FormApplication {
       }
     }
     
-    // Special handling after all fields are processed
     newItems.forEach(item => {
-      // If this is a custom path, get the data from the customPath field
       if (item.dataPath === 'custom' && item.customPath) {
-        // Store the custom path but keep dataPath as 'custom' for the UI
         item.customPath = item.customPath.trim();
       } else {
-        // Clear customPath if not using a custom data path
         item.customPath = '';
       }
     });
     
-    // Preserve existing animations from items
     const layouts = game.settings.get(MODULE_ID, "layouts") || {};
     const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
     const currentItems = layouts[activeLayout] || [];
     
-    // Copy animations from existing items to new items
     newItems.forEach((item, index) => {
       if (currentItems[index] && currentItems[index].animations) {
         item.animations = currentItems[index].animations;
@@ -1302,10 +1280,8 @@ class OverlayWindowOpener extends FormApplication {
 
 
 function openOverlayWindow(windowId = "main") {
-  // Store window references globally
   window.overlayWindows = window.overlayWindows || {};
 
-  // Close existing window if open
   if (window.overlayWindows && window.overlayWindows[windowId] && !window.overlayWindows[windowId].closed) {
     window.overlayWindows[windowId].close();
   }
@@ -1376,10 +1352,8 @@ function openOverlayWindow(windowId = "main") {
   
   overlayWindow.document.close();
   
-  // Store reference to this specific window
   window.overlayWindows[windowId] = overlayWindow;
   
-  // For backward compatibility, also set the legacy global reference
   if (windowId === "main") {
     window.overlayWindow = overlayWindow;
   }
@@ -1769,7 +1743,6 @@ function updateOverlayWindow(windowId = "main") {
 
 
 Hooks.on("updateActor", (actor, update, options, userId) => {
-  // Check for relevant changes to trigger animations
   if (foundry.utils.hasProperty(update, "system.attributes.hp")) {
     triggerAnimationsByEvent(actor.id, "hpChange", {
       oldValue: actor._source.system.attributes.hp.value,
@@ -1777,7 +1750,6 @@ Hooks.on("updateActor", (actor, update, options, userId) => {
     });
   }
   
-  // Always update overlay window
   updateOverlayWindow();
 });
 
@@ -1825,7 +1797,6 @@ class ManageLayouts extends FormApplication {
     const layoutCount = Object.keys(layouts).length;
     
     if (!isPremium && layoutCount > 0) {
-      // Create a dialog to inform about premium feature
       new Dialog({
         title: "Premium Feature",
         content: `
@@ -1850,11 +1821,10 @@ class ManageLayouts extends FormApplication {
       return;
     }
     
-    // Continue with creating a new layout
     const layoutName = prompt("Enter a new layout name:");
     if (!layoutName) return;
 
-    const maxNameLength = 50; // Adjust this value as needed
+    const maxNameLength = 50; 
     if (layoutName.length > maxNameLength) {
       ui.notifications.error(`Layout name too long. Maximum length is ${maxNameLength} characters.`);
       return;
@@ -1908,8 +1878,7 @@ class ManageLayouts extends FormApplication {
   async _onDelete(event) {
     event.preventDefault();
     const layoutName = event.currentTarget.dataset.layout;
-    console.log("Deleting layout:", layoutName); // Debug logging
-    
+    console.log("Deleting layout:", layoutName);
     if (layoutName === "Default") {
       ui.notifications.warn("Cannot delete the Default layout.");
       return;
@@ -1927,7 +1896,6 @@ class ManageLayouts extends FormApplication {
       
       delete layouts[layoutName];
       
-      // Check if this was the active layout and reset to Default if needed
       const activeLayout = game.settings.get(MODULE_ID, "activeLayout");
       if (activeLayout === layoutName) {
         await game.settings.set(MODULE_ID, "activeLayout", "Default");
@@ -1979,7 +1947,6 @@ class ManageLayouts extends FormApplication {
             icon: '<i class="fas fa-download"></i>',
             label: "Download JSON",
             callback: () => {
-              // Create blob and trigger download
               const blob = new Blob([data], { type: "application/json" });
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a");
@@ -2013,7 +1980,6 @@ class ManageLayouts extends FormApplication {
     const layoutName = prompt("Enter the name for the imported layout:");
     if (!layoutName) return;
     
-    // Create a text area for pasting the JSON to handle special characters better
     const dialog = new Dialog({
       title: "Import Layout JSON",
       content: `
@@ -2032,28 +1998,23 @@ class ManageLayouts extends FormApplication {
             try {
               const json = html.find("#import-json").val().trim();
               
-              // Normalize the JSON string by removing any potential invisible characters
               const normalizedJson = json
                 .replace(/[\u0000-\u001F\u007F-\u009F\u00AD\u0600-\u0604\u070F\u17B4\u17B5\u200B-\u200F\u2028-\u202F\u2060-\u206F\uFEFF\uFFF0-\uFFFF]/g, "")
-                .replace(/\\"/g, '"')  // Handle escaped quotes that might be double-escaped
-                .replace(/\\\\/g, '\\'); // Handle double backslashes
+                .replace(/\\"/g, '"') 
+                .replace(/\\\\/g, '\\'); 
               
-              // Try to parse the JSON
               let importedLayout;
               try {
                 importedLayout = JSON.parse(normalizedJson);
               } catch (parseError) {
                 console.error("Parse error:", parseError);
-                // Try a more lenient approach if strict parsing fails
                 importedLayout = eval('(' + normalizedJson + ')');
               }
               
-              // Validate that we got an array
               if (!Array.isArray(importedLayout)) {
                 throw new Error("Imported JSON is not a valid layout array");
               }
               
-              // Update the layouts
               const layouts = game.settings.get(MODULE_ID, "layouts") || {};
               layouts[layoutName] = importedLayout;
               await game.settings.set(MODULE_ID, "layouts", layouts);
@@ -2080,7 +2041,7 @@ class ManageLayouts extends FormApplication {
   async _onDuplicate(event) {
     event.preventDefault();
     const originalLayoutName = event.currentTarget.dataset.layout;
-    console.log("Duplicating layout:", originalLayoutName); // Debug logging
+    console.log("Duplicating layout:", originalLayoutName); 
     
     try {
       const layouts = game.settings.get(MODULE_ID, "layouts") || {};
@@ -2090,22 +2051,19 @@ class ManageLayouts extends FormApplication {
         return;
       }
       
-      // Generate a new name for the duplicated layout
       let baseName = originalLayoutName;
       let copyNumber = 1;
       let newLayoutName = `${baseName} (Copy)`;
       
-      // Check if the name already exists and increment the copy number if needed
       while (layouts[newLayoutName]) {
         copyNumber++;
         newLayoutName = `${baseName} (Copy ${copyNumber})`;
       }
       
-      // Allow the user to customize the name
       const customName = prompt("Enter a name for the duplicated layout:", newLayoutName);
-      if (!customName) return; // User canceled
+      if (!customName) return; 
 
-      const maxNameLength = 50; // Adjust this value as needed
+      const maxNameLength = 50;
       if (customName.length > maxNameLength) {
         ui.notifications.error(`Layout name too long. Maximum length is ${maxNameLength} characters.`);
         return;
@@ -2116,10 +2074,8 @@ class ManageLayouts extends FormApplication {
         return;
       }
       
-      // Create a deep copy of the layout to avoid reference issues
       layouts[customName] = JSON.parse(JSON.stringify(layouts[originalLayoutName]));
       
-      // Save the new layout
       await game.settings.set(MODULE_ID, "layouts", layouts);
       ui.notifications.info(`Layout "${originalLayoutName}" duplicated as "${customName}".`);
       this.render();
@@ -2493,7 +2449,6 @@ class AnimationManager extends FormApplication {
   
 
   _renderInner(data) {
-    // Log the context data being passed to the template
     console.log("Animation Manager template data:", data);
     console.log("Actors available:", data.allActors?.length || 0);
     if (data.allActors?.length > 0) {
@@ -2502,7 +2457,6 @@ class AnimationManager extends FormApplication {
       console.log("No actors found in data");
     }
     
-    // Continue with normal rendering
     return super._renderInner(data);
   }
 
@@ -2512,7 +2466,6 @@ class AnimationManager extends FormApplication {
     const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
     
     if (!isPremium) {
-      // Show a dialog explaining premium features
       new Dialog({
         title: "Premium Feature",
         content: `
@@ -2534,7 +2487,6 @@ class AnimationManager extends FormApplication {
         default: "close"
       }).render(true);
       
-      // Prevent further initialization
       return null;
     }
     
@@ -2544,13 +2496,11 @@ class AnimationManager extends FormApplication {
   }
   
   getData() {
-    // Get all actors for the target actor dropdown
     const allActors = game.actors.contents.filter(a => a.type === "character" || a.hasPlayerOwner);
     
-    // Animation options separated by type
     return {
       item: this.item,
-      allActors: allActors, // Add actors list for the dropdown
+      allActors: allActors, 
       continuousAnimations: [
         {id: "none", name: "None"},
         {id: "hover", name: "Hover Up/Down"},
@@ -2594,7 +2544,6 @@ class AnimationManager extends FormApplication {
         {id: "hpHealing", name: "HP Healing"},
         {id: "criticalHit", name: "Critical Hit"},
         {id: "levelUp", name: "Level Up"},
-        // Add all the continuous animations as options too
         {id: "hover", name: "Hover Up/Down"},
         {id: "glitch", name: "Glitch"},
         {id: "heartbeat", name: "Heartbeat"},
@@ -2626,10 +2575,8 @@ class AnimationManager extends FormApplication {
     if (actorDropdown.length) {
       console.log("Populating actor dropdown");
       
-      // Get all actors
       const actors = game.actors.contents.filter(a => a.type === "character" || a.hasPlayerOwner);
       
-      // Add actor options
       actors.forEach(actor => {
         actorDropdown.append(new Option(actor.name, actor.id));
       });
@@ -2639,23 +2586,19 @@ class AnimationManager extends FormApplication {
       console.error("Actor dropdown not found in template!");
     }
     
-    // Use the provided html parameter, not a global variable
     html.find(".add-animation").click(this._onAddAnimation.bind(this));
     html.find(".remove-animation").click(this._onRemoveAnimation.bind(this));
     
     html.find("#set-entrance-animation").click(this._onSetEntranceAnimation.bind(this));
   
-    // Handle tab changes
     html.find('.tabs .item').click(ev => {
       const tab = $(ev.currentTarget).data('tab');
       this._tabs[0].activate(tab);
     });
     
-    // Handle condition type changes
     html.find("#trigger-event").change(this._onTriggerEventChange.bind(this, html));
     html.find("#hp-comparison").change(this._onHPComparisonChange.bind(this, html));
     
-    // Show/hide custom stat path field
     html.find("#trigger-stat").change(function() {
       if ($(this).val() === "custom") {
         html.find("#custom-stat-path").slideDown(200);
@@ -2665,23 +2608,19 @@ class AnimationManager extends FormApplication {
     });
   
     
-    // Use the provided html parameter, not a global variable
     html.find(".add-animation").click(this._onAddAnimation.bind(this));
     html.find(".remove-animation").click(this._onRemoveAnimation.bind(this));
     
     html.find("#set-entrance-animation").click(this._onSetEntranceAnimation.bind(this));
 
-    // Handle tab changes
     html.find('.tabs .item').click(ev => {
       const tab = $(ev.currentTarget).data('tab');
       this._tabs[0].activate(tab);
     });
     
-    // Handle condition type changes
     html.find("#trigger-event").change(this._onTriggerEventChange.bind(this, html));
     html.find("#hp-comparison").change(this._onHPComparisonChange.bind(this, html));
     
-    // Show/hide custom stat path field
     html.find("#trigger-stat").change(function() {
       if ($(this).val() === "custom") {
         html.find("#custom-stat-path").slideDown(200);
@@ -2694,10 +2633,8 @@ class AnimationManager extends FormApplication {
   _onTriggerEventChange(html, event) {
     const eventType = $(event.currentTarget).val();
     
-    // Hide all trigger-specific conditions
     html.find('.trigger-condition').hide();
     
-    // Show the specific condition for this event type
     html.find(`.${eventType}-condition`).show();
   }
   
@@ -2718,31 +2655,24 @@ class AnimationManager extends FormApplication {
     const duration = Number(form.find("#entrance-duration").val()) || 0.5;
     const delay = Number(form.find("#entrance-delay").val()) || 0;
     
-    // Update the item directly
     this.item.entranceAnimation = animation;
     this.item.entranceDuration = duration;
     this.item.entranceDelay = delay;
     
-    // Save the changes
     await this._saveItemAnimations();
     
-    // Provide feedback
     ui.notifications.info("Entrance animation updated");
     
-    // Re-render the form
     this.render();
   }
   
   async _onAddAnimation(event) {
     event.preventDefault();
     
-    // Get the html element where the form is located
     const html = $(event.currentTarget).closest('form');
     
-    // Get the animation type based on which tab/button was clicked
     const type = $(event.currentTarget).data('type');
     
-    // Get the selected animation based on the type
     const animation = html.find(`#${type}-animation`).val();
     
     if (!animation || animation === "none") return;
@@ -2750,11 +2680,10 @@ class AnimationManager extends FormApplication {
     let triggerCondition = null;
     if (type === "trigger") {
       const eventType = html.find("#trigger-event").val();
-      const targetActor = html.find("#trigger-actor").val() || null;  // Get the target actor
+      const targetActor = html.find("#trigger-actor").val() || null;  
       const targetStat = html.find("#trigger-stat").val();
       let dataPath = "";
       
-      // Set the data path based on the selected stat
       switch (targetStat) {
         case "hp":
           dataPath = "system.attributes.hp.value";
@@ -2772,7 +2701,7 @@ class AnimationManager extends FormApplication {
       
       triggerCondition = {
         event: eventType,
-        targetActor: targetActor,  // Store the target actor
+        targetActor: targetActor,  
         dataPath: dataPath
       };
       
@@ -2786,7 +2715,6 @@ class AnimationManager extends FormApplication {
       }
     }
     
-    // Create the new animation entry
     const newAnimation = {
       type: type,
       animation: animation,
@@ -2795,17 +2723,13 @@ class AnimationManager extends FormApplication {
       triggerCondition: triggerCondition
     };
     
-    // Add to the animations array
     const activeAnimations = this.item.animations || [];
     activeAnimations.push(newAnimation);
     
-    // Update the item and re-render
     this.item.animations = activeAnimations;
     
-    // Save to the module settings
     await this._saveItemAnimations();
     
-    // Re-render the form
     this.render();
   }
   
@@ -2814,10 +2738,8 @@ class AnimationManager extends FormApplication {
     const type = $(event.currentTarget).data('type');
     const index = Number($(event.currentTarget).data('index'));
     
-    // Get all animations of the specified type
     const typeAnimations = this.item.animations.filter(a => a.type === type);
     
-    // Find the overall index of the animation to remove
     const animations = this.item.animations;
     let removeIndex = -1;
     let typeCount = 0;
@@ -2833,10 +2755,8 @@ class AnimationManager extends FormApplication {
     }
     
     if (removeIndex >= 0) {
-      // Remove the animation
       this.item.animations.splice(removeIndex, 1);
       
-      // Save and re-render
       await this._saveItemAnimations();
       this.render();
     }
@@ -2846,34 +2766,27 @@ class AnimationManager extends FormApplication {
     const layouts = game.settings.get(MODULE_ID, "layouts") || {};
     const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
     
-    // Update the item in the layout
     layouts[activeLayout][this.itemIndex].animations = this.item.animations;
     
-    // Save to settings
     await game.settings.set(MODULE_ID, "layouts", layouts);
     
-    // Update the parent if it exists
     if (this.parentConfig) {
       this.parentConfig.render();
     }
     
-    // Update the overlay if it's open
     if (window.overlayWindow && !window.overlayWindow.closed) {
       updateOverlayWindow();
     }
   }
   
   async _updateObject(event, formData) {
-    // Process form data to update animations
-    // Extract animation durations and delays from form data
     for (const [key, value] of Object.entries(formData)) {
       const parts = key.split('.');
-      if (parts.length === 3) {  // Format: type.index.property
+      if (parts.length === 3) {  
         const type = parts[0];
         const index = Number(parts[1]);
         const property = parts[2];
         
-        // Find the animation in our array
         const animations = this.item.animations || [];
         let targetIndex = -1;
         let typeCount = 0;
@@ -2889,13 +2802,11 @@ class AnimationManager extends FormApplication {
         }
         
         if (targetIndex >= 0) {
-          // Update the property
           this.item.animations[targetIndex][property] = Number(value);
         }
       }
     }
     
-    // Save changes
     await this._saveItemAnimations();
   }
 }
@@ -2962,21 +2873,15 @@ function applyAllContinuousAnimations(animations, element) {
   
   console.log("Applying continuous animations:", animations);
   
-  // Multiple animations need a special approach
   if (animations.length > 1) {
-    // Add a special attribute to track animations
     element.setAttribute('data-animations', JSON.stringify(animations.map(a => a.animation)));
     
-    // For multi-element types, we need different animation handling
     if (element.tagName.toLowerCase() === 'img') {
-      // For images
       applyMultipleImageAnimations(animations, element);
     } else {
-      // For text and other elements
       applyMultipleTextAnimations(animations, element);
     }
   } else if (animations.length === 1) {
-    // For a single animation, use the simpler approach
     const anim = animations[0];
     element.classList.add(anim.animation);
     element.style.animationDelay = `${anim.delay}s`;
@@ -2986,17 +2891,14 @@ function applyAllContinuousAnimations(animations, element) {
 }
 
 function applyMultipleTextAnimations(animations, element) {
-  // Insert a style element in the overlay window for this specific element
   const styleId = `style-${Math.random().toString(36).substring(2, 9)}`;
   element.setAttribute('data-style-id', styleId);
   
   const styleEl = window.overlayWindow.document.createElement('style');
   styleEl.id = styleId;
   
-  // Create keyframes that combine all animations
   let transformProperties = [];
   
-  // Add effects based on the animation types
   if (animations.some(a => a.animation === 'hover')) {
     transformProperties.push('translateY(-5px)');
   }
@@ -3010,7 +2912,6 @@ function applyMultipleTextAnimations(animations, element) {
     transformProperties.push('rotate(3deg)');
   }
   
-  // Create a custom animation for this element
   styleEl.textContent = `
     @keyframes combined-${styleId} {
       0% { transform: translateX(-50%); }
@@ -3027,17 +2928,14 @@ function applyMultipleTextAnimations(animations, element) {
 }
 
 function applyMultipleImageAnimations(animations, element) {
-  // Insert a style element in the overlay window for this specific element
   const styleId = `style-${Math.random().toString(36).substring(2, 9)}`;
   element.setAttribute('data-style-id', styleId);
   
   const styleEl = window.overlayWindow.document.createElement('style');
   styleEl.id = styleId;
   
-  // Create keyframes that combine all animations
   let transformProperties = [];
   
-  // Add effects based on the animation types
   if (animations.some(a => a.animation === 'hover')) {
     transformProperties.push('translateY(-5px)');
   }
@@ -3051,7 +2949,6 @@ function applyMultipleImageAnimations(animations, element) {
     transformProperties.push('rotate(3deg)');
   }
   
-  // Create a custom animation for this element - no translateX(-50%) for images
   styleEl.textContent = `
     @keyframes combined-${styleId} {
       0% { transform: translate(0, 0); }
@@ -3103,12 +3000,10 @@ function triggerHPAnimation(actorId, animationType, oldValue, newValue) {
   const container = window.overlayWindow.document.getElementById("overlay-container");
   if (!container) return;
   
-  // Find HP elements associated with this actor
   const layouts = game.settings.get(MODULE_ID, "layouts") || {};
   const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
   const items = layouts[activeLayout] || [];
   
-  // Find HP items for this actor
   const hpItems = items.filter(item => 
     item.type === "data" && 
     item.actorId === actorId && 
@@ -3117,43 +3012,34 @@ function triggerHPAnimation(actorId, animationType, oldValue, newValue) {
   
   if (!hpItems.length) return;
   
-  // Apply temporary animation class to these elements
   const doc = window.overlayWindow.document;
   const elements = Array.from(doc.querySelectorAll(".overlay-item"));
   
   hpItems.forEach(hpItem => {
-    // Find matching element in the DOM
     const matchingElement = elements.find(el => {
-      // Compare position or other attributes to identify the right element
       return el.style.top === `${hpItem.top}px` && 
              el.style.left === `${hpItem.left}px` &&
              el.textContent.includes(String(newValue));
     });
     
     if (matchingElement) {
-      // Remove any existing triggered animations
       matchingElement.classList.remove("hp-damage", "hp-healing");
       
-      // Force reflow
       void matchingElement.offsetWidth;
       
-      // Add new animation class
       matchingElement.classList.add(`hp-${animationType}`);
       
-      // Add data for potential effects based on damage amount
       const changeAmount = Math.abs(newValue - oldValue);
       matchingElement.dataset.changeAmount = changeAmount;
       
-      // Remove the class after animation completes
       setTimeout(() => {
         matchingElement.classList.remove(`hp-${animationType}`);
         delete matchingElement.dataset.changeAmount;
-      }, 2000); // Adjust based on animation duration
+      }, 2000); 
     }
   });
 }
 
-// Updated triggerAnimationsByEvent function
 function triggerAnimationsByEvent(actorId, eventType, context) {
   console.log("Attempting to trigger animations for event", eventType, "on actor", actorId, "context", context);
   
@@ -3226,13 +3112,11 @@ function triggerAnimationsByEvent(actorId, eventType, context) {
   }
 }
 
-// Improved version of evaluateTriggerCondition
 function evaluateTriggerCondition(condition, context) {
   console.log("Evaluating trigger condition", condition, "with context", context);
   
   if (!condition) return false;
   
-  // Map of event types to their condition checks
   const conditionChecks = {
     "hpChange": () => {
       if (condition.comparison === "decrease" && context.newValue < context.oldValue) return true;
@@ -3242,7 +3126,6 @@ function evaluateTriggerCondition(condition, context) {
     },
     
     "statChange": () => {
-      // For future implementation of general stat changes
       const oldValue = context.oldValue || 0;
       const newValue = context.newValue || 0;
       
@@ -3264,8 +3147,7 @@ function evaluateTriggerCondition(condition, context) {
       return context.statusEffect !== undefined;
     }
   };
-  
-  // Use the appropriate check for this event type
+
   if (conditionChecks[condition.event]) {
     return conditionChecks[condition.event]();
   }
@@ -3273,11 +3155,9 @@ function evaluateTriggerCondition(condition, context) {
   return false;
 }
 
-// Enhanced applyTriggeredAnimation with support for all animation types
 function applyTriggeredAnimation(element, animation) {
   console.log("Applying triggered animation", animation, "to element", element);
-  
-  // Store original properties to restore later
+
   const originalStyles = {
     color: element.style.color,
     animationName: element.style.animationName,
@@ -3286,36 +3166,36 @@ function applyTriggeredAnimation(element, animation) {
     animationIterationCount: element.style.animationIterationCount
   };
   
-  // Keep track of added classes to remove later
+
   const addedClasses = [];
   
-  // Remove any existing triggered animation classes
+
   element.classList.remove("hp-damage", "hp-healing");
   
-  // Apply the specific animation class
+
   if (animation.animation) {
     element.classList.add(animation.animation);
     addedClasses.push(animation.animation);
   }
   
-  // Animation-specific effects
+  
   switch (animation.animation) {
     case "hpDamage":
       element.classList.add("hp-damage");
-      element.style.color = "#ff3333"; // Red for damage
+      element.style.color = "#ff3333"; 
       addedClasses.push("hp-damage");
       break;
       
     case "hpHealing":
       element.classList.add("hp-healing");
-      element.style.color = "#33ff33"; // Green for healing
+      element.style.color = "#33ff33"; 
       addedClasses.push("hp-healing");
       break;
       
     default:
-      // For standard animations, set animation properties
+
       if (window.standardAnimations && window.standardAnimations.includes(animation.animation)) {
-        // Set the animation to run only once with the specified duration
+   
         element.style.animationName = animation.animation;
         element.style.animationDuration = `${animation.duration || 1.5}s`;
         element.style.animationDelay = "0s";
@@ -3325,16 +3205,15 @@ function applyTriggeredAnimation(element, animation) {
       break;
   }
   
-  // Force a reflow to ensure animation plays
+ 
   void element.offsetWidth;
   
-  // Schedule cleanup after animation duration
+
   const duration = animation.duration || 1.5;
   setTimeout(() => {
-    // Remove added classes
+
     addedClasses.forEach(cls => element.classList.remove(cls));
     
-    // Restore original styles
     for (const [prop, value] of Object.entries(originalStyles)) {
       if (value) element.style[prop] = value;
     }
@@ -3343,38 +3222,36 @@ function applyTriggeredAnimation(element, animation) {
   }, duration * 1000);
 }
 
-// Create standard animation list for reference
 window.standardAnimations = [
   "hover", "glitch", "heartbeat", "rotate", "wiggle", "pulse", "slide",
   "flash", "shake", "shimmer", "floatSway", "textGlow", "breathe",
   "colorShift", "jitter", "emphasis", "ripple", "blinkingCursor", "backdropPulse"
 ];
 
-// Update the actor hook to send more context in trigger events
+
 Hooks.on("updateActor", (actor, update, options, userId) => {
-  // Check for HP changes
+
   if (foundry.utils.hasProperty(update, "system.attributes.hp")) {
     const oldValue = actor._source.system.attributes.hp.value || 0;
     const newValue = actor.system.attributes.hp.value || 0;
     
     console.log(`HP changed for actor ${actor.id}: ${oldValue} → ${newValue}`);
     
-    // Trigger animations based on HP change
+
     triggerAnimationsByEvent(actor.id, "hpChange", {
       oldValue: oldValue,
       newValue: newValue,
       dataPath: "system.attributes.hp.value"
     });
   }
-  
-  // Check for level changes
+
   if (foundry.utils.hasProperty(update, "system.details.level")) {
     const oldValue = actor._source.system.details.level || 0;
     const newValue = actor.system.details.level || 0;
     
     console.log(`Level changed for actor ${actor.id}: ${oldValue} → ${newValue}`);
     
-    // Trigger animations based on level change
+  
     triggerAnimationsByEvent(actor.id, "levelUp", {
       oldValue: oldValue,
       newValue: newValue,
@@ -3382,9 +3259,7 @@ Hooks.on("updateActor", (actor, update, options, userId) => {
     });
   }
   
-  // Add more property checks here for other stats you want to monitor
-  
-  // Always update overlay window
+ 
   updateOverlayWindow();
 });
 
@@ -3401,7 +3276,7 @@ function evaluateTriggerCondition(condition, context) {
       break;
     
     case "statChange":
-      // For future implementation of general stat changes
+   
       break;
       
     case "levelUp":
@@ -3420,41 +3295,38 @@ function evaluateTriggerCondition(condition, context) {
 function applyTriggeredAnimation(element, animation) {
   console.log("Applying triggered animation", animation, "to element", element);
   
-  // Remove any existing animation classes from previous triggers
+ 
   element.classList.remove("hp-damage", "hp-healing");
   
-  // Store original properties to restore later
+ 
   const originalColor = element.style.color;
   const originalClasses = [...element.classList];
   
-  // Apply the specific animation class
+  
   element.classList.add(animation.animation);
   
-  // Animation-specific effects
   switch (animation.animation) {
     case "hpDamage":
       element.classList.add("hp-damage");
-      element.style.color = "#ff3333"; // Red for damage
+      element.style.color = "#ff3333"; 
       break;
     case "hpHealing":
       element.classList.add("hp-healing");
-      element.style.color = "#33ff33"; // Green for healing
+      element.style.color = "#33ff33"; 
       break;
     default:
-      // If it's a standard animation from the continuous list, apply that
       if (window.standardAnimations && window.standardAnimations.includes(animation.animation)) {
         element.classList.add(animation.animation);
       }
       break;
   }
   
-  // Force a reflow to ensure animation plays
   void element.offsetWidth;
   
-  // Schedule cleanup after animation duration
+  
   const duration = animation.duration || 1.5;
   setTimeout(() => {
-    // Reset to original state
+
     element.classList = originalClasses.join(' ');
     element.style.color = originalColor;
     
@@ -3572,7 +3444,7 @@ class OverlayWindowManager extends FormApplication {
     delete windows[windowId];
     await game.settings.set(MODULE_ID, "overlayWindows", windows);
     
-    // Close the window if it's open
+ 
     if (window.overlayWindows && window.overlayWindows[windowId]) {
       window.overlayWindows[windowId].close();
       delete window.overlayWindows[windowId];
@@ -3615,7 +3487,7 @@ class OverlayWindowConfig extends FormApplication {
   }
   
   _getSlideshowOptions() {
-    // Create fake slideshow options - you'll need to implement actual slideshow presets
+  
     return [
       { id: "none", name: "No Slideshow" },
       { id: "main", name: "Main Slideshow" }
@@ -3638,7 +3510,6 @@ class OverlayWindowConfig extends FormApplication {
     windows[this.windowId][field] = value;
     await game.settings.set(MODULE_ID, "overlayWindows", windows);
     
-    // Update the window if it's open
     if (window.overlayWindows && window.overlayWindows[this.windowId]) {
       updateOverlayWindow(this.windowId);
     }
