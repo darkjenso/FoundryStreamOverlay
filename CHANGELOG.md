@@ -1,13 +1,17 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
-## [3.3.0] - 2025-03-20
 
-### New Premium Feature
-- Multiple Green Screens
-   - Premium users can now create multiple green screens and place different layouts or slideshows on as needed.
+## [3.3.1] - 2025-03-21
 
-## [3.2.2] - 2025-03-20
+### Bug Fixes
+- Fixed issue where non-premium users could create more than one window
+- Resolved layout refresh issues when creating/editing layouts
+- Changes made to layouts now immediately update in all open windows
+- Layout dropdown in configuration panel now updates in real-time when layouts are created/modified
+- Improved performance when making changes to layouts in multiple windows
+
+## [3.2.1] - 2025-03-20
 
 ### New
 - Added a "custom" data field for other details to be tracked or from other game systems. Unsure if working, will need testing.

@@ -960,8 +960,18 @@ class OverlayConfig extends FormApplication {
     
     await this._updateObject(event, formData);
     
+    const windows = game.settings.get(MODULE_ID, "overlayWindows") || {};
+    
     if (window.overlayWindow && !window.overlayWindow.closed) {
-      updateOverlayWindow();
+      updateOverlayWindow("main");
+    }
+    
+    if (window.overlayWindows) {
+      for (const [windowId, windowConfig] of Object.entries(windows)) {
+        if (window.overlayWindows[windowId] && !window.overlayWindows[windowId].closed) {
+          updateOverlayWindow(windowId);
+        }
+      }
     }
     
     this._showAutoSaveFeedback();
@@ -1823,7 +1833,7 @@ class ManageLayouts extends FormApplication {
     
     const layoutName = prompt("Enter a new layout name:");
     if (!layoutName) return;
-
+  
     const maxNameLength = 50; 
     if (layoutName.length > maxNameLength) {
       ui.notifications.error(`Layout name too long. Maximum length is ${maxNameLength} characters.`);
@@ -1838,6 +1848,13 @@ class ManageLayouts extends FormApplication {
     layouts[layoutName] = [];
     await game.settings.set(MODULE_ID, "layouts", layouts);
     ui.notifications.info(`Layout "${layoutName}" created.`);
+    
+    for (const app of Object.values(ui.windows)) {
+      if (app instanceof OverlayConfig) {
+        app.render();
+      }
+    }
+    
     this.render();
   }
   async _onActivate(event) {
@@ -1854,7 +1871,7 @@ class ManageLayouts extends FormApplication {
     const oldName = event.currentTarget.dataset.layout;
     let newName = prompt("Enter a new name for this layout:", oldName);
     if (!newName || newName === oldName) return;
-
+  
     const maxNameLength = 50;
     if (newName.length > maxNameLength) {
       ui.notifications.error(`Layout name too long. Maximum length is ${maxNameLength} characters.`);
@@ -1872,13 +1889,21 @@ class ManageLayouts extends FormApplication {
       await game.settings.set(MODULE_ID, "activeLayout", newName);
     }
     await game.settings.set(MODULE_ID, "layouts", layouts);
+    
+    // Refresh any open config windows
+    for (const app of Object.values(ui.windows)) {
+      if (app instanceof OverlayConfig) {
+        app.render();
+      }
+    }
+    
     this.render();
   }
 
   async _onDelete(event) {
     event.preventDefault();
     const layoutName = event.currentTarget.dataset.layout;
-    console.log("Deleting layout:", layoutName);
+    
     if (layoutName === "Default") {
       ui.notifications.warn("Cannot delete the Default layout.");
       return;
@@ -1904,6 +1929,14 @@ class ManageLayouts extends FormApplication {
       
       await game.settings.set(MODULE_ID, "layouts", layouts);
       ui.notifications.info(`Layout "${layoutName}" deleted.`);
+      
+      // Refresh any open config windows
+      for (const app of Object.values(ui.windows)) {
+        if (app instanceof OverlayConfig) {
+          app.render();
+        }
+      }
+      
       this.render();
     } catch (error) {
       console.error("Failed to delete layout:", error);
@@ -2019,6 +2052,14 @@ class ManageLayouts extends FormApplication {
               layouts[layoutName] = importedLayout;
               await game.settings.set(MODULE_ID, "layouts", layouts);
               ui.notifications.info(`Imported layout: ${layoutName}`);
+              
+              // Refresh any open config windows
+              for (const app of Object.values(ui.windows)) {
+                if (app instanceof OverlayConfig) {
+                  app.render();
+                }
+              }
+              
               this.render();
             } catch (e) {
               console.error("Import error:", e);
@@ -2041,7 +2082,6 @@ class ManageLayouts extends FormApplication {
   async _onDuplicate(event) {
     event.preventDefault();
     const originalLayoutName = event.currentTarget.dataset.layout;
-    console.log("Duplicating layout:", originalLayoutName); 
     
     try {
       const layouts = game.settings.get(MODULE_ID, "layouts") || {};
@@ -2062,7 +2102,7 @@ class ManageLayouts extends FormApplication {
       
       const customName = prompt("Enter a name for the duplicated layout:", newLayoutName);
       if (!customName) return; 
-
+  
       const maxNameLength = 50;
       if (customName.length > maxNameLength) {
         ui.notifications.error(`Layout name too long. Maximum length is ${maxNameLength} characters.`);
@@ -2078,6 +2118,14 @@ class ManageLayouts extends FormApplication {
       
       await game.settings.set(MODULE_ID, "layouts", layouts);
       ui.notifications.info(`Layout "${originalLayoutName}" duplicated as "${customName}".`);
+      
+      // Refresh any open config windows
+      for (const app of Object.values(ui.windows)) {
+        if (app instanceof OverlayConfig) {
+          app.render();
+        }
+      }
+      
       this.render();
     } catch (error) {
       console.error("Duplication error:", error);
@@ -3365,7 +3413,8 @@ class OverlayWindowManager extends FormApplication {
     const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
     const windows = game.settings.get(MODULE_ID, "overlayWindows");
     
-    if (!isPremium && Object.keys(windows).length > 1) {
+    // Check if non-premium user is trying to create a second window
+    if (!isPremium && Object.keys(windows).length >= 1) {
       new Dialog({
         title: "Premium Feature",
         content: `
