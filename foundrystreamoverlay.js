@@ -1021,15 +1021,19 @@ class OverlayConfig extends FormApplication {
       entranceDelay: 0,
       animations: [] 
     };
-
+  
     for (let i = 0; i < current.length; i++) {
       current[i].order = current[i].order + 1;
     }
-
+  
     current.unshift(newItem);
-
+  
     layouts[activeLayout] = current;
     await game.settings.set(MODULE_ID, "layouts", layouts);
+    
+    // Update all open windows
+    this._updateAllWindows();
+    
     this.render();
   }
 
@@ -1038,7 +1042,7 @@ class OverlayConfig extends FormApplication {
     const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
     const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
     const current = layouts[activeLayout] || [];
-
+  
     const newItem = {
       type: "image",
       imagePath: "",
@@ -1055,7 +1059,7 @@ class OverlayConfig extends FormApplication {
       entranceDelay: 0,
       animations: [] 
     };
-
+  
     for (let i = 0; i < current.length; i++) {
       current[i].order = current[i].order + 1;
     }
@@ -1064,6 +1068,10 @@ class OverlayConfig extends FormApplication {
     
     layouts[activeLayout] = current;
     await game.settings.set(MODULE_ID, "layouts", layouts);
+    
+    // Update all open windows
+    this._updateAllWindows();
+    
     this.render();
   }
 
@@ -1098,11 +1106,15 @@ class OverlayConfig extends FormApplication {
     for (let i = 0; i < current.length; i++) {
       current[i].order = current[i].order + 1;
     }
-
+  
     current.unshift(newItem);
     
     layouts[activeLayout] = current;
     await game.settings.set(MODULE_ID, "layouts", layouts);
+    
+    // Update all open windows
+    this._updateAllWindows();
+    
     this.render();
   }
 
@@ -1115,6 +1127,10 @@ class OverlayConfig extends FormApplication {
     current.splice(index, 1);
     layouts[activeLayout] = current;
     await game.settings.set(MODULE_ID, "layouts", layouts);
+    
+    // Update all open windows
+    this._updateAllWindows();
+    
     this.render();
   }
 
@@ -1453,83 +1469,106 @@ function updateOverlayWindow(windowId = "main") {
       if (item.hide) return null;
       
       let textValue;
-      if (item.dataPath === "name") {
-        textValue = actor.name;
-      } else if (item.dataPath === "hp") {
-        const currentHP = foundry.utils.getProperty(actor, 'system.attributes.hp.value');
-        const maxHP = foundry.utils.getProperty(actor, 'system.attributes.hp.max');
-        textValue = `${currentHP} / ${maxHP}`;
-      } else if (item.dataPath === "system.details.class") {
-        const classItems = actor.items?.filter(item => item.type === "class");
       
-        if (classItems && classItems.length > 0) {
-          if (classItems.length === 1) {
-            textValue = classItems[0].name;
+      try {
+        // Special case handling for common data paths
+        if (item.dataPath === "name") {
+          textValue = actor.name;
+        } else if (item.dataPath === "hp") {
+          const currentHP = foundry.utils.getProperty(actor, 'system.attributes.hp.value');
+          const maxHP = foundry.utils.getProperty(actor, 'system.attributes.hp.max');
+          textValue = `${currentHP} / ${maxHP}`;
+        } else if (item.dataPath === "system.details.class") {
+          // Complex class logic
+          const classItems = actor.items?.filter(item => item.type === "class");
+        
+          if (classItems && classItems.length > 0) {
+            if (classItems.length === 1) {
+              textValue = classItems[0].name;
+            } else {
+              textValue = classItems.map(item => {
+                const level = foundry.utils.getProperty(item, 'system.levels') || "";
+                return `${item.name} ${level}`.trim();
+              }).join('/');
+            }
           } else {
-            textValue = classItems.map(item => {
-              const level = foundry.utils.getProperty(item, 'system.levels') || "";
-              return `${item.name} ${level}`.trim();
-            }).join('/');
+            const classesVal = foundry.utils.getProperty(actor, 'system.classes');
+            const detailClassesVal = foundry.utils.getProperty(actor, 'system.details.classes');
+            const classVal = foundry.utils.getProperty(actor, 'system.details.class');
+            const classNameVal = foundry.utils.getProperty(actor, 'system.details.className');
+            
+            if (classesVal && typeof classesVal === 'object') {
+              const classEntries = Object.entries(classesVal);
+              
+              if (classEntries.length > 0) {
+                if (classEntries.length === 1) {
+                  textValue = classEntries[0][0];
+                } else {
+                  textValue = classEntries.map(([className, classData]) => {
+                    const level = classData.levels || "";
+                    return `${className} ${level}`.trim();
+                  }).join('/');
+                }
+              } else {
+                textValue = 'N/A';
+              }
+            } 
+            else if (detailClassesVal && typeof detailClassesVal === 'object') {
+              const classEntries = Object.entries(detailClassesVal);
+              
+              if (classEntries.length > 0) {
+                if (classEntries.length === 1) {
+                  textValue = classEntries[0][0];
+                } else {
+                  textValue = classEntries.map(([className, classData]) => {
+                    const level = classData.levels || "";
+                    return `${className} ${level}`.trim();
+                  }).join('/');
+                }
+              } else {
+                textValue = 'N/A';
+              }
+            } 
+            else if (classVal) {
+              textValue = classVal;
+            } else if (classNameVal) {
+              textValue = classNameVal;
+            } else {
+              textValue = 'N/A';
+            }
           }
-        } else {
-          const classesVal = foundry.utils.getProperty(actor, 'system.classes');
-          const detailClassesVal = foundry.utils.getProperty(actor, 'system.details.classes');
-          const classVal = foundry.utils.getProperty(actor, 'system.details.class');
-          const classNameVal = foundry.utils.getProperty(actor, 'system.details.className');
+        } else if (item.dataPath === "system.details.race") {
+          textValue = foundry.utils.getProperty(actor, 'system.details.race') || 
+                     foundry.utils.getProperty(actor, 'system.race') || 'N/A';
+        } else if (item.dataPath === "custom" && item.customPath) {
+          // Handle custom data path
+          const path = item.customPath.trim();
+          textValue = path ? foundry.utils.getProperty(actor, path) : 'N/A';
           
-          if (classesVal && typeof classesVal === 'object') {
-            const classEntries = Object.entries(classesVal);
-            
-            if (classEntries.length > 0) {
-              if (classEntries.length === 1) {
-                textValue = classEntries[0][0];
-              } else {
-                textValue = classEntries.map(([className, classData]) => {
-                  const level = classData.levels || "";
-                  return `${className} ${level}`.trim();
-                }).join('/');
-              }
-            } else {
-              textValue = 'N/A';
+          // Convert objects to readable format
+          if (textValue && typeof textValue === 'object') {
+            try {
+              textValue = JSON.stringify(textValue).slice(0, 50);
+              if (textValue.length === 50) textValue += '...';
+            } catch (e) {
+              textValue = '[Object]';
             }
-          } 
-          else if (detailClassesVal && typeof detailClassesVal === 'object') {
-            const classEntries = Object.entries(detailClassesVal);
-            
-            if (classEntries.length > 0) {
-              if (classEntries.length === 1) {
-                textValue = classEntries[0][0];
-              } else {
-                textValue = classEntries.map(([className, classData]) => {
-                  const level = classData.levels || "";
-                  return `${className} ${level}`.trim();
-                }).join('/');
-              }
-            } else {
-              textValue = 'N/A';
-            }
-          } 
-          else if (classVal) {
-            textValue = classVal;
-          } else if (classNameVal) {
-            textValue = classNameVal;
-          } else {
+          }
+          
+          // Ensure undefined or null values become 'N/A'
+          if (textValue === null || textValue === undefined) {
             textValue = 'N/A';
           }
+        } else {
+          // Standard data path handling
+          textValue = foundry.utils.getProperty(actor, item.dataPath);
         }
-      
-      } else if (item.dataPath === "system.details.race") {
-        textValue = foundry.utils.getProperty(actor, 'system.details.race') || 
-                   foundry.utils.getProperty(actor, 'system.race') || 'N/A';
-
-      }else if (item.dataPath === "custom" && item.customPath) {
-        textValue = foundry.utils.getProperty(actor, item.customPath);
-        if (textValue === null || textValue === undefined) textValue = "N/A";
-      }
-       else {
-        textValue = foundry.utils.getProperty(actor, item.dataPath);
+      } catch (error) {
+        console.error(`Error getting data for ${item.dataPath || item.customPath}:`, error);
+        textValue = 'Error';
       }
       
+      // Add label if configured
       if (item.addLabel) {
         const labelMap = {
           "name": "Name",
@@ -1545,19 +1584,27 @@ function updateOverlayWindow(windowId = "main") {
           "system.abilities.con.value": "CON",
           "system.abilities.int.value": "INT",
           "system.abilities.wis.value": "WIS",
-          "system.abilities.cha.value": "CHA"
+          "system.abilities.cha.value": "CHA",
+          "custom": item.customPath || "Custom"
         };
       
         const label = labelMap[item.dataPath] || '';
         textValue = label ? `${label}: ${textValue}` : textValue;
       }
       
+      // Final check for null values
       if (textValue === null || textValue === undefined) textValue = "N/A";
+      
+      // Convert to string if necessary
+      if (typeof textValue !== 'string') {
+        textValue = String(textValue);
+      }
 
       return {
         type: "data",
         actorId: item.actorId,
         dataPath: item.dataPath,
+        customPath: item.customPath || "",
         data: textValue,
         top: item.top ?? 0,
         left: item.left ?? 0,
@@ -1677,6 +1724,11 @@ function updateOverlayWindow(windowId = "main") {
       div.style.cssText = styleText;
       div.textContent = item.type === "static" ? item.content : item.data;
       
+      // Store data path for debugging purposes
+      if (item.type === "data") {
+        div.dataset.path = item.dataPath === "custom" ? item.customPath : item.dataPath;
+      }
+      
       element = div;
       
       if (isPremium && item.animations && item.animations.length > 0) {
@@ -1750,7 +1802,6 @@ function updateOverlayWindow(windowId = "main") {
     window.overlayWindow.document.body.style.backgroundColor = bg;
   }
 }
-
 
 Hooks.on("updateActor", (actor, update, options, userId) => {
   if (foundry.utils.hasProperty(update, "system.attributes.hp")) {
@@ -2213,29 +2264,35 @@ class SlideshowConfig extends FormApplication {
   async _onMoveUp(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
-    const data = game.settings.get(MODULE_ID, "slideshow") || { 
-      list: [], 
-      random: false,
-      targetWindow: "main" 
-    };
+    const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
+    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const current = layouts[activeLayout] || [];
     if (index > 0) {
-      [data.list[index - 1], data.list[index]] = [data.list[index], data.list[index - 1]];
-      await game.settings.set(MODULE_ID, "slideshow", data);
+      [current[index - 1], current[index]] = [current[index], current[index - 1]];
+      layouts[activeLayout] = current;
+      await game.settings.set(MODULE_ID, "layouts", layouts);
+      
+      // Update all open windows
+      this._updateAllWindows();
+      
       this.render();
     }
   }
-
+  
   async _onMoveDown(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
-    const data = game.settings.get(MODULE_ID, "slideshow") || { 
-      list: [], 
-      random: false,
-      targetWindow: "main" 
-    };
-    if (index < data.list.length - 1) {
-      [data.list[index], data.list[index + 1]] = [data.list[index + 1], data.list[index]];
-      await game.settings.set(MODULE_ID, "slideshow", data);
+    const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
+    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const current = layouts[activeLayout] || [];
+    if (index < current.length - 1) {
+      [current[index], current[index + 1]] = [current[index + 1], current[index]];
+      layouts[activeLayout] = current;
+      await game.settings.set(MODULE_ID, "layouts", layouts);
+      
+      // Update all open windows
+      this._updateAllWindows();
+      
       this.render();
     }
   }
@@ -2481,6 +2538,22 @@ class SlideshowConfig extends FormApplication {
     await game.settings.set(MODULE_ID, "slideshow", data);
     ui.notifications.info("Slideshow configuration saved.");
   }
+
+  _updateAllWindows() {
+    if (window.overlayWindow && !window.overlayWindow.closed) {
+      updateOverlayWindow("main");
+    }
+    
+    const windows = game.settings.get(MODULE_ID, "overlayWindows") || {};
+    if (window.overlayWindows) {
+      for (const [windowId, windowConfig] of Object.entries(windows)) {
+        if (window.overlayWindows[windowId] && !window.overlayWindows[windowId].closed) {
+          updateOverlayWindow(windowId);
+        }
+      }
+    }
+  }
+
 }
 
 class AnimationManager extends FormApplication {
