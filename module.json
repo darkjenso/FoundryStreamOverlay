@@ -1,8 +1,8 @@
 {
   "id": "foundrystreamoverlay",
   "title": "Foundry Stream Overlay",
-  "description": "This module creates a green‐screen overlay with live HP values for player characters, perfect for streaming. Customisable for Foundry V12.",
-  "version": "3.3.3",
+  "description": "Create stunning and dynamic green screen overlays for use with obs or other streaming software to show live data of your party!",
+  "version": "3.3.1",
   "compatibility": {
     "minimum": "12",
     "verified": "12"
@@ -23,7 +23,7 @@
   ],
   "url": "https://github.com/darkjenso/FoundryStreamOverlay/",
   "manifest": "https://raw.githubusercontent.com/darkjenso/FoundryStreamOverlay/refs/heads/main/module.json",
-  "download": "https://github.com/darkjenso/FoundryStreamOverlay/releases/download/3.3.3/foundrystreamoverlay.zip",
+  "download": "https://github.com/darkjenso/FoundryStreamOverlay/releases/download/3.3.1/foundrystreamoverlay.zip",
   "socket": true,
   "relationships": {
     "requires": [

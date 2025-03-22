@@ -4,7 +4,7 @@
     <thead>
       <tr>
         <th>Layout Name</th>
-        <th>Status</th>
+        <th>Used By</th>
         <th>Actions</th>
       </tr>
     </thead>
@@ -13,11 +13,11 @@
       <tr>
         <td>{{@key}}</td>
         <td>
-          {{#ifEquals ../activeLayout @key}}
-            Active
+          {{#if (lookup ../layoutUsage @key)}}
+            {{join (lookup ../layoutUsage @key) ", "}}
           {{else}}
-            <button type="button" class="activate-layout" data-layout="{{@key}}">Activate</button>
-          {{/ifEquals}}
+            <em style="color:#666;">Not in use</em>
+          {{/if}}
         </td>
         <td>
           <button type="button" class="rename-layout" data-layout="{{@key}}">Rename</button>

@@ -824,6 +824,83 @@ class OverlayConfig extends FormApplication {
     this._injectStyles();
   }
 
+
+
+  _populateSystemExamples(html) {
+    const gameSystem = game.system.id;
+    const examplesContainer = html.find('.system-examples-container');
+    
+    if (!examplesContainer.length) return;
+    
+    let examples = [];
+    
+    // Add system-specific examples
+    switch (gameSystem) {
+      case "dnd5e":
+        examples = [
+          { label: "Current HP", path: "system.attributes.hp.value" },
+          { label: "Max HP", path: "system.attributes.hp.max" },
+          { label: "Spell Slots (Level 1)", path: "system.spells.spell1.value" },
+          { label: "Spell Slots (Level 2)", path: "system.spells.spell2.value" },
+          { label: "Class Levels", path: "system.details.level" },
+          { label: "XP", path: "system.details.xp.value" },
+          { label: "Proficiency Bonus", path: "system.attributes.prof" }
+        ];
+        break;
+      case "pf2e":
+        examples = [
+          { label: "Hero Points", path: "system.resources.heroPoints.value" },
+          { label: "Focus Points", path: "system.resources.focus.value" },
+          { label: "Speed", path: "system.attributes.speed.value" },
+          { label: "Stamina Points", path: "system.attributes.sp.value" },
+          { label: "Resolve Points", path: "system.attributes.rp.value" }
+        ];
+        break;
+      case "wfrp4e":
+        examples = [
+          { label: "Wounds", path: "system.status.wounds.value" },
+          { label: "Fate", path: "system.status.fate.value" },
+          { label: "Fortune", path: "system.status.fortune.value" },
+          { label: "Advantage", path: "system.status.advantage.value" }
+        ];
+        break;
+      case "tormenta20":
+        examples = [
+          { label: "Pontos de Mana", path: "system.attributes.mana.value" },
+          { label: "Exp", path: "system.attributes.exp.value" }
+        ];
+        break;
+      default:
+        // Generic examples for all systems
+        examples = [
+          { label: "Name", path: "name" },
+          { label: "Current HP", path: "system.attributes.hp.value" },
+          { label: "Look for 'system.attributes', 'system.resources', etc.", path: "" }
+        ];
+    }
+    
+    // Only show if we have examples
+    if (examples.length) {
+      let html = `<div class="data-path-examples">
+                    <h4>Common Data Paths for ${game.system.title || gameSystem}:</h4>
+                    <ul>`;
+      
+      examples.forEach(example => {
+        if (example.path) {
+          html += `<li><strong>${example.label}:</strong> <code>${example.path}</code></li>`;
+        } else {
+          html += `<li>${example.label}</li>`;
+        }
+      });
+      
+      html += `</ul>
+              <p><em>Tip: To explore an actor's data structure, right-click on the token and select "Export Data" to view all available paths.</em></p>
+              </div>`;
+      
+      examplesContainer.html(html).show();
+    }
+  }
+
   getData() {
     const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
     const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
@@ -914,6 +991,57 @@ class OverlayConfig extends FormApplication {
   activateListeners(html) {
     super.activateListeners(html);
     
+  
+    html.find('select[name^="dataPath-"]').change(function() {
+      const index = this.name.split('-')[1];
+      const customPathInput = html.find(`.custom-path-input[data-index="${index}"]`);
+      const isCustom = this.value === 'custom';
+      
+      if (isCustom) {
+        customPathInput.slideDown(200);
+        
+        // Populate this specific field's examples
+        populateSystemExamplesForField(html, index);
+        
+        // Show the examples container for this specific field
+        customPathInput.find('.system-examples-container').slideDown(200);
+        
+        setTimeout(() => {
+          customPathInput.find('input').focus();
+        }, 210);
+      } else {
+        customPathInput.slideUp(200);
+      }
+    });
+    
+    html.find('select[name^="dataPath-"]').each(function() {
+      const index = this.name.split('-')[1];
+      const customPathInput = html.find(`.custom-path-input[data-index="${index}"]`);
+      const isCustom = this.value === 'custom';
+      
+      if (isCustom) {
+        customPathInput.show();
+        populateSystemExamplesForField(html, index);
+        customPathInput.find('.system-examples-container').show();
+      } else {
+        customPathInput.hide();
+      }
+    });
+
+    setTimeout(() => {
+      const hasCustomPath = html.find('select[name^="dataPath-"]').filter(function() {
+        return $(this).val() === 'custom';
+      }).length > 0;
+    
+      if (!hasCustomPath) {
+        html.find('.system-examples-container').hide();
+      } else {
+        html.find('.system-examples-container').show();
+      }
+    }, 100);
+    
+    html.find(".debug-actor-data").click(this._onDebugActorData.bind(this));
+    
     const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
     
     html.find('input, select').on('change', this._onFieldChange.bind(this));
@@ -951,7 +1079,7 @@ class OverlayConfig extends FormApplication {
       
       this.render();
     });
-
+  
     html.find('.toggle-extras-column').click(function() {
       const $button = $(this);
       const $icon = $button.find('i');
@@ -1003,121 +1131,64 @@ class OverlayConfig extends FormApplication {
         optionsDiv.slideUp(200);
       }
     });
-
-    // Enhanced logic for data path selection
+  
     html.find('select[name^="dataPath-"]').change(function() {
       const index = this.name.split('-')[1];
       const customPathInput = html.find(`.custom-path-input[data-index="${index}"]`);
+      const systemExamplesContainer = customPathInput.find('.system-examples-container');
       
       if (this.value === 'custom') {
         customPathInput.slideDown(200);
+        systemExamplesContainer.slideDown(200);
         
-        // Auto-focus on the custom path input
+        populateSystemExamplesForField(html, index);
+        
         setTimeout(() => {
           customPathInput.find('input').focus();
         }, 210);
       } else {
         customPathInput.slideUp(200);
+        systemExamplesContainer.slideUp(200);
       }
     });
     
-    // Initialize custom path inputs based on current state
     html.find('select[name^="dataPath-"]').each(function() {
       const index = this.name.split('-')[1];
       const customPathInput = html.find(`.custom-path-input[data-index="${index}"]`);
       
       if (this.value === 'custom') {
         customPathInput.show();
+        
+        populateSystemExamplesForField(html, index);
       } else {
         customPathInput.hide();
       }
     });
     
-    // Add system-specific examples
-    this._populateSystemExamples(html);
     
-    // Add export debugging button
     html.find(".debug-actor-data").click(this._onDebugActorData.bind(this));
+    
+    setTimeout(() => {
+      const hasCustomPath = html.find('select[name^="dataPath-"]').filter(function() {
+        return $(this).val() === 'custom';
+      }).length > 0;
+  
+      if (!hasCustomPath) {
+        html.find('.system-examples-container').hide();
+      }
+    }, 100);
   }
   
-  _populateSystemExamples(html) {
-    const gameSystem = game.system.id;
-    const examplesContainer = html.find('.system-examples-container');
-    
-    if (!examplesContainer.length) return;
-    
-    let examples = [];
-    
-    // Add system-specific examples
-    switch (gameSystem) {
-      case "dnd5e":
-        examples = [
-          { label: "Current HP", path: "system.attributes.hp.value" },
-          { label: "Max HP", path: "system.attributes.hp.max" },
-          { label: "Spell Slots (Level 1)", path: "system.spells.spell1.value" },
-          { label: "Spell Slots (Level 2)", path: "system.spells.spell2.value" },
-          { label: "Class Levels", path: "system.details.level" },
-          { label: "XP", path: "system.details.xp.value" },
-          { label: "Proficiency Bonus", path: "system.attributes.prof" }
-        ];
-        break;
-      case "pf2e":
-        examples = [
-          { label: "Hero Points", path: "system.resources.heroPoints.value" },
-          { label: "Focus Points", path: "system.resources.focus.value" },
-          { label: "Speed", path: "system.attributes.speed.value" },
-          { label: "Stamina Points", path: "system.attributes.sp.value" },
-          { label: "Resolve Points", path: "system.attributes.rp.value" }
-        ];
-        break;
-      case "wfrp4e":
-        examples = [
-          { label: "Wounds", path: "system.status.wounds.value" },
-          { label: "Fate", path: "system.status.fate.value" },
-          { label: "Fortune", path: "system.status.fortune.value" },
-          { label: "Advantage", path: "system.status.advantage.value" }
-        ];
-        break;
-      case "tormenta20":
-        examples = [
-          { label: "Pontos de Mana", path: "system.attributes.mana.value" },
-          { label: "Exp", path: "system.attributes.exp.value" }
-        ];
-        break;
-      default:
-        // Generic examples for all systems
-        examples = [
-          { label: "Name", path: "name" },
-          { label: "Current HP", path: "system.attributes.hp.value" },
-          { label: "Look for 'system.attributes', 'system.resources', etc.", path: "" }
-        ];
-    }
-    
-    // Only show if we have examples
-    if (examples.length) {
-      let html = `<div class="data-path-examples">
-                    <h4>Common Data Paths for ${game.system.title || gameSystem}:</h4>
-                    <ul>`;
-      
-      examples.forEach(example => {
-        if (example.path) {
-          html += `<li><strong>${example.label}:</strong> <code>${example.path}</code></li>`;
-        } else {
-          html += `<li>${example.label}</li>`;
-        }
-      });
-      
-      html += `</ul>
-              <p><em>Tip: To explore an actor's data structure, right-click on the token and select "Export Data" to view all available paths.</em></p>
-              </div>`;
-      
-      examplesContainer.html(html).show();
-    }
-  }
+
   
   _onDebugActorData(event) {
     event.preventDefault();
-    const actorSelect = $(event.currentTarget).closest('.form-group').find('select[name^="actorId-"]');
+    
+    const row = $(event.currentTarget).closest('tr');
+    
+    const rowIndex = row.find('input[name^="type-"]').attr('name')?.split('-')[1];
+    
+    const actorSelect = row.find(`select[name="actorId-${rowIndex}"]`);
     const actorId = actorSelect.val();
     
     if (!actorId) {
@@ -1131,10 +1202,8 @@ class OverlayConfig extends FormApplication {
       return;
     }
     
-    // Create a human-readable version of the data structure
     const dataDisplay = this._formatActorData(actor);
     
-    // Display to user in a dialog
     new Dialog({
       title: `Data Paths for ${actor.name}`,
       content: `
@@ -1522,16 +1591,12 @@ class OverlayConfig extends FormApplication {
       }
     }
     
-    // Process custom paths
     newItems.forEach(item => {
       if (item.dataPath === 'custom' && item.customPath) {
-        // Clean up the custom path
         item.customPath = item.customPath.trim();
         
-        // Remove any leftover whitespace, quotes, etc.
         item.customPath = item.customPath.replace(/^["']|["']$/g, '');
       } else {
-        // If not using custom path, ensure it's empty to avoid confusion
         item.customPath = '';
       }
     });
@@ -1540,7 +1605,6 @@ class OverlayConfig extends FormApplication {
     const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
     const currentItems = layouts[activeLayout] || [];
     
-    // Preserve animations from existing items
     newItems.forEach((item, index) => {
       if (currentItems[index] && currentItems[index].animations) {
         item.animations = currentItems[index].animations;
@@ -1672,6 +1736,145 @@ function openOverlayWindow(windowId = "main") {
   
   updateOverlayWindow(windowId);
 }
+
+function populateSystemExamplesForField(html, index) {
+  const gameSystem = game.system.id;
+  const examplesContainer = html.find(`.system-examples-container[data-index="${index}"]`);
+  
+  if (!examplesContainer.length) return;
+  
+  let examples = [];
+  
+  // Add system-specific examples
+  switch (gameSystem) {
+    case "dnd5e":
+      examples = [
+        { label: "Current HP", path: "system.attributes.hp.value" },
+        { label: "Max HP", path: "system.attributes.hp.max" },
+        { label: "Spell Slots (Level 1)", path: "system.spells.spell1.value" },
+        { label: "Spell Slots (Level 2)", path: "system.spells.spell2.value" },
+        { label: "Class Levels", path: "system.details.level" },
+        { label: "XP", path: "system.details.xp.value" },
+        { label: "Proficiency Bonus", path: "system.attributes.prof" }
+      ];
+      break;
+    case "pf2e":
+      examples = [
+        { label: "Hero Points", path: "system.resources.heroPoints.value" },
+        { label: "Focus Points", path: "system.resources.focus.value" },
+        { label: "Speed", path: "system.attributes.speed.value" },
+        { label: "Stamina Points", path: "system.attributes.sp.value" },
+        { label: "Resolve Points", path: "system.attributes.rp.value" }
+      ];
+      break;
+    // Add other cases as in your original code
+    default:
+      // Generic examples for all systems
+      examples = [
+        { label: "Name", path: "name" },
+        { label: "Current HP", path: "system.attributes.hp.value" },
+        { label: "Look for 'system.attributes', 'system.resources', etc.", path: "" }
+      ];
+  }
+  
+  // Only show if we have examples
+  if (examples.length) {
+    let html = `<div class="data-path-examples">
+                  <h4>Common Data Paths for ${game.system.title || gameSystem}:</h4>
+                  <ul>`;
+    
+    examples.forEach(example => {
+      if (example.path) {
+        html += `<li><strong>${example.label}:</strong> <code>${example.path}</code></li>`;
+      } else {
+        html += `<li>${example.label}</li>`;
+      }
+    });
+    
+    html += `</ul>
+            <p><em>Tip: To explore an actor's data structure, right-click on the token and select "Export Data" to view all available paths.</em></p>
+            </div>`;
+    
+    examplesContainer.html(html).show();
+  }
+}
+
+
+function populateSystemExamplesForField(html, index) {
+  const gameSystem = game.system.id;
+  const examplesContainer = html.find(`.system-examples-container[data-index="${index}"]`);
+  
+  if (!examplesContainer.length) return;
+  
+  let examples = [];
+  
+  // Add system-specific examples based on game system
+  switch (gameSystem) {
+    case "dnd5e":
+      examples = [
+        { label: "Current HP", path: "system.attributes.hp.value" },
+        { label: "Max HP", path: "system.attributes.hp.max" },
+        { label: "Spell Slots (Level 1)", path: "system.spells.spell1.value" },
+        { label: "Spell Slots (Level 2)", path: "system.spells.spell2.value" },
+        { label: "Class Levels", path: "system.details.level" },
+        { label: "XP", path: "system.details.xp.value" },
+        { label: "Proficiency Bonus", path: "system.attributes.prof" }
+      ];
+      break;
+    case "pf2e":
+      examples = [
+        { label: "Hero Points", path: "system.resources.heroPoints.value" },
+        { label: "Focus Points", path: "system.resources.focus.value" },
+        { label: "Speed", path: "system.attributes.speed.value" },
+        { label: "Stamina Points", path: "system.attributes.sp.value" },
+        { label: "Resolve Points", path: "system.attributes.rp.value" }
+      ];
+      break;
+    case "wfrp4e":
+      examples = [
+        { label: "Wounds", path: "system.status.wounds.value" },
+        { label: "Fate", path: "system.status.fate.value" },
+        { label: "Fortune", path: "system.status.fortune.value" },
+        { label: "Advantage", path: "system.status.advantage.value" }
+      ];
+      break;
+    case "tormenta20":
+      examples = [
+        { label: "Pontos de Mana", path: "system.attributes.mana.value" },
+        { label: "Exp", path: "system.attributes.exp.value" }
+      ];
+      break;
+    default:
+      // Generic examples for all systems
+      examples = [
+        { label: "Name", path: "name" },
+        { label: "Current HP", path: "system.attributes.hp.value" },
+        { label: "Look for 'system.attributes', 'system.resources', etc.", path: "" }
+      ];
+  }
+  
+  // Only show if we have examples
+  if (examples.length) {
+    let html = `<div class="data-path-examples">
+                  <h4>Common Data Paths for ${game.system.title || gameSystem}:</h4>
+                  <ul>`;
+    
+    examples.forEach(example => {
+      if (example.path) {
+        html += `<li><strong>${example.label}:</strong> <code>${example.path}</code></li>`;
+      } else {
+        html += `<li>${example.label}</li>`;
+      }
+    });
+    
+    html += `</ul>
+            <p><em>Tip: To explore an actor's data structure, right-click on the token and select "Export Data" to view all available paths.</em></p>
+            </div>`;
+    
+    examplesContainer.html(html);
+  }
+}
+
 
 function updateOverlayWindow(windowId = "main") {
   window.overlayAnimatedElements = window.overlayAnimatedElements || {};
@@ -1829,22 +2032,36 @@ function updateOverlayWindow(windowId = "main") {
         } else if (item.dataPath === "custom" && item.customPath) {
           // Handle custom data path
           const path = item.customPath.trim();
-          textValue = path ? foundry.utils.getProperty(actor, path) : 'N/A';
-          
-          // Convert objects to readable format
-          if (textValue && typeof textValue === 'object') {
-            try {
-              textValue = JSON.stringify(textValue).slice(0, 50);
-              if (textValue.length === 50) textValue += '...';
-            } catch (e) {
-              textValue = '[Object]';
+          try {
+            // Better error handling for custom paths
+            if (path) {
+              console.log(`Getting custom path: ${path} for actor: ${actor.id}`);
+              textValue = foundry.utils.getProperty(actor, path);
+              console.log(`Retrieved value: ${textValue}`);
+              
+              // Convert objects to readable format
+              if (textValue && typeof textValue === 'object') {
+                try {
+                  textValue = JSON.stringify(textValue).slice(0, 50);
+                  if (textValue.length === 50) textValue += '...';
+                } catch (e) {
+                  textValue = '[Object]';
+                }
+              }
+            } else {
+              console.warn(`Empty custom path for actor: ${actor.id}`);
+              textValue = 'N/A (Empty Path)';
             }
+          } catch (error) {
+            console.error(`Error getting data for custom path "${path}":`, error);
+            textValue = `Error: ${error.message}`;
           }
           
           // Ensure undefined or null values become 'N/A'
           if (textValue === null || textValue === undefined) {
             textValue = 'N/A';
           }
+        
         } else {
           // Standard data path handling
           textValue = foundry.utils.getProperty(actor, item.dataPath);
@@ -2128,7 +2345,6 @@ class ManageLayouts extends FormApplication {
   activateListeners(html) {
     super.activateListeners(html);
     html.find(".create-new-layout").click(this._onCreateNewLayout.bind(this));
-    html.find(".activate-layout").click(this._onActivate.bind(this));
     html.find(".rename-layout").click(this._onRename.bind(this));
     html.find(".duplicate-layout").click(this._onDuplicate.bind(this));
     html.find(".delete-layout").click(this._onDelete.bind(this));
@@ -2194,14 +2410,7 @@ class ManageLayouts extends FormApplication {
     
     this.render();
   }
-  async _onActivate(event) {
-    event.preventDefault();
-    const layoutName = event.currentTarget.dataset.layout;
-    await game.settings.set(MODULE_ID, "activeLayout", layoutName);
-    ui.notifications.info(`Activated layout: ${layoutName}`);
-    updateOverlayWindow();
-    this.render();
-  }
+
 
   async _onRename(event) {
     event.preventDefault();
@@ -2236,7 +2445,6 @@ class ManageLayouts extends FormApplication {
     
     this.render();
   }
-
   async _onDelete(event) {
     event.preventDefault();
     const layoutName = event.currentTarget.dataset.layout;
@@ -2244,6 +2452,35 @@ class ManageLayouts extends FormApplication {
     if (layoutName === "Default") {
       ui.notifications.warn("Cannot delete the Default layout.");
       return;
+    }
+    
+    const windows = game.settings.get(MODULE_ID, "overlayWindows") || {};
+    const usedByWindows = Object.values(windows).filter(w => w.activeLayout === layoutName).map(w => w.name);
+    
+    if (usedByWindows.length > 0) {
+      // This layout is used by windows - warn the user
+      const windowNames = usedByWindows.join('", "');
+      const confirmation = await Dialog.confirm({
+        title: "Layout In Use",
+        content: `This layout is currently used by the following windows: "${windowNames}". If you delete it, these windows will revert to the Default layout. Continue?`,
+        yes: () => true,
+        no: () => false
+      });
+      
+      if (!confirmation) return;
+      
+      // Reset any windows using this layout to Default
+      let modified = false;
+      for (const [windowId, windowConfig] of Object.entries(windows)) {
+        if (windowConfig.activeLayout === layoutName) {
+          windows[windowId].activeLayout = "Default";
+          modified = true;
+        }
+      }
+      
+      if (modified) {
+        await game.settings.set(MODULE_ID, "overlayWindows", windows);
+      }
     }
     
     if (!confirm(`Are you sure you want to delete layout: ${layoutName}?`)) return;
@@ -2257,13 +2494,6 @@ class ManageLayouts extends FormApplication {
       }
       
       delete layouts[layoutName];
-      
-      const activeLayout = game.settings.get(MODULE_ID, "activeLayout");
-      if (activeLayout === layoutName) {
-        await game.settings.set(MODULE_ID, "activeLayout", "Default");
-        ui.notifications.info(`Active layout reset to Default.`);
-      }
-      
       await game.settings.set(MODULE_ID, "layouts", layouts);
       ui.notifications.info(`Layout "${layoutName}" deleted.`);
       
