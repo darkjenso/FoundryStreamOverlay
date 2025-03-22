@@ -2,7 +2,7 @@
   "id": "foundrystreamoverlay",
   "title": "Foundry Stream Overlay",
   "description": "Create stunning and dynamic green screen overlays for use with obs or other streaming software to show live data of your party!",
-  "version": "3.3.1",
+  "version": "3.3.4",
   "compatibility": {
     "minimum": "12",
     "verified": "12"
@@ -23,7 +23,7 @@
   ],
   "url": "https://github.com/darkjenso/FoundryStreamOverlay/",
   "manifest": "https://raw.githubusercontent.com/darkjenso/FoundryStreamOverlay/refs/heads/main/module.json",
-  "download": "https://github.com/darkjenso/FoundryStreamOverlay/releases/download/3.3.1/foundrystreamoverlay.zip",
+  "download": "https://github.com/darkjenso/FoundryStreamOverlay/releases/download/3.3.4/foundrystreamoverlay.zip",
   "socket": true,
   "relationships": {
     "requires": [
