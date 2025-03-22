@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.3.5] - 2025-03-22
+
+### Bug Fixes
+- Fixed an issue where free users couldnt see their overlay, removing legacy activation code had an annoying side effect!
 
 ## [3.3.4] - 2025-03-22
 
