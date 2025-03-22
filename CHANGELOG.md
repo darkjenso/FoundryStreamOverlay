@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+
+## [3.3.4] - 2025-03-22
+
+### Bug Fixes
+- Custom data paths should now be fixed
+- Removed some legacy code: activate button on layouts manager removed as layouts set up on window manager.
+
 ## [3.3.3] - 2025-03-21
 
 ### Bug Fixes
