@@ -779,6 +779,42 @@ class OverlayConfig extends FormApplication {
         width: 100%;
         text-align: center;
       }
+      
+      .custom-path-input {
+        margin-top: 5px;
+        padding: 5px;
+        background-color: rgba(0, 0, 0, 0.05);
+        border-radius: 3px;
+      }
+      
+      .custom-path-input input {
+        width: 100%;
+        margin-bottom: 4px;
+      }
+      
+      .custom-path-input small {
+        display: block;
+        font-style: italic;
+        color: #666;
+      }
+      
+      .custom-path-help {
+        display: inline-block;
+        margin-left: 5px;
+        position: relative;
+      }
+      
+      .data-path-examples {
+        margin-top: 8px;
+        font-size: 0.9em;
+        color: #555;
+      }
+      
+      .data-path-examples code {
+        background: rgba(0,0,0,0.05);
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
     `;
     document.head.appendChild(styleElem);
   }
@@ -800,6 +836,7 @@ class OverlayConfig extends FormApplication {
         type: item.type || "data", 
         actorId: item.actorId || "",
         dataPath: item.dataPath || "name",
+        customPath: item.customPath || "", // Make sure custom path is included
         content: item.content || "",
         top: item.top || 0,
         left: item.left || 0,
@@ -826,9 +863,52 @@ class OverlayConfig extends FormApplication {
     });
     const dataPathChoices = POSSIBLE_DATA_PATHS;
     const allActors = game.actors.contents.filter(a => a.type === "character" || a.hasPlayerOwner);
-    return { rows, allActors, dataPathChoices, activeLayout, layouts };
+    
+    // Add helpful examples for the most common game systems
+    const gameSystem = game.system.id;
+    let systemExamples = [];
+    
+    switch (gameSystem) {
+      case "dnd5e":
+        systemExamples = [
+          { label: "Spell Slots", path: "system.spells.spell1.value" },
+          { label: "Proficiency Bonus", path: "system.attributes.prof" },
+          { label: "Initiative", path: "system.attributes.init.total" }
+        ];
+        break;
+      case "pf2e":
+        systemExamples = [
+          { label: "Hero Points", path: "system.resources.heroPoints.value" },
+          { label: "Focus Points", path: "system.resources.focus.value" },
+          { label: "Speed", path: "system.attributes.speed.value" }
+        ];
+        break;
+      case "swade":
+        systemExamples = [
+          { label: "Bennies", path: "system.bennies.value" },
+          { label: "Wild Die", path: "system.wildDie" },
+          { label: "Wounds", path: "system.wounds.value" }
+        ];
+        break;
+      case "wfrp4e":
+        systemExamples = [
+          { label: "Wounds", path: "system.status.wounds.value" },
+          { label: "Fate", path: "system.status.fate.value" },
+          { label: "Fortune", path: "system.status.fortune.value" }
+        ];
+        break;
+    }
+    
+    return { 
+      rows, 
+      allActors, 
+      dataPathChoices, 
+      activeLayout, 
+      layouts,
+      gameSystem,
+      systemExamples
+    };
   }
-
 
   
   activateListeners(html) {
@@ -924,17 +1004,195 @@ class OverlayConfig extends FormApplication {
       }
     });
 
-
+    // Enhanced logic for data path selection
     html.find('select[name^="dataPath-"]').change(function() {
       const index = this.name.split('-')[1];
       const customPathInput = html.find(`.custom-path-input[data-index="${index}"]`);
       
       if (this.value === 'custom') {
         customPathInput.slideDown(200);
+        
+        // Auto-focus on the custom path input
+        setTimeout(() => {
+          customPathInput.find('input').focus();
+        }, 210);
       } else {
         customPathInput.slideUp(200);
       }
     });
+    
+    // Initialize custom path inputs based on current state
+    html.find('select[name^="dataPath-"]').each(function() {
+      const index = this.name.split('-')[1];
+      const customPathInput = html.find(`.custom-path-input[data-index="${index}"]`);
+      
+      if (this.value === 'custom') {
+        customPathInput.show();
+      } else {
+        customPathInput.hide();
+      }
+    });
+    
+    // Add system-specific examples
+    this._populateSystemExamples(html);
+    
+    // Add export debugging button
+    html.find(".debug-actor-data").click(this._onDebugActorData.bind(this));
+  }
+  
+  _populateSystemExamples(html) {
+    const gameSystem = game.system.id;
+    const examplesContainer = html.find('.system-examples-container');
+    
+    if (!examplesContainer.length) return;
+    
+    let examples = [];
+    
+    // Add system-specific examples
+    switch (gameSystem) {
+      case "dnd5e":
+        examples = [
+          { label: "Current HP", path: "system.attributes.hp.value" },
+          { label: "Max HP", path: "system.attributes.hp.max" },
+          { label: "Spell Slots (Level 1)", path: "system.spells.spell1.value" },
+          { label: "Spell Slots (Level 2)", path: "system.spells.spell2.value" },
+          { label: "Class Levels", path: "system.details.level" },
+          { label: "XP", path: "system.details.xp.value" },
+          { label: "Proficiency Bonus", path: "system.attributes.prof" }
+        ];
+        break;
+      case "pf2e":
+        examples = [
+          { label: "Hero Points", path: "system.resources.heroPoints.value" },
+          { label: "Focus Points", path: "system.resources.focus.value" },
+          { label: "Speed", path: "system.attributes.speed.value" },
+          { label: "Stamina Points", path: "system.attributes.sp.value" },
+          { label: "Resolve Points", path: "system.attributes.rp.value" }
+        ];
+        break;
+      case "wfrp4e":
+        examples = [
+          { label: "Wounds", path: "system.status.wounds.value" },
+          { label: "Fate", path: "system.status.fate.value" },
+          { label: "Fortune", path: "system.status.fortune.value" },
+          { label: "Advantage", path: "system.status.advantage.value" }
+        ];
+        break;
+      case "tormenta20":
+        examples = [
+          { label: "Pontos de Mana", path: "system.attributes.mana.value" },
+          { label: "Exp", path: "system.attributes.exp.value" }
+        ];
+        break;
+      default:
+        // Generic examples for all systems
+        examples = [
+          { label: "Name", path: "name" },
+          { label: "Current HP", path: "system.attributes.hp.value" },
+          { label: "Look for 'system.attributes', 'system.resources', etc.", path: "" }
+        ];
+    }
+    
+    // Only show if we have examples
+    if (examples.length) {
+      let html = `<div class="data-path-examples">
+                    <h4>Common Data Paths for ${game.system.title || gameSystem}:</h4>
+                    <ul>`;
+      
+      examples.forEach(example => {
+        if (example.path) {
+          html += `<li><strong>${example.label}:</strong> <code>${example.path}</code></li>`;
+        } else {
+          html += `<li>${example.label}</li>`;
+        }
+      });
+      
+      html += `</ul>
+              <p><em>Tip: To explore an actor's data structure, right-click on the token and select "Export Data" to view all available paths.</em></p>
+              </div>`;
+      
+      examplesContainer.html(html).show();
+    }
+  }
+  
+  _onDebugActorData(event) {
+    event.preventDefault();
+    const actorSelect = $(event.currentTarget).closest('.form-group').find('select[name^="actorId-"]');
+    const actorId = actorSelect.val();
+    
+    if (!actorId) {
+      ui.notifications.warn("Please select an actor first.");
+      return;
+    }
+    
+    const actor = game.actors.get(actorId);
+    if (!actor) {
+      ui.notifications.error("Unable to find the selected actor.");
+      return;
+    }
+    
+    // Create a human-readable version of the data structure
+    const dataDisplay = this._formatActorData(actor);
+    
+    // Display to user in a dialog
+    new Dialog({
+      title: `Data Paths for ${actor.name}`,
+      content: `
+        <div style="height: 400px; overflow-y: auto; font-family: monospace; white-space: pre-wrap; font-size: 12px;">
+          ${dataDisplay}
+        </div>
+        <p style="margin-top: 10px;">
+          <em>Use these paths with the "Custom Data Path" option to display specific actor data.</em>
+        </p>
+      `,
+      buttons: {
+        close: {
+          icon: '<i class="fas fa-times"></i>',
+          label: "Close"
+        }
+      },
+      width: 600
+    }).render(true);
+  }
+  
+  _formatActorData(actor, prefix = "", indent = 0) {
+    const indentStr = "  ".repeat(indent);
+    let result = "";
+    
+    // Get a simplified version of the actor data for display
+    const data = {
+      name: actor.name,
+      system: actor.system
+    };
+    
+    // Format object recursively
+    const formatObject = (obj, path = "", level = 0) => {
+      const padding = "  ".repeat(level);
+      let output = "";
+      
+      for (const [key, value] of Object.entries(obj)) {
+        const fullPath = path ? `${path}.${key}` : key;
+        
+        if (typeof value === "object" && value !== null) {
+          // Don't go too deep
+          if (level < 5) {
+            output += `${padding}${key}: {\n`;
+            output += formatObject(value, fullPath, level + 1);
+            output += `${padding}}\n`;
+          } else {
+            output += `${padding}${key}: { ... }\n`;
+          }
+        } else {
+          // For primitive values, show the path and value
+          output += `${padding}${key}: <span style="color:#4a6;">${value}</span> <span style="color:#999;">(Path: ${fullPath})</span>\n`;
+        }
+      }
+      
+      return output;
+    };
+    
+    result = formatObject(data);
+    return result;
   }
 
   _onManageAnimations(event) {
@@ -960,6 +1218,13 @@ class OverlayConfig extends FormApplication {
     
     await this._updateObject(event, formData);
     
+    this._updateAllWindows();
+    
+    this._showAutoSaveFeedback();
+  }
+  
+  _updateAllWindows() {
+    // Update all overlay windows
     const windows = game.settings.get(MODULE_ID, "overlayWindows") || {};
     
     if (window.overlayWindow && !window.overlayWindow.closed) {
@@ -973,8 +1238,6 @@ class OverlayConfig extends FormApplication {
         }
       }
     }
-    
-    this._showAutoSaveFeedback();
   }
   
   _showAutoSaveFeedback() {
@@ -1001,6 +1264,7 @@ class OverlayConfig extends FormApplication {
       type: "data",
       actorId: "",
       dataPath: "name",
+      customPath: "",  // Add customPath to the default item
       top: 0,
       left: 0,
       hide: false,
@@ -1144,6 +1408,10 @@ class OverlayConfig extends FormApplication {
       [current[index - 1], current[index]] = [current[index], current[index - 1]];
       layouts[activeLayout] = current;
       await game.settings.set(MODULE_ID, "layouts", layouts);
+      
+      // Update all open windows
+      this._updateAllWindows();
+      
       this.render();
     }
   }
@@ -1158,6 +1426,10 @@ class OverlayConfig extends FormApplication {
       [current[index], current[index + 1]] = [current[index + 1], current[index]];
       layouts[activeLayout] = current;
       await game.settings.set(MODULE_ID, "layouts", layouts);
+      
+      // Update all open windows
+      this._updateAllWindows();
+      
       this.render();
     }
   }
@@ -1250,10 +1522,16 @@ class OverlayConfig extends FormApplication {
       }
     }
     
+    // Process custom paths
     newItems.forEach(item => {
       if (item.dataPath === 'custom' && item.customPath) {
+        // Clean up the custom path
         item.customPath = item.customPath.trim();
+        
+        // Remove any leftover whitespace, quotes, etc.
+        item.customPath = item.customPath.replace(/^["']|["']$/g, '');
       } else {
+        // If not using custom path, ensure it's empty to avoid confusion
         item.customPath = '';
       }
     });
@@ -1262,9 +1540,17 @@ class OverlayConfig extends FormApplication {
     const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
     const currentItems = layouts[activeLayout] || [];
     
+    // Preserve animations from existing items
     newItems.forEach((item, index) => {
       if (currentItems[index] && currentItems[index].animations) {
         item.animations = currentItems[index].animations;
+      }
+    });
+    
+    // Add custom data debugging attributes to help users
+    newItems.forEach(item => {
+      if (item.type === 'data' && item.dataPath === 'custom') {
+        item._lastUpdated = Date.now();
       }
     });
     
