@@ -2,7 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## [3.4.0] - 2025-03-22
+## [3.4.1] - 2025-03-25
+### Bug Fixes
+- Fixed small bug stopping users to change layouts on the config
+
+## [3.4.0] - 2025-03-25
 
 ### Bug Fixes
 - Fixed an issue that free users wereable to duplicate layouts
