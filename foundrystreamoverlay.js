@@ -1,3 +1,5 @@
+
+import OverlayData from './data-storage.js';
 const MODULE_ID = "foundrystreamoverlay";
 
 const LAYOUT_TRANSITIONS = {
@@ -253,6 +255,8 @@ function validateActivationKey(key) {
 }
 
 
+
+
 Hooks.once("init", () => {
   Handlebars.registerHelper("ifEquals", function(arg1, arg2, options) {
     return (arg1 === arg2) ? options.fn(this) : options.inverse(this);
@@ -261,6 +265,21 @@ Hooks.once("init", () => {
 
   Handlebars.registerHelper("eq", function(a, b) {
     return a === b;
+  });
+
+
+  Hooks.on("ready", () => {
+    const isPremium = OverlayData.getSetting("isPremium") || false;
+    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    
+    if (!layouts["Default"]) {
+      layouts["Default"] = [];
+      game.settings.set(MODULE_ID, "layouts", layouts);
+    }
+    
+    if (!isPremium) {
+      game.settings.set(MODULE_ID, "activeLayout", "Default");
+    }
   });
 
   Handlebars.registerHelper("ifNotDefault", function(value, options) {
@@ -512,8 +531,8 @@ class FoundryStreamOverlay extends Application {
   getData() {
     const backgroundColour = game.settings.get(MODULE_ID, "backgroundColour");
     const layouts = game.settings.get(MODULE_ID, "layouts") || {};
-    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
-    const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
+    const activeLayout = OverlayData.getActiveLayout() || "Default";
+    const isPremium = OverlayData.getSetting("isPremium") || false;
   
     const items = (layouts[activeLayout] || []).map(item => {
       const animation = item.animation || "none";
@@ -628,7 +647,7 @@ class PremiumStatusDialog extends FormApplication {
   }
 
   getData() {
-    const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
+    const isPremium = OverlayData.getSetting("isPremium") || false;
     const activationKey = game.settings.get(MODULE_ID, "activationKey") || "";
     return { isPremium, activationKey };
   }
@@ -903,7 +922,7 @@ class OverlayConfig extends FormApplication {
 
   getData() {
     const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
-    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const activeLayout = OverlayData.getActiveLayout() || "Default";
     const rows = (layouts[activeLayout] || []).map((item, idx) => {
       // Check if this item has animations configured
       const hasAnimations = !!(item.animations && item.animations.length > 0);
@@ -1042,7 +1061,7 @@ class OverlayConfig extends FormApplication {
     
     html.find(".debug-actor-data").click(this._onDebugActorData.bind(this));
     
-    const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
+    const isPremium = OverlayData.getSetting("isPremium") || false;
     
     html.find('input, select').on('change', this._onFieldChange.bind(this));
     
@@ -1268,7 +1287,7 @@ class OverlayConfig extends FormApplication {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
     const layouts = game.settings.get(MODULE_ID, "layouts") || {};
-    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const activeLayout = OverlayData.getActiveLayout() || "Default";
     const item = layouts[activeLayout][index];
     
     if (!item.animations) {
@@ -1327,7 +1346,7 @@ class OverlayConfig extends FormApplication {
   async _onAddRow(event) {
     event.preventDefault();
     const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
-    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const activeLayout = OverlayData.getActiveLayout() || "Default";
     const current = layouts[activeLayout] || [];
     const newItem = {
       type: "data",
@@ -1362,7 +1381,7 @@ class OverlayConfig extends FormApplication {
     current.unshift(newItem);
   
     layouts[activeLayout] = current;
-    await game.settings.set(MODULE_ID, "layouts", layouts);
+    await OverlayData.setLayout(layoutName, layoutItems);
     
     // Update all open windows
     this._updateAllWindows();
@@ -1373,7 +1392,7 @@ class OverlayConfig extends FormApplication {
   async _onAddImage(event) {
     event.preventDefault();
     const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
-    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const activeLayout = OverlayData.getActiveLayout() || "Default";
     const current = layouts[activeLayout] || [];
   
     const newItem = {
@@ -1400,7 +1419,7 @@ class OverlayConfig extends FormApplication {
     current.unshift(newItem);
     
     layouts[activeLayout] = current;
-    await game.settings.set(MODULE_ID, "layouts", layouts);
+    await OverlayData.setLayout(layoutName, layoutItems);
     
     // Update all open windows
     this._updateAllWindows();
@@ -1411,7 +1430,7 @@ class OverlayConfig extends FormApplication {
   async _onAddStatic(event) {
     event.preventDefault();
     const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
-    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const activeLayout = OverlayData.getActiveLayout() || "Default";
     const current = layouts[activeLayout] || [];
     const newItem = {
       type: "static",
@@ -1443,7 +1462,7 @@ class OverlayConfig extends FormApplication {
     current.unshift(newItem);
     
     layouts[activeLayout] = current;
-    await game.settings.set(MODULE_ID, "layouts", layouts);
+    await OverlayData.setLayout(layoutName, layoutItems);
     
     // Update all open windows
     this._updateAllWindows();
@@ -1455,11 +1474,11 @@ class OverlayConfig extends FormApplication {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
     const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
-    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const activeLayout = OverlayData.getActiveLayout() || "Default";
     const current = layouts[activeLayout] || [];
     current.splice(index, 1);
     layouts[activeLayout] = current;
-    await game.settings.set(MODULE_ID, "layouts", layouts);
+    await OverlayData.setLayout(layoutName, layoutItems);
     
     // Update all open windows
     this._updateAllWindows();
@@ -1471,12 +1490,12 @@ class OverlayConfig extends FormApplication {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
     const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
-    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const activeLayout = OverlayData.getActiveLayout() || "Default";
     const current = layouts[activeLayout] || [];
     if (index > 0) {
       [current[index - 1], current[index]] = [current[index], current[index - 1]];
       layouts[activeLayout] = current;
-      await game.settings.set(MODULE_ID, "layouts", layouts);
+      await OverlayData.setLayout(layoutName, layoutItems);
       
       // Update all open windows
       this._updateAllWindows();
@@ -1489,12 +1508,12 @@ class OverlayConfig extends FormApplication {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
     const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
-    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const activeLayout = OverlayData.getActiveLayout() || "Default";
     const current = layouts[activeLayout] || [];
     if (index < current.length - 1) {
       [current[index], current[index + 1]] = [current[index + 1], current[index]];
       layouts[activeLayout] = current;
-      await game.settings.set(MODULE_ID, "layouts", layouts);
+      await OverlayData.setLayout(layoutName, layoutItems);
       
       // Update all open windows
       this._updateAllWindows();
@@ -1504,7 +1523,7 @@ class OverlayConfig extends FormApplication {
   }
 
   async _updateObject(event, formData) {
-    const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
+    const isPremium = OverlayData.getSetting("isPremium") || false;
   
     if (!isPremium) {
       for (let key in formData) {
@@ -1602,7 +1621,7 @@ class OverlayConfig extends FormApplication {
     });
     
     const layouts = game.settings.get(MODULE_ID, "layouts") || {};
-    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const activeLayout = OverlayData.getActiveLayout() || "Default";
     const currentItems = layouts[activeLayout] || [];
     
     newItems.forEach((item, index) => {
@@ -1619,7 +1638,7 @@ class OverlayConfig extends FormApplication {
     });
     
     layouts[activeLayout] = newItems;
-    await game.settings.set(MODULE_ID, "layouts", layouts);
+    await OverlayData.setLayout(layoutName, layoutItems);
   }
 }
 
@@ -1662,19 +1681,24 @@ function openOverlayWindow(windowId = "main") {
     window.overlayWindows[windowId].close();
   }
 
-  const windows = game.settings.get(MODULE_ID, "overlayWindows");
+  const windows = OverlayData.getOverlayWindows();
   const windowConfig = windows[windowId] || windows.main;
+  
+  // Get configured size or use defaults
+  const width = windowConfig.width || 800;
+  const height = windowConfig.height || 600;
   
   const overlayWindow = window.open(
     "",
     `FoundryStreamOverlay_${windowId}`,
-    "width=800,height=600,resizable=yes"
+    `width=${width},height=${height},resizable=yes`
   );
   
   if (!overlayWindow) {
     ui.notifications.warn("Popup blocked! Please allow popups for Foundry.");
     return;
   }
+  
   
   const bg = game.settings.get(MODULE_ID, "backgroundColour");
   
@@ -1737,67 +1761,6 @@ function openOverlayWindow(windowId = "main") {
   updateOverlayWindow(windowId);
 }
 
-function populateSystemExamplesForField(html, index) {
-  const gameSystem = game.system.id;
-  const examplesContainer = html.find(`.system-examples-container[data-index="${index}"]`);
-  
-  if (!examplesContainer.length) return;
-  
-  let examples = [];
-  
-  // Add system-specific examples
-  switch (gameSystem) {
-    case "dnd5e":
-      examples = [
-        { label: "Current HP", path: "system.attributes.hp.value" },
-        { label: "Max HP", path: "system.attributes.hp.max" },
-        { label: "Spell Slots (Level 1)", path: "system.spells.spell1.value" },
-        { label: "Spell Slots (Level 2)", path: "system.spells.spell2.value" },
-        { label: "Class Levels", path: "system.details.level" },
-        { label: "XP", path: "system.details.xp.value" },
-        { label: "Proficiency Bonus", path: "system.attributes.prof" }
-      ];
-      break;
-    case "pf2e":
-      examples = [
-        { label: "Hero Points", path: "system.resources.heroPoints.value" },
-        { label: "Focus Points", path: "system.resources.focus.value" },
-        { label: "Speed", path: "system.attributes.speed.value" },
-        { label: "Stamina Points", path: "system.attributes.sp.value" },
-        { label: "Resolve Points", path: "system.attributes.rp.value" }
-      ];
-      break;
-    // Add other cases as in your original code
-    default:
-      // Generic examples for all systems
-      examples = [
-        { label: "Name", path: "name" },
-        { label: "Current HP", path: "system.attributes.hp.value" },
-        { label: "Look for 'system.attributes', 'system.resources', etc.", path: "" }
-      ];
-  }
-  
-  // Only show if we have examples
-  if (examples.length) {
-    let html = `<div class="data-path-examples">
-                  <h4>Common Data Paths for ${game.system.title || gameSystem}:</h4>
-                  <ul>`;
-    
-    examples.forEach(example => {
-      if (example.path) {
-        html += `<li><strong>${example.label}:</strong> <code>${example.path}</code></li>`;
-      } else {
-        html += `<li>${example.label}</li>`;
-      }
-    });
-    
-    html += `</ul>
-            <p><em>Tip: To explore an actor's data structure, right-click on the token and select "Export Data" to view all available paths.</em></p>
-            </div>`;
-    
-    examplesContainer.html(html).show();
-  }
-}
 
 
 function populateSystemExamplesForField(html, index) {
@@ -1889,8 +1852,13 @@ function updateOverlayWindow(windowId = "main") {
   
   const bg = game.settings.get(MODULE_ID, "backgroundColour");
   const layouts = game.settings.get(MODULE_ID, "layouts") || {};
-  const activeLayout = windowConfig.activeLayout || "Default";
-  const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
+  const isPremium = OverlayData.getSetting("isPremium") || false;
+  
+  // Ensure free users always use the Default layout
+  let activeLayout = windowConfig.activeLayout || "Default";
+  if (!isPremium) {
+    activeLayout = "Default";
+  }
   
   overlayWindow.document.body.style.backgroundColor = bg;
   
@@ -2330,14 +2298,33 @@ class ManageLayouts extends FormApplication {
     });
   }
 
+  async _onActivate(event) {
+    event.preventDefault();
+    
+    const isPremium = OverlayData.getSetting("isPremium") || false;
+    if (!isPremium) {
+      ui.notifications.warn("Free users can only use the Default layout. Upgrade to Premium for multiple layouts.");
+      return;
+    }
+    
+    const layoutName = event.currentTarget.dataset.layout;
+    await game.settings.set(MODULE_ID, "activeLayout", layoutName);
+    ui.notifications.info(`Activated layout: ${layoutName}`);
+    this.render();
+  }
+
   getData() {
     const layouts = game.settings.get(MODULE_ID, "layouts") || {};
-    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
-    const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
+    const activeLayout = OverlayData.getActiveLayout() || "Default";
+    const isPremium = OverlayData.getSetting("isPremium") || false;
+    
+    if (!isPremium && activeLayout !== "Default") {
+      game.settings.set(MODULE_ID, "activeLayout", "Default");
+    }
     
     return { 
       layouts, 
-      activeLayout,
+      activeLayout: isPremium ? activeLayout : "Default", 
       isPremium
     };
   }
@@ -2355,8 +2342,8 @@ class ManageLayouts extends FormApplication {
   async _onCreateNewLayout(event) {
     event.preventDefault();
     
-    const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
-    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    const isPremium = OverlayData.getSetting("isPremium");
+    const layouts = game.settings.get(MODULE_ID, "layouts");
     const layoutCount = Object.keys(layouts).length;
     
     if (!isPremium && layoutCount > 0) {
@@ -2399,7 +2386,7 @@ class ManageLayouts extends FormApplication {
     }
     
     layouts[layoutName] = [];
-    await game.settings.set(MODULE_ID, "layouts", layouts);
+    await OverlayData.setLayout(layoutName, layoutItems);
     ui.notifications.info(`Layout "${layoutName}" created.`);
     
     for (const app of Object.values(ui.windows)) {
@@ -2430,11 +2417,11 @@ class ManageLayouts extends FormApplication {
     }
     layouts[newName] = layouts[oldName];
     delete layouts[oldName];
-    const activeLayout = game.settings.get(MODULE_ID, "activeLayout");
+    const activeLayout = OverlayData.getActiveLayout();
     if (activeLayout === oldName) {
       await game.settings.set(MODULE_ID, "activeLayout", newName);
     }
-    await game.settings.set(MODULE_ID, "layouts", layouts);
+    await OverlayData.setLayout(layoutName, layoutItems);
     
     // Refresh any open config windows
     for (const app of Object.values(ui.windows)) {
@@ -2454,7 +2441,17 @@ class ManageLayouts extends FormApplication {
       return;
     }
     
-    const windows = game.settings.get(MODULE_ID, "overlayWindows") || {};
+    // Get layouts from OverlayData instead of game.settings
+    const layouts = OverlayData.getLayouts();
+    
+    // Check if layout exists in the new storage system
+    if (!layouts[layoutName]) {
+      ui.notifications.warn(`Layout "${layoutName}" not found.`);
+      return;
+    }
+    
+    // Check for windows using this layout
+    const windows = OverlayData.getOverlayWindows();
     const usedByWindows = Object.values(windows).filter(w => w.activeLayout === layoutName).map(w => w.name);
     
     if (usedByWindows.length > 0) {
@@ -2470,31 +2467,23 @@ class ManageLayouts extends FormApplication {
       if (!confirmation) return;
       
       // Reset any windows using this layout to Default
-      let modified = false;
       for (const [windowId, windowConfig] of Object.entries(windows)) {
         if (windowConfig.activeLayout === layoutName) {
           windows[windowId].activeLayout = "Default";
-          modified = true;
         }
       }
       
-      if (modified) {
-        await game.settings.set(MODULE_ID, "overlayWindows", windows);
+      // Update windows in OverlayData
+      for (const [windowId, config] of Object.entries(windows)) {
+        await OverlayData.setOverlayWindow(windowId, config);
       }
     }
     
     if (!confirm(`Are you sure you want to delete layout: ${layoutName}?`)) return;
     
     try {
-      const layouts = game.settings.get(MODULE_ID, "layouts") || {};
-      
-      if (!layouts[layoutName]) {
-        ui.notifications.warn(`Layout "${layoutName}" not found.`);
-        return;
-      }
-      
-      delete layouts[layoutName];
-      await game.settings.set(MODULE_ID, "layouts", layouts);
+      // Delete layout using OverlayData
+      await OverlayData.deleteLayout(layoutName);
       ui.notifications.info(`Layout "${layoutName}" deleted.`);
       
       // Refresh any open config windows
@@ -2617,7 +2606,7 @@ class ManageLayouts extends FormApplication {
               
               const layouts = game.settings.get(MODULE_ID, "layouts") || {};
               layouts[layoutName] = importedLayout;
-              await game.settings.set(MODULE_ID, "layouts", layouts);
+              await OverlayData.setLayout(layoutName, layoutItems);
               ui.notifications.info(`Imported layout: ${layoutName}`);
               
               // Refresh any open config windows
@@ -2648,6 +2637,36 @@ class ManageLayouts extends FormApplication {
 
   async _onDuplicate(event) {
     event.preventDefault();
+    
+    // Check if the user has premium access
+    const isPremium = OverlayData.getSetting("isPremium") || false;
+    
+    // If not premium, show premium required dialog and return
+    if (!isPremium) {
+      new Dialog({
+        title: "Premium Feature",
+        content: `
+          <h3><i class="fas fa-gem" style="color:#FF424D;"></i> Premium Feature Required</h3>
+          <p>Multiple layouts require premium activation.</p>
+          <p>With premium, you can create unlimited layouts, use animations, and access the slideshow feature!</p>
+        `,
+        buttons: {
+          upgrade: {
+            icon: '<i class="fab fa-patreon"></i>',
+            label: "Upgrade on Patreon",
+            callback: () => window.open("https://www.patreon.com/c/jenzelta", "_blank")
+          },
+          cancel: {
+            icon: '<i class="fas fa-times"></i>',
+            label: "Close"
+          }
+        },
+        default: "cancel",
+        width: 400
+      }).render(true);
+      return;
+    }
+    
     const originalLayoutName = event.currentTarget.dataset.layout;
     
     try {
@@ -2658,6 +2677,7 @@ class ManageLayouts extends FormApplication {
         return;
       }
       
+      // Rest of the existing duplicate function code...
       let baseName = originalLayoutName;
       let copyNumber = 1;
       let newLayoutName = `${baseName} (Copy)`;
@@ -2683,7 +2703,7 @@ class ManageLayouts extends FormApplication {
       
       layouts[customName] = JSON.parse(JSON.stringify(layouts[originalLayoutName]));
       
-      await game.settings.set(MODULE_ID, "layouts", layouts);
+      await OverlayData.setLayout(layoutName, layoutItems);
       ui.notifications.info(`Layout "${originalLayoutName}" duplicated as "${customName}".`);
       
       // Refresh any open config windows
@@ -2716,14 +2736,8 @@ class SlideshowConfig extends FormApplication {
   }
 
   getData() {
-    const slideshow = game.settings.get(MODULE_ID, "slideshow") || { 
-      list: [], 
-      random: false,
-      transition: "none",
-      transitionDuration: 0.5,
-      targetWindow: "main"
-    };
-    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    const slideshow = OverlayData.getSlideshow();
+    const layouts = OverlayData.getLayouts();
     const availableLayouts = Object.keys(layouts);
     
     const windows = game.settings.get(MODULE_ID, "overlayWindows") || {
@@ -2781,12 +2795,12 @@ class SlideshowConfig extends FormApplication {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
     const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
-    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const activeLayout = OverlayData.getActiveLayout() || "Default";
     const current = layouts[activeLayout] || [];
     if (index > 0) {
       [current[index - 1], current[index]] = [current[index], current[index - 1]];
       layouts[activeLayout] = current;
-      await game.settings.set(MODULE_ID, "layouts", layouts);
+      await OverlayData.setLayout(layoutName, layoutItems);
       
       // Update all open windows
       this._updateAllWindows();
@@ -2799,12 +2813,12 @@ class SlideshowConfig extends FormApplication {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
     const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
-    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const activeLayout = OverlayData.getActiveLayout() || "Default";
     const current = layouts[activeLayout] || [];
     if (index < current.length - 1) {
       [current[index], current[index + 1]] = [current[index + 1], current[index]];
       layouts[activeLayout] = current;
-      await game.settings.set(MODULE_ID, "layouts", layouts);
+      await OverlayData.setLayout(layoutName, layoutItems);
       
       // Update all open windows
       this._updateAllWindows();
@@ -2816,7 +2830,7 @@ class SlideshowConfig extends FormApplication {
   async _onStartSlideshow(event) {
     event.preventDefault();
 
-    const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
+    const isPremium = OverlayData.getSetting("isPremium") || false;
     if (!isPremium) {
       ui.notifications.warn("Slideshow feature requires premium activation. Please consider supporting on Patreon.");
       return;
@@ -3053,6 +3067,10 @@ class SlideshowConfig extends FormApplication {
     
     await game.settings.set(MODULE_ID, "slideshow", data);
     ui.notifications.info("Slideshow configuration saved.");
+
+    await OverlayData.setSlideshow(data);
+    ui.notifications.info("Slideshow configuration saved.");
+  
   }
 
   _updateAllWindows() {
@@ -3100,7 +3118,7 @@ class AnimationManager extends FormApplication {
 
   constructor(item, itemIndex, parentConfig) {
     super();
-    const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
+    const isPremium = OverlayData.getSetting("isPremium") || false;
     
     if (!isPremium) {
       new Dialog({
@@ -3192,7 +3210,7 @@ class AnimationManager extends FormApplication {
         {id: "flash", name: "Flash"}
       ],
       activeAnimations: this.item.animations || [],
-      isPremium: game.settings.get(MODULE_ID, "isPremium") || false
+      isPremium: OverlayData.getSetting("isPremium") || false
     };
   }
   
@@ -3401,11 +3419,11 @@ class AnimationManager extends FormApplication {
   
   async _saveItemAnimations() {
     const layouts = game.settings.get(MODULE_ID, "layouts") || {};
-    const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+    const activeLayout = OverlayData.getActiveLayout() || "Default";
     
     layouts[activeLayout][this.itemIndex].animations = this.item.animations;
     
-    await game.settings.set(MODULE_ID, "layouts", layouts);
+    await OverlayData.setLayout(layoutName, layoutItems);
     
     if (this.parentConfig) {
       this.parentConfig.render();
@@ -3600,36 +3618,7 @@ function applyMultipleImageAnimations(animations, element) {
   
   window.overlayWindow.document.head.appendChild(styleEl);
 }
-function applyAllContinuousAnimations(animations, element) {
-  if (!animations.length) return;
-  
-  // For multiple animations, we need to create custom animation properties
-  if (animations.length > 1) {
-    // Add all animation classes
-    animations.forEach(anim => {
-      element.classList.add(anim.animation);
-    });
-    
-    // Build a combined animation property
-    const animationNames = animations.map(anim => anim.animation).join(", ");
-    const animationDurations = animations.map(anim => `${anim.duration}s`).join(", ");
-    const animationDelays = animations.map(anim => `${anim.delay}s`).join(", ");
-    const animationIterationCounts = animations.map(() => "infinite").join(", ");
-    
-    // Apply combined animations
-    element.style.animationName = animationNames;
-    element.style.animationDuration = animationDurations;
-    element.style.animationDelay = animationDelays;
-    element.style.animationIterationCount = animationIterationCounts;
-    element.style.animationFillMode = "forwards";
-  } else if (animations.length === 1) {
-    // For a single animation, use the simpler approach
-    const anim = animations[0];
-    element.classList.add(anim.animation);
-    element.style.animationDelay = `${anim.delay}s`;
-    element.style.animationDuration = `${anim.duration}s`;
-  }
-}
+
 
 function triggerHPAnimation(actorId, animationType, oldValue, newValue) {
   if (!window.overlayWindow || window.overlayWindow.closed) return;
@@ -3638,7 +3627,7 @@ function triggerHPAnimation(actorId, animationType, oldValue, newValue) {
   if (!container) return;
   
   const layouts = game.settings.get(MODULE_ID, "layouts") || {};
-  const activeLayout = game.settings.get(MODULE_ID, "activeLayout") || "Default";
+  const activeLayout = OverlayData.getActiveLayout() || "Default";
   const items = layouts[activeLayout] || [];
   
   const hpItems = items.filter(item => 
@@ -3749,115 +3738,9 @@ function triggerAnimationsByEvent(actorId, eventType, context) {
   }
 }
 
-function evaluateTriggerCondition(condition, context) {
-  console.log("Evaluating trigger condition", condition, "with context", context);
-  
-  if (!condition) return false;
-  
-  const conditionChecks = {
-    "hpChange": () => {
-      if (condition.comparison === "decrease" && context.newValue < context.oldValue) return true;
-      if (condition.comparison === "increase" && context.newValue > context.oldValue) return true;
-      if (condition.comparison === "threshold" && context.newValue <= condition.threshold) return true;
-      return false;
-    },
-    
-    "statChange": () => {
-      const oldValue = context.oldValue || 0;
-      const newValue = context.newValue || 0;
-      
-      if (condition.comparison === "decrease" && newValue < oldValue) return true;
-      if (condition.comparison === "increase" && newValue > oldValue) return true;
-      if (condition.comparison === "threshold" && newValue <= (condition.threshold || 0)) return true;
-      return false;
-    },
-    
-    "levelUp": () => {
-      return (context.newValue > context.oldValue);
-    },
-    
-    "criticalHit": () => {
-      return context.isCritical === true;
-    },
-    
-    "statusEffect": () => {
-      return context.statusEffect !== undefined;
-    }
-  };
 
-  if (conditionChecks[condition.event]) {
-    return conditionChecks[condition.event]();
-  }
-  
-  return false;
-}
 
-function applyTriggeredAnimation(element, animation) {
-  console.log("Applying triggered animation", animation, "to element", element);
 
-  const originalStyles = {
-    color: element.style.color,
-    animationName: element.style.animationName,
-    animationDuration: element.style.animationDuration,
-    animationDelay: element.style.animationDelay,
-    animationIterationCount: element.style.animationIterationCount
-  };
-  
-
-  const addedClasses = [];
-  
-
-  element.classList.remove("hp-damage", "hp-healing");
-  
-
-  if (animation.animation) {
-    element.classList.add(animation.animation);
-    addedClasses.push(animation.animation);
-  }
-  
-  
-  switch (animation.animation) {
-    case "hpDamage":
-      element.classList.add("hp-damage");
-      element.style.color = "#ff3333"; 
-      addedClasses.push("hp-damage");
-      break;
-      
-    case "hpHealing":
-      element.classList.add("hp-healing");
-      element.style.color = "#33ff33"; 
-      addedClasses.push("hp-healing");
-      break;
-      
-    default:
-
-      if (window.standardAnimations && window.standardAnimations.includes(animation.animation)) {
-   
-        element.style.animationName = animation.animation;
-        element.style.animationDuration = `${animation.duration || 1.5}s`;
-        element.style.animationDelay = "0s";
-        element.style.animationIterationCount = "1";
-        element.style.animationFillMode = "forwards";
-      }
-      break;
-  }
-  
- 
-  void element.offsetWidth;
-  
-
-  const duration = animation.duration || 1.5;
-  setTimeout(() => {
-
-    addedClasses.forEach(cls => element.classList.remove(cls));
-    
-    for (const [prop, value] of Object.entries(originalStyles)) {
-      if (value) element.style[prop] = value;
-    }
-    
-    console.log("Animation complete, element restored");
-  }, duration * 1000);
-}
 
 window.standardAnimations = [
   "hover", "glitch", "heartbeat", "rotate", "wiggle", "pulse", "slide",
@@ -3999,7 +3882,7 @@ class OverlayWindowManager extends FormApplication {
   async _onCreateWindow(event) {
     event.preventDefault();
     
-    const isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
+    const isPremium = OverlayData.getSetting("isPremium") || false;
     const windows = game.settings.get(MODULE_ID, "overlayWindows");
     
     // Check if non-premium user is trying to create a second window
@@ -4120,7 +4003,7 @@ class OverlayWindowConfig extends FormApplication {
       windowConfig, 
       layouts,
       slideshows,
-      isPremium: game.settings.get(MODULE_ID, "isPremium")
+      isPremium: OverlayData.getSetting("isPremium")
     };
   }
   

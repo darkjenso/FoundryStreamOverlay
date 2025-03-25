@@ -1,37 +1,126 @@
 <form>
-  <h2>Configure Window: {{windowConfig.name}}</h2>
-  
-  <div class="form-group">
-    <label>Window Name:</label>
-    <input type="text" name="name" value="{{windowConfig.name}}">
-  </div>
-  
-  <div class="form-group">
-    <label>Display Layout:</label>
-    <select name="activeLayout">
-      {{#each layouts}}
-        <option value="{{@key}}" {{#if (eq ../windowConfig.activeLayout @key)}}selected{{/if}}>{{@key}}</option>
-      {{/each}}
-    </select>
-  </div>
-  
-  <div class="form-group">
-    <label>
-      <input type="checkbox" name="slideshowActive" {{#if windowConfig.slideshowActive}}checked{{/if}}>
-      Enable Slideshow
-    </label>
-  </div>
-  
-  <div class="form-group" {{#unless windowConfig.slideshowActive}}style="display:none"{{/unless}}>
-    <label>Slideshow Configuration:</label>
-    <select name="slideshowId">
-      {{#each slideshows}}
-        <option value="{{this.id}}" {{#if (eq ../windowConfig.slideshowId this.id)}}selected{{/if}}>{{this.name}}</option>
-      {{/each}}
-    </select>
-  </div>
-  
-  <div style="margin-top:1em; text-align:center;">
-    <button type="button" class="open-window">Open Window</button>
-  </div>
-</form>
+    <h2>Configure Window: {{windowConfig.name}}</h2>
+    
+    <div class="form-group">
+      <label>Window Name:</label>
+      <input type="text" name="name" value="{{windowConfig.name}}">
+    </div>
+    
+    <div class="form-group">
+      <label>Display Layout:</label>
+      <select name="activeLayout">
+        {{#each layouts}}
+          <option value="{{@key}}" {{#if (eq ../windowConfig.activeLayout @key)}}selected{{/if}}>{{@key}}</option>
+        {{/each}}
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label>
+        <input type="checkbox" name="slideshowActive" {{#if windowConfig.slideshowActive}}checked{{/if}}>
+        Enable Slideshow
+      </label>
+    </div>
+    
+    <div class="form-group" {{#unless windowConfig.slideshowActive}}style="display:none"{{/unless}}>
+      <label>Slideshow Configuration:</label>
+      <select name="slideshowId">
+        {{#each slideshows}}
+          <option value="{{this.id}}" {{#if (eq ../windowConfig.slideshowId this.id)}}selected{{/if}}>{{this.name}}</option>
+        {{/each}}
+      </select>
+    </div>
+    
+    <div class="form-group window-size-section">
+      <label>Window Size:</label>
+      <div class="window-size-inputs">
+        <div class="input-group">
+          <label>Width:</label>
+          <input type="number" name="width" value="{{windowConfig.width}}" min="200" step="10">
+        </div>
+        <div class="input-group">
+          <label>Height:</label>
+          <input type="number" name="height" value="{{windowConfig.height}}" min="200" step="10">
+        </div>
+      </div>
+      <p class="hint">Default size when opening the window (in pixels)</p>
+      
+      <div class="current-size-actions">
+        <button type="button" id="save-current-size" {{#unless isWindowOpen}}disabled{{/unless}}>
+          <i class="fas fa-save"></i> Save Current Size
+        </button>
+        <span class="hint save-size-hint">
+          {{#if isWindowOpen}}
+          Click to use the current window dimensions
+          {{else}}
+          Open the window first to save its size
+          {{/if}}
+        </span>
+      </div>
+    </div>
+    
+    <div style="margin-top:1em; text-align:center;">
+      <button type="button" class="open-window">Open Window</button>
+    </div>
+    
+    <hr>
+    
+    <div class="form-footer">
+      <button type="submit">Save Configuration</button>
+    </div>
+    
+    <style>
+      .form-group {
+        margin-bottom: 1em;
+      }
+      
+      .window-size-section {
+        background-color: #f5f5f5;
+        padding: 1em;
+        border-radius: 4px;
+        border-left: 3px solid #4b8;
+      }
+      
+      .window-size-inputs {
+        display: flex;
+        gap: 1em;
+        margin-top: 0.5em;
+      }
+      
+      .input-group {
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .input-group input {
+        width: 80px;
+      }
+      
+      .hint {
+        font-style: italic;
+        color: #666;
+        font-size: 0.9em;
+        margin-top: 0.2em;
+      }
+      
+      .current-size-actions {
+        margin-top: 1em;
+        padding-top: 0.5em;
+        border-top: 1px dashed #ddd;
+      }
+      
+      .save-size-hint {
+        margin-left: 0.5em;
+      }
+      
+      .form-footer {
+        margin-top: 1em;
+        text-align: right;
+      }
+      
+      button[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    </style>
+  </form>

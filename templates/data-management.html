@@ -1,0 +1,87 @@
+<form>
+  <h2>Overlay Data Management</h2>
+  
+  <div class="form-section">
+    <h3>Import & Export</h3>
+    <p>Import or export all your overlay layouts, settings, and configurations as a single file.</p>
+    
+    <div class="button-group">
+      <button type="button" id="export-data" class="export-button">
+        <i class="fas fa-download"></i> Export Data
+      </button>
+      
+      <button type="button" id="import-data" class="import-button">
+        <i class="fas fa-upload"></i> Import Data
+      </button>
+      <input type="file" id="import-file" accept=".json" style="display: none;">
+    </div>
+    
+    {{#if hasData}}
+    <div class="data-info">
+      <p><i class="fas fa-info-circle"></i> Last saved: {{lastSaved}}</p>
+    </div>
+    {{/if}}
+  </div>
+  
+  <div class="form-section warning-section">
+    <h3><i class="fas fa-exclamation-triangle"></i> Important</h3>
+    <ul>
+      <li>Importing data will <strong>replace all</strong> your current layouts and settings.</li>
+      <li>Make sure to export your current data first if you want to keep it.</li>
+      <li>Only import files that were exported from this module.</li>
+    </ul>
+  </div>
+  
+  <div class="form-section">
+    <h3>Backup Recommendations</h3>
+    <p>Consider creating regular backups of your overlay configurations, especially after making significant changes.</p>
+  </div>
+  
+  <style>
+    .form-section {
+      margin-bottom: 1.5em;
+      padding-bottom: 1.5em;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    .form-section:last-child {
+      border-bottom: none;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 1em;
+      margin: 1em 0;
+    }
+    
+    button {
+      padding: 0.5em 1em;
+      cursor: pointer;
+    }
+    
+    .export-button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+    }
+    
+    .import-button {
+      background-color: #2196F3;
+      color: white;
+      border: none;
+    }
+    
+    .warning-section {
+      background-color: #fff3cd;
+      border: 1px solid #ffeeba;
+      border-radius: 4px;
+      padding: 0.5em 1em;
+    }
+    
+    .data-info {
+      font-style: italic;
+      color: #666;
+      margin-top: 0.5em;
+    }
+  </style>
+</form>
