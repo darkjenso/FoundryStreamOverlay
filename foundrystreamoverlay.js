@@ -270,7 +270,7 @@ Hooks.once("init", () => {
 
   Hooks.on("ready", () => {
     const isPremium = OverlayData.getSetting("isPremium") || false;
-    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    const layouts = OverlayData.getLayouts();
     
     if (!layouts["Default"]) {
       layouts["Default"] = [];
@@ -349,34 +349,7 @@ game.settings.register(MODULE_ID, "isPremium", {
   default: false
 });
 
-function validateActivationKey(key) {
-  if (!key || key.length !== 16 || !/^[A-F0-9]{16}$/.test(key)) {
-    if (key !== "") {
-      ui.notifications.error("Invalid activation key format.");
-    }
-    game.settings.set(MODULE_ID, "isPremium", false);
-    return;
-  }
-  
-  let sum = 0;
-  for (let i = 0; i < 15; i++) {
-    const charCode = parseInt(key[i], 16);
-    sum = (sum + charCode) % 16;
-  }
-  
-  const expectedChecksum = sum.toString(16).toUpperCase();
-  const lastChar = key[15];
-  
-  const isValid = lastChar === expectedChecksum;
-  
-  game.settings.set(MODULE_ID, "isPremium", isValid);
-  
-  if (isValid) {
-    ui.notifications.info("Premium features activated! Thank you for your support.");
-  } else {
-    ui.notifications.error("Invalid activation key.");
-  }
-}
+
 
   game.settings.register(MODULE_ID, "activationKey", {
     name: "Premium Activation Key",
@@ -530,7 +503,7 @@ class FoundryStreamOverlay extends Application {
 
   getData() {
     const backgroundColour = game.settings.get(MODULE_ID, "backgroundColour");
-    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    const layouts = OverlayData.getLayouts();
     const activeLayout = OverlayData.getActiveLayout() || "Default";
     const isPremium = OverlayData.getSetting("isPremium") || false;
   
@@ -1286,7 +1259,7 @@ class OverlayConfig extends FormApplication {
   _onManageAnimations(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
-    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    const layouts = OverlayData.getLayouts();
     const activeLayout = OverlayData.getActiveLayout() || "Default";
     const item = layouts[activeLayout][index];
     
@@ -1345,9 +1318,8 @@ class OverlayConfig extends FormApplication {
 
   async _onAddRow(event) {
     event.preventDefault();
-    const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
     const activeLayout = OverlayData.getActiveLayout() || "Default";
-    const current = layouts[activeLayout] || [];
+    const current = OverlayData.getLayout(activeLayout) || [];
     const newItem = {
       type: "data",
       actorId: "",
@@ -1381,7 +1353,7 @@ class OverlayConfig extends FormApplication {
     current.unshift(newItem);
   
     layouts[activeLayout] = current;
-    await OverlayData.setLayout(layoutName, layoutItems);
+    await OverlayData.setLayout(layoutName, items);
     
     // Update all open windows
     this._updateAllWindows();
@@ -1419,7 +1391,7 @@ class OverlayConfig extends FormApplication {
     current.unshift(newItem);
     
     layouts[activeLayout] = current;
-    await OverlayData.setLayout(layoutName, layoutItems);
+    await OverlayData.setLayout(layoutName, items);
     
     // Update all open windows
     this._updateAllWindows();
@@ -1462,7 +1434,7 @@ class OverlayConfig extends FormApplication {
     current.unshift(newItem);
     
     layouts[activeLayout] = current;
-    await OverlayData.setLayout(layoutName, layoutItems);
+    await OverlayData.setLayout(layoutName, items);
     
     // Update all open windows
     this._updateAllWindows();
@@ -1478,7 +1450,7 @@ class OverlayConfig extends FormApplication {
     const current = layouts[activeLayout] || [];
     current.splice(index, 1);
     layouts[activeLayout] = current;
-    await OverlayData.setLayout(layoutName, layoutItems);
+    await OverlayData.setLayout(layoutName, items);
     
     // Update all open windows
     this._updateAllWindows();
@@ -1495,7 +1467,7 @@ class OverlayConfig extends FormApplication {
     if (index > 0) {
       [current[index - 1], current[index]] = [current[index], current[index - 1]];
       layouts[activeLayout] = current;
-      await OverlayData.setLayout(layoutName, layoutItems);
+      await OverlayData.setLayout(layoutName, items);
       
       // Update all open windows
       this._updateAllWindows();
@@ -1513,7 +1485,7 @@ class OverlayConfig extends FormApplication {
     if (index < current.length - 1) {
       [current[index], current[index + 1]] = [current[index + 1], current[index]];
       layouts[activeLayout] = current;
-      await OverlayData.setLayout(layoutName, layoutItems);
+      await OverlayData.setLayout(layoutName, items);
       
       // Update all open windows
       this._updateAllWindows();
@@ -1620,7 +1592,7 @@ class OverlayConfig extends FormApplication {
       }
     });
     
-    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    const layouts = OverlayData.getLayouts();
     const activeLayout = OverlayData.getActiveLayout() || "Default";
     const currentItems = layouts[activeLayout] || [];
     
@@ -1638,7 +1610,7 @@ class OverlayConfig extends FormApplication {
     });
     
     layouts[activeLayout] = newItems;
-    await OverlayData.setLayout(layoutName, layoutItems);
+    await OverlayData.setLayout(layoutName, items);
   }
 }
 
@@ -1851,7 +1823,7 @@ function updateOverlayWindow(windowId = "main") {
   const windowConfig = windows[windowId] || windows.main;
   
   const bg = game.settings.get(MODULE_ID, "backgroundColour");
-  const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+  const layouts = OverlayData.getLayouts();
   const isPremium = OverlayData.getSetting("isPremium") || false;
   
   // Ensure free users always use the Default layout
@@ -2314,7 +2286,7 @@ class ManageLayouts extends FormApplication {
   }
 
   getData() {
-    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    const layouts = OverlayData.getLayouts();
     const activeLayout = OverlayData.getActiveLayout() || "Default";
     const isPremium = OverlayData.getSetting("isPremium") || false;
     
@@ -2386,7 +2358,7 @@ class ManageLayouts extends FormApplication {
     }
     
     layouts[layoutName] = [];
-    await OverlayData.setLayout(layoutName, layoutItems);
+    await OverlayData.setLayout(layoutName, items);
     ui.notifications.info(`Layout "${layoutName}" created.`);
     
     for (const app of Object.values(ui.windows)) {
@@ -2410,7 +2382,7 @@ class ManageLayouts extends FormApplication {
       ui.notifications.error(`Layout name too long. Maximum length is ${maxNameLength} characters.`);
       return;
     }
-    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    const layouts = OverlayData.getLayouts();
     if (layouts[newName]) {
       ui.notifications.warn("A layout with that name already exists.");
       return;
@@ -2421,7 +2393,7 @@ class ManageLayouts extends FormApplication {
     if (activeLayout === oldName) {
       await game.settings.set(MODULE_ID, "activeLayout", newName);
     }
-    await OverlayData.setLayout(layoutName, layoutItems);
+    await OverlayData.setLayout(layoutName, items);
     
     // Refresh any open config windows
     for (const app of Object.values(ui.windows)) {
@@ -2441,47 +2413,50 @@ class ManageLayouts extends FormApplication {
       return;
     }
     
-    // Get layouts from OverlayData instead of game.settings
-    const layouts = OverlayData.getLayouts();
-    
-    // Check if layout exists in the new storage system
-    if (!layouts[layoutName]) {
-      ui.notifications.warn(`Layout "${layoutName}" not found.`);
-      return;
-    }
-    
-    // Check for windows using this layout
-    const windows = OverlayData.getOverlayWindows();
-    const usedByWindows = Object.values(windows).filter(w => w.activeLayout === layoutName).map(w => w.name);
-    
-    if (usedByWindows.length > 0) {
-      // This layout is used by windows - warn the user
-      const windowNames = usedByWindows.join('", "');
-      const confirmation = await Dialog.confirm({
-        title: "Layout In Use",
-        content: `This layout is currently used by the following windows: "${windowNames}". If you delete it, these windows will revert to the Default layout. Continue?`,
-        yes: () => true,
-        no: () => false
-      });
+    try {
+      // Check if layout exists
+      const layout = OverlayData.getLayout(layoutName);
+      if (!layout) {
+        ui.notifications.warn(`Layout "${layoutName}" not found.`);
+        return;
+      }
       
-      if (!confirmation) return;
+      // Check for windows using this layout
+      const windows = OverlayData.getOverlayWindows();
+      const usedByWindows = Object.values(windows)
+        .filter(w => w.activeLayout === layoutName)
+        .map(w => w.name);
       
-      // Reset any windows using this layout to Default
-      for (const [windowId, windowConfig] of Object.entries(windows)) {
-        if (windowConfig.activeLayout === layoutName) {
-          windows[windowId].activeLayout = "Default";
+      if (usedByWindows.length > 0) {
+        // This layout is used by windows - warn the user
+        const windowNames = usedByWindows.join('", "');
+        const confirmation = await Dialog.confirm({
+          title: "Layout In Use",
+          content: `This layout is currently used by the following windows: "${windowNames}". If you delete it, these windows will revert to the Default layout. Continue?`,
+          yes: () => true,
+          no: () => false
+        });
+        
+        if (!confirmation) return;
+        
+        // Update windows in OverlayData first - modify the stored configurations
+        for (const windowId of Object.keys(windows)) {
+          if (windows[windowId].activeLayout === layoutName) {
+            // Make a copy of the window config and update it
+            const updatedConfig = { ...windows[windowId], activeLayout: "Default" };
+            await OverlayData.setOverlayWindow(windowId, updatedConfig);
+          }
         }
       }
       
-      // Update windows in OverlayData
-      for (const [windowId, config] of Object.entries(windows)) {
-        await OverlayData.setOverlayWindow(windowId, config);
-      }
-    }
-    
-    if (!confirm(`Are you sure you want to delete layout: ${layoutName}?`)) return;
-    
-    try {
+      // Final confirmation prompt
+      if (!await Dialog.confirm({
+        title: "Delete Layout",
+        content: `Are you sure you want to delete layout: ${layoutName}?`,
+        yes: () => true,
+        no: () => false
+      })) return;
+      
       // Delete layout using OverlayData
       await OverlayData.deleteLayout(layoutName);
       ui.notifications.info(`Layout "${layoutName}" deleted.`);
@@ -2503,7 +2478,7 @@ class ManageLayouts extends FormApplication {
   async _onExport(event) {
     event.preventDefault();
     const layoutName = event.currentTarget.dataset.layout;
-    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    const layouts = OverlayData.getLayouts();
     
     try {
       // Create a clean copy of the layout data to avoid reference issues
@@ -2604,9 +2579,9 @@ class ManageLayouts extends FormApplication {
                 throw new Error("Imported JSON is not a valid layout array");
               }
               
-              const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+              const layouts = OverlayData.getLayouts();
               layouts[layoutName] = importedLayout;
-              await OverlayData.setLayout(layoutName, layoutItems);
+              await OverlayData.setLayout(layoutName, items);
               ui.notifications.info(`Imported layout: ${layoutName}`);
               
               // Refresh any open config windows
@@ -2670,7 +2645,7 @@ class ManageLayouts extends FormApplication {
     const originalLayoutName = event.currentTarget.dataset.layout;
     
     try {
-      const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+      const layouts = OverlayData.getLayouts();
       
       if (!layouts[originalLayoutName]) {
         ui.notifications.error(`Layout "${originalLayoutName}" not found.`);
@@ -2703,7 +2678,7 @@ class ManageLayouts extends FormApplication {
       
       layouts[customName] = JSON.parse(JSON.stringify(layouts[originalLayoutName]));
       
-      await OverlayData.setLayout(layoutName, layoutItems);
+      await OverlayData.setLayout(layoutName, items);
       ui.notifications.info(`Layout "${originalLayoutName}" duplicated as "${customName}".`);
       
       // Refresh any open config windows
@@ -2740,7 +2715,7 @@ class SlideshowConfig extends FormApplication {
     const layouts = OverlayData.getLayouts();
     const availableLayouts = Object.keys(layouts);
     
-    const windows = game.settings.get(MODULE_ID, "overlayWindows") || {
+    const windows = OverlayData.getOverlayWindows() || {
       "main": { id: "main", name: "Main Overlay" }
     };
     
@@ -2768,39 +2743,34 @@ class SlideshowConfig extends FormApplication {
   async _onAddSelectedItem(event) {
     event.preventDefault();
     const selectedLayout = $(event.currentTarget).closest("form").find("#new-layout-dropdown").val();
-    const data = game.settings.get(MODULE_ID, "slideshow") || { 
-      list: [], 
-      random: false,
-      targetWindow: "main" 
-    };
-    data.list.push({ layout: selectedLayout, duration: 10 });
-    await game.settings.set(MODULE_ID, "slideshow", data);
+    const slideshow = OverlayData.getSlideshow();
+    
+    slideshow.list.push({ layout: selectedLayout, duration: 10 });
+    await OverlayData.setSlideshow(slideshow);
     this.render();
   }
 
   async _onRemoveItem(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
-    const data = game.settings.get(MODULE_ID, "slideshow") || { 
-      list: [], 
-      random: false,
-      targetWindow: "main" 
-    };
-    data.list.splice(index, 1);
-    await game.settings.set(MODULE_ID, "slideshow", data);
+    const slideshow = OverlayData.getSlideshow();
+    
+    slideshow.list.splice(index, 1);
+    await OverlayData.setSlideshow(slideshow);
     this.render();
   }
 
   async _onMoveUp(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
-    const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
-    const activeLayout = OverlayData.getActiveLayout() || "Default";
-    const current = layouts[activeLayout] || [];
+    const slideshow = OverlayData.getSlideshow();
+    
     if (index > 0) {
-      [current[index - 1], current[index]] = [current[index], current[index - 1]];
-      layouts[activeLayout] = current;
-      await OverlayData.setLayout(layoutName, layoutItems);
+      // Swap items in the slideshow list
+      [slideshow.list[index - 1], slideshow.list[index]] = 
+      [slideshow.list[index], slideshow.list[index - 1]];
+      
+      await OverlayData.setSlideshow(slideshow);
       
       // Update all open windows
       this._updateAllWindows();
@@ -2812,13 +2782,14 @@ class SlideshowConfig extends FormApplication {
   async _onMoveDown(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
-    const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
-    const activeLayout = OverlayData.getActiveLayout() || "Default";
-    const current = layouts[activeLayout] || [];
-    if (index < current.length - 1) {
-      [current[index], current[index + 1]] = [current[index + 1], current[index]];
-      layouts[activeLayout] = current;
-      await OverlayData.setLayout(layoutName, layoutItems);
+    const slideshow = OverlayData.getSlideshow();
+    
+    if (index < slideshow.list.length - 1) {
+      // Swap items in the slideshow list
+      [slideshow.list[index], slideshow.list[index + 1]] = 
+      [slideshow.list[index + 1], slideshow.list[index]];
+      
+      await OverlayData.setSlideshow(slideshow);
       
       // Update all open windows
       this._updateAllWindows();
@@ -2836,13 +2807,7 @@ class SlideshowConfig extends FormApplication {
       return;
     }
       
-    const slideshow = game.settings.get(MODULE_ID, "slideshow") || { 
-      list: [], 
-      random: false,
-      transition: "none",
-      transitionDuration: 0.5,
-      targetWindow: "main"
-    };
+    const slideshow = OverlayData.getSlideshow();
     
     console.log("Starting slideshow with settings:", slideshow);
     
@@ -2915,13 +2880,7 @@ class SlideshowConfig extends FormApplication {
           return;
         }
         
-        const currentSlideshow = game.settings.get(MODULE_ID, "slideshow") || { 
-          list: [], 
-          random: false,
-          transition: "none",
-          transitionDuration: 0.5,
-          targetWindow: "main"
-        };
+        const currentSlideshow = OverlayData.getSlideshow();
         
         if (currentSlideshow.list.length === 0) {
           console.log("No layouts in slideshow");
@@ -2954,7 +2913,7 @@ class SlideshowConfig extends FormApplication {
         const transitionDuration = currentSlideshow.transitionDuration || 0.5;
         
         try {
-          const windows = game.settings.get(MODULE_ID, "overlayWindows");
+          const windows = OverlayData.getOverlayWindows();
           const windowConfig = windows[windowId] || windows.main;
           const currentLayoutName = windowConfig.activeLayout;
           const nextLayoutName = currentItem.layout;
@@ -2962,18 +2921,19 @@ class SlideshowConfig extends FormApplication {
           console.log(`Transitioning from ${currentLayoutName} to ${nextLayoutName} in window ${windowId}`);
           
           if (currentLayoutName !== nextLayoutName) {
-            windows[windowId].activeLayout = nextLayoutName;
-            await game.settings.set(MODULE_ID, "overlayWindows", windows);
+            // Update the window config with the new layout
+            const updatedConfig = { ...windowConfig, activeLayout: nextLayoutName };
+            await OverlayData.setOverlayWindow(windowId, updatedConfig);
             
             updateOverlayWindow(windowId);
             
             const tempDiv = overlayWindow.document.createElement('div');
             tempDiv.innerHTML = container.innerHTML;
             
-            console.log("Generated content:", tempDiv.innerHTML);
+            // Temporarily set window back to previous layout
+            const revertConfig = { ...windowConfig, activeLayout: currentLayoutName };
+            await OverlayData.setOverlayWindow(windowId, revertConfig);
             
-            windows[windowId].activeLayout = currentLayoutName;
-            await game.settings.set(MODULE_ID, "overlayWindows", windows);
             updateOverlayWindow(windowId);
             
             if (transition !== "none" && LAYOUT_TRANSITIONS[transition]) {
@@ -2986,8 +2946,8 @@ class SlideshowConfig extends FormApplication {
               }
             }
             
-            windows[windowId].activeLayout = nextLayoutName;
-            await game.settings.set(MODULE_ID, "overlayWindows", windows);
+            // Set window to the new layout after transition
+            await OverlayData.setOverlayWindow(windowId, updatedConfig);
             updateOverlayWindow(windowId);
           }
           
@@ -3033,7 +2993,7 @@ class SlideshowConfig extends FormApplication {
     
     console.log("Slideshow form data:", formData);
     
-    const data = { 
+    const slideshowData = { 
       list: [], 
       random: false,
       transition: "none",
@@ -3052,25 +3012,22 @@ class SlideshowConfig extends FormApplication {
     
     for (let key in temp) {
       if (temp[key].layout) {
-        data.list.push({
+        slideshowData.list.push({
           layout: temp[key].layout,
           duration: Number(temp[key].duration) || 10
         });
       }
     }
     
-    data.random = formData.random === "on";
-    data.transition = formData.transition || "none";
-    data.transitionDuration = Number(formData.transitionDuration) || 0.5;
+    slideshowData.random = formData.random === "on";
+    slideshowData.transition = formData.transition || "none";
+    slideshowData.transitionDuration = Number(formData.transitionDuration) || 0.5;
     
-    console.log("Processed slideshow data:", data);
+    console.log("Processed slideshow data:", slideshowData);
     
-    await game.settings.set(MODULE_ID, "slideshow", data);
+    // Only save once with OverlayData
+    await OverlayData.setSlideshow(slideshowData);
     ui.notifications.info("Slideshow configuration saved.");
-
-    await OverlayData.setSlideshow(data);
-    ui.notifications.info("Slideshow configuration saved.");
-  
   }
 
   _updateAllWindows() {
@@ -3078,7 +3035,7 @@ class SlideshowConfig extends FormApplication {
       updateOverlayWindow("main");
     }
     
-    const windows = game.settings.get(MODULE_ID, "overlayWindows") || {};
+    const windows = OverlayData.getOverlayWindows() || {};
     if (window.overlayWindows) {
       for (const [windowId, windowConfig] of Object.entries(windows)) {
         if (window.overlayWindows[windowId] && !window.overlayWindows[windowId].closed) {
@@ -3087,7 +3044,6 @@ class SlideshowConfig extends FormApplication {
       }
     }
   }
-
 }
 
 class AnimationManager extends FormApplication {
@@ -3418,12 +3374,12 @@ class AnimationManager extends FormApplication {
   }
   
   async _saveItemAnimations() {
-    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    const layouts = OverlayData.getLayouts();
     const activeLayout = OverlayData.getActiveLayout() || "Default";
     
     layouts[activeLayout][this.itemIndex].animations = this.item.animations;
     
-    await OverlayData.setLayout(layoutName, layoutItems);
+    await OverlayData.setLayout(layoutName, items);
     
     if (this.parentConfig) {
       this.parentConfig.render();
@@ -3626,7 +3582,7 @@ function triggerHPAnimation(actorId, animationType, oldValue, newValue) {
   const container = window.overlayWindow.document.getElementById("overlay-container");
   if (!container) return;
   
-  const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+  const layouts = OverlayData.getLayouts();
   const activeLayout = OverlayData.getActiveLayout() || "Default";
   const items = layouts[activeLayout] || [];
   
@@ -3993,22 +3949,26 @@ class OverlayWindowConfig extends FormApplication {
   }
   
   getData() {
-    const windows = game.settings.get(MODULE_ID, "overlayWindows");
+    const windows = OverlayData.getOverlayWindows();
     const windowConfig = windows[this.windowId];
-    const layouts = game.settings.get(MODULE_ID, "layouts") || {};
+    const layouts = OverlayData.getLayouts();
     const slideshows = this._getSlideshowOptions();
+    
+    // Check if window is currently open
+    const isWindowOpen = window.overlayWindows?.[this.windowId] && 
+                         !window.overlayWindows[this.windowId].closed;
     
     return { 
       windowId: this.windowId,
       windowConfig, 
       layouts,
       slideshows,
-      isPremium: OverlayData.getSetting("isPremium")
+      isPremium: OverlayData.getSetting("isPremium"),
+      isWindowOpen
     };
   }
   
   _getSlideshowOptions() {
-  
     return [
       { id: "none", name: "No Slideshow" },
       { id: "main", name: "Main Slideshow" }
@@ -4019,25 +3979,131 @@ class OverlayWindowConfig extends FormApplication {
     super.activateListeners(html);
     html.find("input, select").on("change", this._onSettingChange.bind(this));
     html.find(".open-window").click(this._onOpenWindow.bind(this));
+    html.find("#save-current-size").click(this._onSaveCurrentSize.bind(this));
   }
   
   async _onSettingChange(event) {
-    const windows = game.settings.get(MODULE_ID, "overlayWindows");
+    const windows = OverlayData.getOverlayWindows();
+    const windowConfig = windows[this.windowId];
     const field = event.currentTarget.name;
-    const value = event.currentTarget.type === "checkbox" 
-      ? event.currentTarget.checked 
-      : event.currentTarget.value;
     
-    windows[this.windowId][field] = value;
-    await game.settings.set(MODULE_ID, "overlayWindows", windows);
+    // Parse numeric values appropriately
+    let value;
+    if (event.currentTarget.type === "checkbox") {
+      value = event.currentTarget.checked;
+    } else if (field === "width" || field === "height") {
+      value = parseInt(event.currentTarget.value) || (field === "width" ? 800 : 600);
+    } else {
+      value = event.currentTarget.value;
+    }
+    
+    // Create updated config
+    const updatedConfig = { 
+      ...windowConfig,
+      [field]: value 
+    };
+    
+    await OverlayData.setOverlayWindow(this.windowId, updatedConfig);
     
     if (window.overlayWindows && window.overlayWindows[this.windowId]) {
       updateOverlayWindow(this.windowId);
     }
   }
   
+  async _onSaveCurrentSize(event) {
+    event.preventDefault();
+    
+    // Check if the window is open
+    if (!window.overlayWindows?.[this.windowId] || window.overlayWindows[this.windowId].closed) {
+      ui.notifications.warn("Window must be open to capture its current size");
+      return;
+    }
+    
+    try {
+      const currentWindow = window.overlayWindows[this.windowId];
+      
+      // Get the window's current dimensions
+      const width = currentWindow.outerWidth;
+      const height = currentWindow.outerHeight;
+      
+      if (!width || !height) {
+        ui.notifications.warn("Could not determine window dimensions");
+        return;
+      }
+      
+      // Update the form inputs to reflect the current size
+      const form = $(event.currentTarget).closest('form');
+      form.find('input[name="width"]').val(width);
+      form.find('input[name="height"]').val(height);
+      
+      // Save the new dimensions
+      const windows = OverlayData.getOverlayWindows();
+      const windowConfig = windows[this.windowId];
+      
+      const updatedConfig = {
+        ...windowConfig,
+        width,
+        height
+      };
+      
+      await OverlayData.setOverlayWindow(this.windowId, updatedConfig);
+      ui.notifications.info(`Saved current window size: ${width}×${height}`);
+    } catch (error) {
+      console.error("Error saving window size:", error);
+      ui.notifications.error("Failed to save window size");
+    }
+  }
+  
   async _onOpenWindow(event) {
     event.preventDefault();
     openOverlayWindow(this.windowId);
+  }
+  
+  async _updateObject(event, formData) {
+    try {
+      // Get current window config
+      const windows = OverlayData.getOverlayWindows();
+      const windowConfig = windows[this.windowId];
+      
+      // Create updated config with form data
+      const updatedConfig = { 
+        ...windowConfig
+      };
+      
+      // Update properties from form data
+      for (const [key, value] of Object.entries(formData)) {
+        if (key === "width" || key === "height") {
+          updatedConfig[key] = parseInt(value) || (key === "width" ? 800 : 600);
+        } else if (typeof value === "string" && value.match(/^(true|false)$/i)) {
+          updatedConfig[key] = value.toLowerCase() === "true";
+        } else {
+          updatedConfig[key] = value;
+        }
+      }
+      
+      // Save changes through OverlayData
+      await OverlayData.setOverlayWindow(this.windowId, updatedConfig);
+      
+      ui.notifications.info(`Window configuration saved.`);
+      
+      // Apply size changes to the window if it's open
+      if (window.overlayWindows?.[this.windowId] && !window.overlayWindows[this.windowId].closed) {
+        if (formData.width && formData.height) {
+          const width = parseInt(formData.width) || 800;
+          const height = parseInt(formData.height) || 600;
+          window.overlayWindows[this.windowId].resizeTo(width, height);
+          ui.notifications.info(`Applied new size: ${width}×${height}`);
+        }
+      }
+      
+      // Update the window content if it's open
+      updateOverlayWindow(this.windowId);
+      
+      return true;
+    } catch (error) {
+      console.error("Failed to save window configuration:", error);
+      ui.notifications.error("Failed to save window configuration.");
+      return false;
+    }
   }
 }
