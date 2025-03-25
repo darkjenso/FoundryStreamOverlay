@@ -1610,7 +1610,7 @@ class OverlayConfig extends FormApplication {
     });
     
     layouts[activeLayout] = newItems;
-    await OverlayData.setLayout(layoutName, items);
+    await OverlayData.setLayout(activeLayout, newItems);
   }
 }
 
