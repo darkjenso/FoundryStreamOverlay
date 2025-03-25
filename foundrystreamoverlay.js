@@ -226,12 +226,21 @@ const POSSIBLE_DATA_PATHS = [
 ];
 
 function validateActivationKey(key) {
+  console.log(`${MODULE_ID} | Validating activation key: ${key.substring(0, 4)}...`);
+  
   if (!key || key.length !== 16 || !/^[A-F0-9]{16}$/.test(key)) {
     if (key !== "") {
       ui.notifications.error("Invalid activation key format.");
+      console.error(`${MODULE_ID} | Invalid key format`);
     }
+    
+    // Set premium status to false in BOTH places
     game.settings.set(MODULE_ID, "isPremium", false);
-    return;
+    if (OverlayData && OverlayData.initialized) {
+      OverlayData.setSetting("isPremium", false);
+    }
+    
+    return false;
   }
   
   let sum = 0;
@@ -245,17 +254,76 @@ function validateActivationKey(key) {
   
   const isValid = lastChar === expectedChecksum;
   
+  console.log(`${MODULE_ID} | Key validation result: ${isValid ? "VALID" : "INVALID"}`);
+  
+  // Set premium status consistently in BOTH places
   game.settings.set(MODULE_ID, "isPremium", isValid);
+  if (OverlayData && OverlayData.initialized) {
+    OverlayData.setSetting("isPremium", isValid);
+    console.log(`${MODULE_ID} | isPremium set in OverlayData: ${isValid}`);
+  } else {
+    console.warn(`${MODULE_ID} | OverlayData not initialized, isPremium only set in game.settings`);
+  }
   
   if (isValid) {
     ui.notifications.info("Premium features activated! Thank you for your support.");
+    
+    // Refresh relevant UI components
+    for (const app of Object.values(ui.windows)) {
+      if (app instanceof OverlayConfig || 
+          app instanceof ManageLayouts || 
+          app instanceof PremiumStatusDialog) {
+        app.render(true);
+      }
+    }
+    
+    // Update all overlay windows
+    if (window.overlayWindow && !window.overlayWindow.closed) {
+      updateOverlayWindow();
+    }
+    
+    if (window.overlayWindows) {
+      for (const [windowId, overlayWindow] of Object.entries(window.overlayWindows)) {
+        if (overlayWindow && !overlayWindow.closed) {
+          updateOverlayWindow(windowId);
+        }
+      }
+    }
   } else {
     ui.notifications.error("Invalid activation key.");
   }
+  
+  return isValid;
 }
 
 
-
+Hooks.once("ready", async () => {
+  await OverlayData.initialize();
+  
+  // Ensure premium status is consistent after initialization
+  const storedKey = OverlayData.getSetting("activationKey") || "";
+  const gameSettingsKey = game.settings.get(MODULE_ID, "activationKey") || "";
+  
+  // If there's a key in either system, validate it
+  if (storedKey || gameSettingsKey) {
+    const keyToUse = storedKey || gameSettingsKey;
+    
+    // Make sure both systems have the same key
+    if (storedKey !== gameSettingsKey) {
+      console.warn(`${MODULE_ID} | Activation key mismatch, synchronizing...`);
+      if (storedKey) {
+        game.settings.set(MODULE_ID, "activationKey", storedKey);
+      } else {
+        await OverlayData.setSetting("activationKey", gameSettingsKey);
+      }
+    }
+    
+    // Validate the key to ensure premium status is set correctly
+    validateActivationKey(keyToUse);
+  }
+  
+  // Other initialization code...
+});
 
 Hooks.once("init", () => {
   Handlebars.registerHelper("ifEquals", function(arg1, arg2, options) {
@@ -370,12 +438,21 @@ game.settings.register(MODULE_ID, "isPremium", {
   });
 
   function validateActivationKey(key) {
+    console.log(`${MODULE_ID} | Validating activation key: ${key.substring(0, 4)}...`);
+    
     if (!key || key.length !== 16 || !/^[A-F0-9]{16}$/.test(key)) {
       if (key !== "") {
         ui.notifications.error("Invalid activation key format.");
+        console.error(`${MODULE_ID} | Invalid key format`);
       }
+      
+      // Set premium status to false in BOTH places
       game.settings.set(MODULE_ID, "isPremium", false);
-      return;
+      if (OverlayData && OverlayData.initialized) {
+        OverlayData.setSetting("isPremium", false);
+      }
+      
+      return false;
     }
     
     let sum = 0;
@@ -389,13 +466,46 @@ game.settings.register(MODULE_ID, "isPremium", {
     
     const isValid = lastChar === expectedChecksum;
     
+    console.log(`${MODULE_ID} | Key validation result: ${isValid ? "VALID" : "INVALID"}`);
+    
+    // Set premium status consistently in BOTH places
     game.settings.set(MODULE_ID, "isPremium", isValid);
+    if (OverlayData && OverlayData.initialized) {
+      OverlayData.setSetting("isPremium", isValid);
+      console.log(`${MODULE_ID} | isPremium set in OverlayData: ${isValid}`);
+    } else {
+      console.warn(`${MODULE_ID} | OverlayData not initialized, isPremium only set in game.settings`);
+    }
     
     if (isValid) {
       ui.notifications.info("Premium features activated! Thank you for your support.");
+      
+      // Refresh relevant UI components
+      for (const app of Object.values(ui.windows)) {
+        if (app instanceof OverlayConfig || 
+            app instanceof ManageLayouts || 
+            app instanceof PremiumStatusDialog) {
+          app.render(true);
+        }
+      }
+      
+      // Update all overlay windows
+      if (window.overlayWindow && !window.overlayWindow.closed) {
+        updateOverlayWindow();
+      }
+      
+      if (window.overlayWindows) {
+        for (const [windowId, overlayWindow] of Object.entries(window.overlayWindows)) {
+          if (overlayWindow && !overlayWindow.closed) {
+            updateOverlayWindow(windowId);
+          }
+        }
+      }
     } else {
       ui.notifications.error("Invalid activation key.");
     }
+    
+    return isValid;
   }
 
   
@@ -657,7 +767,13 @@ Hooks.once("init", () => {
     config: true,
     type: String,
     default: "",
-    onChange: value => validateActivationKey(value)
+    onChange: async value => {
+      // Store the key in both places
+      if (OverlayData && OverlayData.initialized) {
+        await OverlayData.setSetting("activationKey", value);
+      }
+      validateActivationKey(value);
+    }
   });
 
   game.settings.register(MODULE_ID, "isPremium", {
@@ -665,7 +781,14 @@ Hooks.once("init", () => {
     scope: "client",
     config: false,
     type: Boolean,
-    default: false
+    default: false,
+    onChange: async value => {
+      // Keep both systems in sync
+      if (OverlayData && OverlayData.initialized) {
+        await OverlayData.setSetting("isPremium", value);
+      }
+      console.log(`${MODULE_ID} | Premium status changed to: ${value}`);
+    }
   });
   
   game.settings.registerMenu(MODULE_ID, "premiumStatus", {
@@ -679,7 +802,21 @@ Hooks.once("init", () => {
   
 });
 
-
+function isPremiumActive() {
+  // Check both sources to ensure consistency
+  const settingValue = game.settings.get(MODULE_ID, "isPremium") || false;
+  const overlayValue = OverlayData?.initialized ? OverlayData.getSetting("isPremium") || false : false;
+  
+  // If there's a discrepancy, log it but prefer the OverlayData value if it exists
+  if (settingValue !== overlayValue && OverlayData?.initialized) {
+    console.warn(`${MODULE_ID} | Premium status mismatch: game.settings=${settingValue}, OverlayData=${overlayValue}`);
+    // Sync them
+    game.settings.set(MODULE_ID, "isPremium", overlayValue);
+    return overlayValue;
+  }
+  
+  return settingValue;
+}
 
 class OverlayConfig extends FormApplication {
   static get defaultOptions() {
@@ -894,8 +1031,8 @@ class OverlayConfig extends FormApplication {
   }
 
   getData() {
-    const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
-    const activeLayout = OverlayData.getActiveLayout() || "Default";
+    const layouts = OverlayData.getLayouts();
+  const activeLayout = OverlayData.getActiveLayout() || "Default";
     const rows = (layouts[activeLayout] || []).map((item, idx) => {
       // Check if this item has animations configured
       const hasAnimations = !!(item.animations && item.animations.length > 0);
@@ -1066,7 +1203,8 @@ class OverlayConfig extends FormApplication {
     html.find("#active-layout").change(async e => {
       e.preventDefault();
       const newLayout = html.find("#active-layout").val();
-      await game.settings.set("foundrystreamoverlay", "activeLayout", newLayout);
+      
+      await OverlayData.setActiveLayout(newLayout);
       ui.notifications.info("Active layout set to " + newLayout);
       
       this.render();
@@ -1351,9 +1489,7 @@ class OverlayConfig extends FormApplication {
     }
   
     current.unshift(newItem);
-  
-    layouts[activeLayout] = current;
-    await OverlayData.setLayout(layoutName, items);
+    await OverlayData.setLayout(activeLayout, current);
     
     // Update all open windows
     this._updateAllWindows();
@@ -1389,9 +1525,7 @@ class OverlayConfig extends FormApplication {
     }
     
     current.unshift(newItem);
-    
-    layouts[activeLayout] = current;
-    await OverlayData.setLayout(layoutName, items);
+    await OverlayData.setLayout(activeLayout, current);
     
     // Update all open windows
     this._updateAllWindows();
@@ -1432,10 +1566,7 @@ class OverlayConfig extends FormApplication {
     }
   
     current.unshift(newItem);
-    
-    layouts[activeLayout] = current;
-    await OverlayData.setLayout(layoutName, items);
-    
+    await OverlayData.setLayout(activeLayout, current);
     // Update all open windows
     this._updateAllWindows();
     
@@ -2357,8 +2488,8 @@ class ManageLayouts extends FormApplication {
       return;
     }
     
-    layouts[layoutName] = [];
-    await OverlayData.setLayout(layoutName, items);
+  layouts[layoutName] = [];
+  await OverlayData.setLayout(layoutName, []);
     ui.notifications.info(`Layout "${layoutName}" created.`);
     
     for (const app of Object.values(ui.windows)) {
@@ -2393,7 +2524,7 @@ class ManageLayouts extends FormApplication {
     if (activeLayout === oldName) {
       await game.settings.set(MODULE_ID, "activeLayout", newName);
     }
-    await OverlayData.setLayout(layoutName, items);
+    await OverlayData.setLayout(newName, layouts[newName]);
     
     // Refresh any open config windows
     for (const app of Object.values(ui.windows)) {
@@ -2678,7 +2809,7 @@ class ManageLayouts extends FormApplication {
       
       layouts[customName] = JSON.parse(JSON.stringify(layouts[originalLayoutName]));
       
-      await OverlayData.setLayout(layoutName, items);
+      await OverlayData.setLayout(customName, layouts[customName]);
       ui.notifications.info(`Layout "${originalLayoutName}" duplicated as "${customName}".`);
       
       // Refresh any open config windows
@@ -3379,7 +3510,7 @@ class AnimationManager extends FormApplication {
     
     layouts[activeLayout][this.itemIndex].animations = this.item.animations;
     
-    await OverlayData.setLayout(layoutName, items);
+    await OverlayData.setLayout(activeLayout, layouts[activeLayout]);
     
     if (this.parentConfig) {
       this.parentConfig.render();

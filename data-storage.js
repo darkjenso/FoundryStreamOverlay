@@ -242,16 +242,24 @@ class OverlayDataStorage {
     return this.data.layouts[name] || null;
   }
   
-  /**
-   * Set a layout
-   * @param {string} name - The layout name
-   * @param {Array} items - The layout items
-   * @returns {Promise<boolean>} Whether the save was successful
-   */
-  async setLayout(name, items) {
+/**
+ * Set a layout
+ * @param {string} name - The layout name
+ * @param {Array} items - The layout items
+ * @returns {Promise<boolean>} Whether the save was successful
+ */
+    async setLayout(name, items) {
+    // First make sure layouts exists in this.data
+    if (!this.data.layouts) {
+      this.data.layouts = { "Default": [] };
+    }
+    
+    // Now set the layout items
     this.data.layouts[name] = items;
+    
+    // Save to storage
     return this.save();
-  }
+     }
   
   /**
    * Delete a layout
