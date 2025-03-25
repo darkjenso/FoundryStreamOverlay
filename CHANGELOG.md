@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.4.1] - 2025-03-26
+### Bug Fixes
+- Fixed issue preventing premium activation
+
 ## [3.4.1] - 2025-03-25
 ### Bug Fixes
 - Fixed small bug stopping users to change layouts on the config
