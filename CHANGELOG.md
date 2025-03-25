@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.4.0] - 2025-03-22
+
+### Bug Fixes
+- Fixed an issue that free users wereable to duplicate layouts
+
+### New
+- Added new data management code to possibly fix previously bugged users. when used should allow the user to wipe the data or save the files as a backup
+- Added new fuction for Premium users allowing them to set the opening sizes of windows 
+
 ## [3.3.5] - 2025-03-22
 
 ### Bug Fixes
