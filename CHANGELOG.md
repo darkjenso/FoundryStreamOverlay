@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.4.3] - 2025-03-26
+### Bug Fixes
+Fixed some issues with multiple windows and layouts
+
 ## [3.4.1] - 2025-03-26
 ### Bug Fixes
 - Fixed issue preventing premium activation
