@@ -760,6 +760,19 @@ class PremiumStatusDialog extends FormApplication {
 
 Hooks.once("init", () => {
   
+
+  Handlebars.registerHelper("ifEquals", function(arg1, arg2, options) {
+    return (arg1 === arg2) ? options.fn(this) : options.inverse(this);
+  });
+  
+  Handlebars.registerHelper("eq", function(a, b) {
+    return a === b;
+  });
+  
+  Handlebars.registerHelper("ne", function(a, b) {
+    return a !== b;
+  });
+
   game.settings.register(MODULE_ID, "activationKey", {
     name: "Premium Activation Key",
     hint: "Enter your key from Patreon to unlock premium features.",
@@ -1031,10 +1044,43 @@ class OverlayConfig extends FormApplication {
   }
 
   getData() {
-    const layouts = OverlayData.getLayouts();
-  const activeLayout = OverlayData.getActiveLayout() || "Default";
-    const rows = (layouts[activeLayout] || []).map((item, idx) => {
-      // Check if this item has animations configured
+    // Get the window ID this config is for (default to "main" if not specified)
+    const windowId = this.options?.windowId || "main";
+    
+    // Get all overlay windows
+    const windows = OverlayData.getOverlayWindows();
+    const windowConfig = windows[windowId] || windows.main || { 
+      id: "main", 
+      name: "Main Overlay",
+      activeLayout: "Default" 
+    };
+    
+    // Get the layout we need to display
+    // If this._selectedLayout exists (set via dropdown change), use that
+    // Otherwise use the window's active layout
+    const layoutName = this._selectedLayout || windowConfig.activeLayout || "Default";
+    this._selectedLayout = layoutName; // Store for future reference
+    
+    // Get all layouts
+    const layouts = OverlayData.getLayouts() || {};
+    
+    // Ensure we're working with arrays
+    let layoutItems = [];
+    
+    if (layouts[layoutName]) {
+      // Make sure it's an array
+      layoutItems = Array.isArray(layouts[layoutName]) ? layouts[layoutName] : [];
+    } else {
+      // If layout doesn't exist, create it with an empty array
+      console.warn(`Layout "${layoutName}" not found, initializing as empty.`);
+      layouts[layoutName] = [];
+      // Save the new empty layout
+      OverlayData.setLayout(layoutName, []);
+    }
+    
+    // Map layout items to rows for the form
+    const rows = layoutItems.map((item, idx) => {
+      // Map items to rows
       const hasAnimations = !!(item.animations && item.animations.length > 0);
       
       return {
@@ -1042,7 +1088,7 @@ class OverlayConfig extends FormApplication {
         type: item.type || "data", 
         actorId: item.actorId || "",
         dataPath: item.dataPath || "name",
-        customPath: item.customPath || "", // Make sure custom path is included
+        customPath: item.customPath || "", 
         content: item.content || "",
         top: item.top || 0,
         left: item.left || 0,
@@ -1067,8 +1113,16 @@ class OverlayConfig extends FormApplication {
         hasAnimations 
       };
     });
+    
     const dataPathChoices = POSSIBLE_DATA_PATHS;
     const allActors = game.actors.contents.filter(a => a.type === "character" || a.hasPlayerOwner);
+    
+    // Get list of all window names for display
+    const allWindows = Object.values(windows).map(w => ({
+      id: w.id,
+      name: w.name,
+      isActive: w.id === windowId
+    }));
     
     // Add helpful examples for the most common game systems
     const gameSystem = game.system.id;
@@ -1105,151 +1159,33 @@ class OverlayConfig extends FormApplication {
         break;
     }
     
+    // Get premium status for UI
+    const isPremium = OverlayData.getSetting("isPremium") || false;
+    
+    console.log(`OverlayConfig getData: Using layout ${layoutName} with ${rows.length} items`);
+    
     return { 
       rows, 
       allActors, 
-      dataPathChoices, 
-      activeLayout, 
+      dataPathChoices,
+      // Window-centric data
+      windowId,
+      windowName: windowConfig.name,
+      allWindows,
+      currentLayout: layoutName,  // This replaces activeLayout for UI
+      // Keep legacy properties for backward compatibility
+      activeLayout: layoutName,   
       layouts,
       gameSystem,
-      systemExamples
+      systemExamples,
+      isPremium
     };
   }
-
   
   activateListeners(html) {
     super.activateListeners(html);
     
-  
-    html.find('select[name^="dataPath-"]').change(function() {
-      const index = this.name.split('-')[1];
-      const customPathInput = html.find(`.custom-path-input[data-index="${index}"]`);
-      const isCustom = this.value === 'custom';
-      
-      if (isCustom) {
-        customPathInput.slideDown(200);
-        
-        // Populate this specific field's examples
-        populateSystemExamplesForField(html, index);
-        
-        // Show the examples container for this specific field
-        customPathInput.find('.system-examples-container').slideDown(200);
-        
-        setTimeout(() => {
-          customPathInput.find('input').focus();
-        }, 210);
-      } else {
-        customPathInput.slideUp(200);
-      }
-    });
-    
-    html.find('select[name^="dataPath-"]').each(function() {
-      const index = this.name.split('-')[1];
-      const customPathInput = html.find(`.custom-path-input[data-index="${index}"]`);
-      const isCustom = this.value === 'custom';
-      
-      if (isCustom) {
-        customPathInput.show();
-        populateSystemExamplesForField(html, index);
-        customPathInput.find('.system-examples-container').show();
-      } else {
-        customPathInput.hide();
-      }
-    });
-
-    setTimeout(() => {
-      const hasCustomPath = html.find('select[name^="dataPath-"]').filter(function() {
-        return $(this).val() === 'custom';
-      }).length > 0;
-    
-      if (!hasCustomPath) {
-        html.find('.system-examples-container').hide();
-      } else {
-        html.find('.system-examples-container').show();
-      }
-    }, 100);
-    
-    html.find(".debug-actor-data").click(this._onDebugActorData.bind(this));
-    
-    const isPremium = OverlayData.getSetting("isPremium") || false;
-    
-    html.find('input, select').on('change', this._onFieldChange.bind(this));
-    
-    if (!isPremium) {
-      html.find(".manage-animations").prop('disabled', true);
-      html.find(".manage-animations").after(
-        '<div class="premium-note" style="color:#aa5555;font-size:0.8em;margin-top:5px;">Premium feature</div>'
-      );
-    
-      
-      html.find("select[name^='entranceAnimation-']").each(function() {
-        $(this).find("option:not([value='none'])").prop("disabled", true);
-        $(this).val("none");
-      });
-      
-      html.find("input[name^='animationDelay-']").prop("disabled", true);
-      html.find("input[name^='animationDuration-']").prop("disabled", true);
-      html.find("input[name^='entranceDuration-']").prop("disabled", true);
-      html.find("input[name^='entranceDelay-']").prop("disabled", true);
-      
-      html.find("select[name^='animation-']").closest("td").append(
-        '<div class="premium-note" style="color:#aa5555;font-size:0.8em;margin-top:5px;">Premium feature</div>'
-      );
-      html.find("select[name^='entranceAnimation-']").closest("td").append(
-        '<div class="premium-note" style="color:#aa5555;font-size:0.8em;margin-top:5px;">Premium feature</div>'
-      );
-    }
-    
-    html.find("#active-layout").change(async e => {
-      e.preventDefault();
-      const newLayout = html.find("#active-layout").val();
-      
-      await OverlayData.setActiveLayout(newLayout);
-      ui.notifications.info("Active layout set to " + newLayout);
-      
-      this.render();
-    });
-  
-    html.find('.toggle-extras-column').click(function() {
-      const $button = $(this);
-      const $icon = $button.find('i');
-      const $extrasColumns = html.find('.extras-column');
-      
-      if ($extrasColumns.first().find('.extras-content').is(':visible')) {
-        $extrasColumns.find('.extras-content').slideUp(200);
-        $icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
-      } else {
-        $extrasColumns.find('.extras-content').slideDown(200);
-        $icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
-      }
-    });
-    
-    html.find(".add-row").click(this._onAddRow.bind(this));
-    html.find(".add-image").click(this._onAddImage.bind(this));
-    html.find(".add-static").click(this._onAddStatic.bind(this));
-    html.on("click", ".remove-row", this._onRemoveRow.bind(this));
-    html.find(".move-up").click(this._onMoveUp.bind(this));
-    html.find(".move-down").click(this._onMoveDown.bind(this));
-    
-    html.find(".manage-animations").click(this._onManageAnimations.bind(this));
-    
-    html.find(".file-picker").off("click").click(e => {
-      const idx = $(e.currentTarget).data("index");
-      new FilePicker({
-        type: "image",
-        current: "",
-        callback: path => {
-          html.find(`input[name="imagePath-${idx}"]`).val(path);
-          html.find(`input[name="imagePath-${idx}"]`).trigger('change');
-        }
-      }).render(true);
-    });
-    
-    html.find("#open-overlay-from-config").click(e => {
-      e.preventDefault();
-      openOverlayWindow();
-    });
-    
+    // Handle font stroke checkbox changes
     html.on("change", "input[name^='fontStroke-']", (event) => {
       const idx = event.currentTarget.name.split("-")[1];
       const isChecked = event.currentTarget.checked;
@@ -1262,6 +1198,7 @@ class OverlayConfig extends FormApplication {
       }
     });
   
+    // Handle custom data path dropdown changes
     html.find('select[name^="dataPath-"]').change(function() {
       const index = this.name.split('-')[1];
       const customPathInput = html.find(`.custom-path-input[data-index="${index}"]`);
@@ -1282,29 +1219,101 @@ class OverlayConfig extends FormApplication {
       }
     });
     
-    html.find('select[name^="dataPath-"]').each(function() {
-      const index = this.name.split('-')[1];
-      const customPathInput = html.find(`.custom-path-input[data-index="${index}"]`);
+    html.find("#active-layout").change(async e => {
+      e.preventDefault();
+      const newLayout = html.find("#active-layout").val();
       
-      if (this.value === 'custom') {
-        customPathInput.show();
+      // Save any changes to the current layout first
+      const formData = new FormDataExtended(html.closest('form')[0]).object;
+      await this._updateObject(e, formData);
+      
+      try {
+        // Store the selected layout name
+        this._selectedLayout = newLayout;
         
-        populateSystemExamplesForField(html, index);
-      } else {
-        customPathInput.hide();
+        // Ensure the layout exists
+        const layouts = OverlayData.getLayouts();
+        if (!layouts[newLayout]) {
+          // Create a new empty layout if it doesn't exist
+          console.log(`Creating new layout: ${newLayout}`);
+          await OverlayData.setLayout(newLayout, []);
+        }
+        
+        // Display a notification
+        ui.notifications.info(`Switched to layout "${newLayout}"`);
+        
+        // Re-render this form - this is the key part
+        // By setting the _selectedLayout before rendering,
+        // getData() will use that layout
+        this.render(true);
+      } catch (error) {
+        console.error("Error switching layout:", error);
+        ui.notifications.error("Failed to switch layout. See console for details.");
       }
     });
     
+    // Handle input changes for auto-save
+    html.find('input, select, textarea').on('change', this._onFieldChange.bind(this));
     
+    // File picker for images
+    html.find(".file-picker").off("click").click(e => {
+      const idx = $(e.currentTarget).data("index");
+      new FilePicker({
+        type: "image",
+        current: "",
+        callback: path => {
+          html.find(`input[name="imagePath-${idx}"]`).val(path);
+          html.find(`input[name="imagePath-${idx}"]`).trigger('change');
+        }
+      }).render(true);
+    });
+    
+    // Data field debugging
     html.find(".debug-actor-data").click(this._onDebugActorData.bind(this));
     
+    // Toggle extras columns
+    html.find('.toggle-extras-column').click(function() {
+      const $button = $(this);
+      const $icon = $button.find('i');
+      const $extrasColumns = html.find('.extras-column');
+      
+      if ($extrasColumns.first().find('.extras-content').is(':visible')) {
+        $extrasColumns.find('.extras-content').slideUp(200);
+        $icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+      } else {
+        $extrasColumns.find('.extras-content').slideDown(200);
+        $icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+      }
+    });
+    
+    // Handle add buttons
+    html.find(".add-row").click(this._onAddRow.bind(this));
+    html.find(".add-image").click(this._onAddImage.bind(this));
+    html.find(".add-static").click(this._onAddStatic.bind(this));
+    
+    // Handle remove and move buttons
+    html.on("click", ".remove-row", this._onRemoveRow.bind(this));
+    html.find(".move-up").click(this._onMoveUp.bind(this));
+    html.find(".move-down").click(this._onMoveDown.bind(this));
+    
+    // Animation manager
+    html.find(".manage-animations").click(this._onManageAnimations.bind(this));
+    
+    // Initialization for all fields on load
     setTimeout(() => {
+      // Hide custom path fields unless selected
       const hasCustomPath = html.find('select[name^="dataPath-"]').filter(function() {
         return $(this).val() === 'custom';
       }).length > 0;
-  
+    
       if (!hasCustomPath) {
         html.find('.system-examples-container').hide();
+      }
+      
+      // Ensure extras are correctly shown/hidden
+      const firstExtrasContent = html.find('.extras-column .extras-content').first();
+      if (firstExtrasContent.is(':visible')) {
+        html.find('.toggle-extras-column i').removeClass('fa-chevron-down').addClass('fa-chevron-up');
       }
     }, 100);
   }
@@ -1453,16 +1462,24 @@ class OverlayConfig extends FormApplication {
       }, 1000);
     }, 10);
   }
-
   async _onAddRow(event) {
     event.preventDefault();
-    const activeLayout = OverlayData.getActiveLayout() || "Default";
-    const current = OverlayData.getLayout(activeLayout) || [];
+    
+    // Get the current layout name - use the selected layout
+    const layoutName = this._selectedLayout || "Default";
+    console.log(`Adding data row to layout: ${layoutName}`);
+    
+    // Get all layouts
+    const layouts = OverlayData.getLayouts();
+    
+    // Ensure we're working with an array
+    const current = Array.isArray(layouts[layoutName]) ? layouts[layoutName] : [];
+    
     const newItem = {
       type: "data",
       actorId: "",
       dataPath: "name",
-      customPath: "",  // Add customPath to the default item
+      customPath: "",
       top: 0,
       left: 0,
       hide: false,
@@ -1489,19 +1506,27 @@ class OverlayConfig extends FormApplication {
     }
   
     current.unshift(newItem);
-    await OverlayData.setLayout(activeLayout, current);
+    await OverlayData.setLayout(layoutName, current);
     
     // Update all open windows
     this._updateAllWindows();
     
     this.render();
   }
-
+  
+  // Updated method for adding an image
   async _onAddImage(event) {
     event.preventDefault();
-    const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
-    const activeLayout = OverlayData.getActiveLayout() || "Default";
-    const current = layouts[activeLayout] || [];
+    
+    // Get the current layout name - use the selected layout
+    const layoutName = this._selectedLayout || "Default";
+    console.log(`Adding image to layout: ${layoutName}`);
+    
+    // Get all layouts
+    const layouts = OverlayData.getLayouts();
+    
+    // Ensure we're working with an array
+    const current = Array.isArray(layouts[layoutName]) ? layouts[layoutName] : [];
   
     const newItem = {
       type: "image",
@@ -1525,19 +1550,28 @@ class OverlayConfig extends FormApplication {
     }
     
     current.unshift(newItem);
-    await OverlayData.setLayout(activeLayout, current);
+    await OverlayData.setLayout(layoutName, current);
     
     // Update all open windows
     this._updateAllWindows();
     
     this.render();
   }
-
+  
+  // Updated method for adding static text
   async _onAddStatic(event) {
     event.preventDefault();
-    const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
-    const activeLayout = OverlayData.getActiveLayout() || "Default";
-    const current = layouts[activeLayout] || [];
+    
+    // Get the current layout name - use the selected layout
+    const layoutName = this._selectedLayout || "Default";
+    console.log(`Adding static text to layout: ${layoutName}`);
+    
+    // Get all layouts
+    const layouts = OverlayData.getLayouts();
+    
+    // Ensure we're working with an array
+    const current = Array.isArray(layouts[layoutName]) ? layouts[layoutName] : [];
+    
     const newItem = {
       type: "static",
       content: "Static text",
@@ -1566,39 +1600,32 @@ class OverlayConfig extends FormApplication {
     }
   
     current.unshift(newItem);
-    await OverlayData.setLayout(activeLayout, current);
+    await OverlayData.setLayout(layoutName, current);
+    
     // Update all open windows
     this._updateAllWindows();
     
     this.render();
   }
-
+  
+  // Similarly update the _onRemoveRow, _onMoveUp, and _onMoveDown methods
   async _onRemoveRow(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
-    const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
-    const activeLayout = OverlayData.getActiveLayout() || "Default";
-    const current = layouts[activeLayout] || [];
-    current.splice(index, 1);
-    layouts[activeLayout] = current;
-    await OverlayData.setLayout(layoutName, items);
     
-    // Update all open windows
-    this._updateAllWindows();
+    // Get the current layout name - use the selected layout
+    const layoutName = this._selectedLayout || "Default";
+    console.log(`Removing row from layout: ${layoutName} at index ${index}`);
     
-    this.render();
-  }
-
-  async _onMoveUp(event) {
-    event.preventDefault();
-    const index = Number(event.currentTarget.dataset.index);
-    const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
-    const activeLayout = OverlayData.getActiveLayout() || "Default";
-    const current = layouts[activeLayout] || [];
-    if (index > 0) {
-      [current[index - 1], current[index]] = [current[index], current[index - 1]];
-      layouts[activeLayout] = current;
-      await OverlayData.setLayout(layoutName, items);
+    // Get all layouts
+    const layouts = OverlayData.getLayouts();
+    
+    // Ensure we're working with an array
+    const current = Array.isArray(layouts[layoutName]) ? layouts[layoutName] : [];
+  
+    if (index >= 0 && index < current.length) {
+      current.splice(index, 1);
+      await OverlayData.setLayout(layoutName, current);
       
       // Update all open windows
       this._updateAllWindows();
@@ -1606,17 +1633,49 @@ class OverlayConfig extends FormApplication {
       this.render();
     }
   }
-
+  
+  async _onMoveUp(event) {
+    event.preventDefault();
+    const index = Number(event.currentTarget.dataset.index);
+    
+    // Get the current layout name - use the selected layout
+    const layoutName = this._selectedLayout || "Default";
+    console.log(`Moving item up in layout: ${layoutName} at index ${index}`);
+    
+    // Get all layouts
+    const layouts = OverlayData.getLayouts();
+    
+    // Ensure we're working with an array
+    const current = Array.isArray(layouts[layoutName]) ? layouts[layoutName] : [];
+  
+    if (index > 0 && index < current.length) {
+      [current[index - 1], current[index]] = [current[index], current[index - 1]];
+      await OverlayData.setLayout(layoutName, current);
+      
+      // Update all open windows
+      this._updateAllWindows();
+      
+      this.render();
+    }
+  }
+  
   async _onMoveDown(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
-    const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
-    const activeLayout = OverlayData.getActiveLayout() || "Default";
-    const current = layouts[activeLayout] || [];
-    if (index < current.length - 1) {
+    
+    // Get the current layout name - use the selected layout
+    const layoutName = this._selectedLayout || "Default";
+    console.log(`Moving item down in layout: ${layoutName} at index ${index}`);
+    
+    // Get all layouts
+    const layouts = OverlayData.getLayouts();
+    
+    // Ensure we're working with an array
+    const current = Array.isArray(layouts[layoutName]) ? layouts[layoutName] : [];
+  
+    if (index >= 0 && index < current.length - 1) {
       [current[index], current[index + 1]] = [current[index + 1], current[index]];
-      layouts[activeLayout] = current;
-      await OverlayData.setLayout(layoutName, items);
+      await OverlayData.setLayout(layoutName, current);
       
       // Update all open windows
       this._updateAllWindows();
@@ -1716,17 +1775,19 @@ class OverlayConfig extends FormApplication {
     newItems.forEach(item => {
       if (item.dataPath === 'custom' && item.customPath) {
         item.customPath = item.customPath.trim();
-        
         item.customPath = item.customPath.replace(/^["']|["']$/g, '');
       } else {
         item.customPath = '';
       }
     });
     
-    const layouts = OverlayData.getLayouts();
-    const activeLayout = OverlayData.getActiveLayout() || "Default";
-    const currentItems = layouts[activeLayout] || [];
+    // Use the _selectedLayout property to determine which layout to save to
+    const currentLayout = this._selectedLayout || "Default";
     
+    const layouts = OverlayData.getLayouts();
+    const currentItems = layouts[currentLayout] || [];
+    
+    // Preserve animations from existing items
     newItems.forEach((item, index) => {
       if (currentItems[index] && currentItems[index].animations) {
         item.animations = currentItems[index].animations;
@@ -1740,8 +1801,11 @@ class OverlayConfig extends FormApplication {
       }
     });
     
-    layouts[activeLayout] = newItems;
-    await OverlayData.setLayout(activeLayout, newItems);
+    console.log(`Saving ${newItems.length} items to layout "${currentLayout}"`);
+    
+    // Save to the current layout
+    layouts[currentLayout] = newItems;
+    await OverlayData.setLayout(currentLayout, newItems);
   }
 }
 
@@ -1943,438 +2007,448 @@ function populateSystemExamplesForField(html, index) {
 
 
 function updateOverlayWindow(windowId = "main") {
-  window.overlayAnimatedElements = window.overlayAnimatedElements || {};
-  
-  const overlayWindow = window.overlayWindows?.[windowId];
-  if (!overlayWindow || overlayWindow.closed) {
-    return;
-  }
-  
-  const windows = game.settings.get(MODULE_ID, "overlayWindows");
-  const windowConfig = windows[windowId] || windows.main;
-  
-  const bg = game.settings.get(MODULE_ID, "backgroundColour");
-  const layouts = OverlayData.getLayouts();
-  const isPremium = OverlayData.getSetting("isPremium") || false;
-  
-  // Ensure free users always use the Default layout
-  let activeLayout = windowConfig.activeLayout || "Default";
-  if (!isPremium) {
-    activeLayout = "Default";
-  }
-  
-  overlayWindow.document.body.style.backgroundColor = bg;
-  
-  const container = overlayWindow.document.getElementById("overlay-container");
-  if (!container) return;
-  
-  container.innerHTML = "";
-  
-  const items = (layouts[activeLayout] || []).map(item => {
-    let animation = isPremium ? (item.animation || "none") : "none";
-    let entranceAnimation = isPremium ? (item.entranceAnimation || "none") : "none";
+  try {
+    console.log(`Updating overlay window: ${windowId}`);
     
-    const animationDelay = (item.animationDelay !== undefined) ? item.animationDelay : 0;
-    const animationDuration = item.animationDuration || 1.5;
-    const entranceDuration = item.entranceDuration || 0.5;
-    const entranceDelay = item.entranceDelay || 0;
+    // Ensure the window collections exist
+    window.overlayWindows = window.overlayWindows || {};
+    window.overlayAnimatedElements = window.overlayAnimatedElements || {};
     
-    const animations = isPremium ? (item.animations || []) : [];
+    // Get the window reference
+    const overlayWindow = window.overlayWindows?.[windowId];
+    if (!overlayWindow || overlayWindow.closed) {
+      console.log(`Window ${windowId} is not open or has been closed`);
+      return;
+    }
     
-    if (item.type === "image") {
-      return {
-        type: "image",
-        imagePath: item.imagePath || "",
-        imageSize: item.imageSize || 100,
-        top: item.top ?? 0,
-        left: item.left ?? 0,
-        hide: item.hide ?? false,
-        order: item.order || 0,
-        animation,
-        animationDelay,
-        animationDuration,
-        entranceAnimation,
-        entranceDuration,
-        entranceDelay,
-        animations,
-        actorId: item.actorId || null
-      };
-    } else if (item.type === "static") {
-      return {
-        type: "static",
-        content: item.content || "",
-        top: item.top ?? 0,
-        left: item.left ?? 0,
-        hide: item.hide ?? false,
-        fontSize: item.fontSize || 16,
-        bold: item.bold || false,
-        fontFamily: item.fontFamily || "Arial, sans-serif",
-        fontColor: item.fontColor || "#000000",
-        fontStroke: item.fontStroke || false,
-        fontStrokeColor: item.fontStrokeColor || "#000000",
-        fontStrokeWidth: item.fontStrokeWidth || 1,
-        order: item.order || 0,
-        animation,
-        animationDelay,
-        animationDuration,
-        entranceAnimation,
-        entranceDuration,
-        entranceDelay,
-        animations,
-        actorId: item.actorId || null
-      };
-    } else {
-      const actor = game.actors.get(item.actorId);
-      if (!actor) return null;
-      if (item.hide) return null;
+    // Get window configuration from storage
+    const windowsConfig = OverlayData.getOverlayWindows();
+    if (!windowsConfig || !windowsConfig[windowId]) {
+      console.warn(`No configuration found for window: ${windowId}`);
+      return;
+    }
+    
+    // Get the active layout for this window
+    const windowConfig = windowsConfig[windowId];
+    const activeLayout = windowConfig.activeLayout || "Default";
+    console.log(`Using layout "${activeLayout}" for window ${windowId}`);
+    
+    // Get the background color
+    const bg = OverlayData.getSetting("backgroundColour") || "#00ff00";
+    
+    // Get all layouts and make sure the active one exists
+    const layouts = OverlayData.getLayouts();
+    if (!layouts || !layouts[activeLayout]) {
+      console.warn(`Layout "${activeLayout}" not found, falling back to Default`);
+      // If the layout doesn't exist, create an empty default layout
+      if (!layouts["Default"]) {
+        OverlayData.setLayout("Default", []);
+      }
       
-      let textValue;
+      // Update the window to use Default layout
+      windowConfig.activeLayout = "Default";
+      OverlayData.setOverlayWindow(windowId, windowConfig);
+    }
+    
+    // Get premium status
+    const isPremium = OverlayData.getSetting("isPremium") || false;
+    
+    // Set the background color
+    try {
+      overlayWindow.document.body.style.backgroundColor = bg;
+    } catch (e) {
+      console.error("Error setting background color:", e);
+    }
+    
+    // Get the overlay container
+    const container = overlayWindow.document.getElementById("overlay-container");
+    if (!container) {
+      console.error(`Could not find overlay container in window ${windowId}`);
+      return;
+    }
+    
+    // Clear container first
+    container.innerHTML = "";
+    
+    // Get the active layout's items
+    const layoutItems = layouts[activeLayout] || [];
+    console.log(`Found ${layoutItems.length} items in layout "${activeLayout}"`);
+    
+    // Process each item for display
+    const processedItems = layoutItems.map(item => {
+      // Handle different item types 
+      if (item.type === "image") {
+        return processImageItem(item, isPremium);
+      } else if (item.type === "static") {
+        return processStaticItem(item, isPremium);
+      } else {
+        return processDataItem(item, isPremium);
+      }
+    }).filter(Boolean); // Remove any null items
+    
+    // Sort items by order
+    processedItems.sort((a, b) => a.order - b.order);
+    
+    // Set render order
+    const max = processedItems.length;
+    processedItems.forEach((item, index) => {
+      item.renderOrder = max - index;
+    });
+    
+    // Create DOM elements for each processed item
+    processedItems.forEach(item => {
+      let element;
       
+      if (item.type === "image") {
+        element = createImageElement(item, overlayWindow);
+      } else {
+        element = createTextElement(item, overlayWindow);
+      }
+      
+      // Store actorId references for later animation triggers
+      if (item.actorId) {
+        if (!window.overlayAnimatedElements[item.actorId]) {
+          window.overlayAnimatedElements[item.actorId] = [];
+        }
+        window.overlayAnimatedElements[item.actorId].push({
+          element: element,
+          item: item,
+          windowId: windowId
+        });
+      }
+      
+      // Add element to the container
+      container.appendChild(element);
+    });
+    
+    // Add promo footer for non-premium users
+    if (!isPremium) {
+      addPromoFooter(container, overlayWindow);
+    }
+    
+    console.log(`Window ${windowId} updated successfully with layout ${activeLayout}`);
+    return true;
+  } catch (error) {
+    console.error(`Error updating overlay window ${windowId}:`, error);
+    return false;
+  }
+}
+
+// Helper function to process image items
+function processImageItem(item, isPremium) {
+  return {
+    type: "image",
+    imagePath: item.imagePath || "",
+    imageSize: item.imageSize || 100,
+    top: item.top ?? 0,
+    left: item.left ?? 0,
+    hide: item.hide ?? false,
+    order: item.order || 0,
+    animation: isPremium ? (item.animation || "none") : "none",
+    animationDelay: (item.animationDelay !== undefined) ? item.animationDelay : 0,
+    animationDuration: item.animationDuration || 1.5,
+    entranceAnimation: isPremium ? (item.entranceAnimation || "none") : "none",
+    entranceDuration: item.entranceDuration || 0.5,
+    entranceDelay: item.entranceDelay || 0,
+    animations: isPremium ? (item.animations || []) : [],
+    actorId: item.actorId || null,
+    renderOrder: 0
+  };
+}
+
+// Helper function to process static text items
+function processStaticItem(item, isPremium) {
+  return {
+    type: "static",
+    content: item.content || "",
+    top: item.top ?? 0,
+    left: item.left ?? 0,
+    hide: item.hide ?? false,
+    fontSize: item.fontSize || 16,
+    bold: item.bold || false,
+    fontFamily: item.fontFamily || "Arial, sans-serif",
+    fontColor: item.fontColor || "#000000",
+    fontStroke: item.fontStroke || false,
+    fontStrokeColor: item.fontStrokeColor || "#000000",
+    fontStrokeWidth: item.fontStrokeWidth || 1,
+    order: item.order || 0,
+    animation: isPremium ? (item.animation || "none") : "none",
+    animationDelay: (item.animationDelay !== undefined) ? item.animationDelay : 0,
+    animationDuration: item.animationDuration || 1.5,
+    entranceAnimation: isPremium ? (item.entranceAnimation || "none") : "none",
+    entranceDuration: item.entranceDuration || 0.5,
+    entranceDelay: item.entranceDelay || 0,
+    animations: isPremium ? (item.animations || []) : [],
+    actorId: item.actorId || null,
+    renderOrder: 0
+  };
+}
+
+// Helper function to process data items
+function processDataItem(item, isPremium) {
+  // Skip processing if item should be hidden
+  if (item.hide) return null;
+  
+  // Get the actor from the game
+  const actor = game.actors.get(item.actorId);
+  if (!actor) return null;
+  
+  // Get the text value
+  let textValue;
+  try {
+    // Special case handling for common data paths
+    if (item.dataPath === "name") {
+      textValue = actor.name;
+    } else if (item.dataPath === "hp") {
+      const currentHP = foundry.utils.getProperty(actor, 'system.attributes.hp.value');
+      const maxHP = foundry.utils.getProperty(actor, 'system.attributes.hp.max');
+      textValue = `${currentHP} / ${maxHP}`;
+    } else if (item.dataPath === "custom" && item.customPath) {
+      // Handle custom data path
+      const path = item.customPath.trim();
       try {
-        // Special case handling for common data paths
-        if (item.dataPath === "name") {
-          textValue = actor.name;
-        } else if (item.dataPath === "hp") {
-          const currentHP = foundry.utils.getProperty(actor, 'system.attributes.hp.value');
-          const maxHP = foundry.utils.getProperty(actor, 'system.attributes.hp.max');
-          textValue = `${currentHP} / ${maxHP}`;
-        } else if (item.dataPath === "system.details.class") {
-          // Complex class logic
-          const classItems = actor.items?.filter(item => item.type === "class");
-        
-          if (classItems && classItems.length > 0) {
-            if (classItems.length === 1) {
-              textValue = classItems[0].name;
-            } else {
-              textValue = classItems.map(item => {
-                const level = foundry.utils.getProperty(item, 'system.levels') || "";
-                return `${item.name} ${level}`.trim();
-              }).join('/');
-            }
-          } else {
-            const classesVal = foundry.utils.getProperty(actor, 'system.classes');
-            const detailClassesVal = foundry.utils.getProperty(actor, 'system.details.classes');
-            const classVal = foundry.utils.getProperty(actor, 'system.details.class');
-            const classNameVal = foundry.utils.getProperty(actor, 'system.details.className');
-            
-            if (classesVal && typeof classesVal === 'object') {
-              const classEntries = Object.entries(classesVal);
-              
-              if (classEntries.length > 0) {
-                if (classEntries.length === 1) {
-                  textValue = classEntries[0][0];
-                } else {
-                  textValue = classEntries.map(([className, classData]) => {
-                    const level = classData.levels || "";
-                    return `${className} ${level}`.trim();
-                  }).join('/');
-                }
-              } else {
-                textValue = 'N/A';
-              }
-            } 
-            else if (detailClassesVal && typeof detailClassesVal === 'object') {
-              const classEntries = Object.entries(detailClassesVal);
-              
-              if (classEntries.length > 0) {
-                if (classEntries.length === 1) {
-                  textValue = classEntries[0][0];
-                } else {
-                  textValue = classEntries.map(([className, classData]) => {
-                    const level = classData.levels || "";
-                    return `${className} ${level}`.trim();
-                  }).join('/');
-                }
-              } else {
-                textValue = 'N/A';
-              }
-            } 
-            else if (classVal) {
-              textValue = classVal;
-            } else if (classNameVal) {
-              textValue = classNameVal;
-            } else {
-              textValue = 'N/A';
-            }
-          }
-        } else if (item.dataPath === "system.details.race") {
-          textValue = foundry.utils.getProperty(actor, 'system.details.race') || 
-                     foundry.utils.getProperty(actor, 'system.race') || 'N/A';
-        } else if (item.dataPath === "custom" && item.customPath) {
-          // Handle custom data path
-          const path = item.customPath.trim();
-          try {
-            // Better error handling for custom paths
-            if (path) {
-              console.log(`Getting custom path: ${path} for actor: ${actor.id}`);
-              textValue = foundry.utils.getProperty(actor, path);
-              console.log(`Retrieved value: ${textValue}`);
-              
-              // Convert objects to readable format
-              if (textValue && typeof textValue === 'object') {
-                try {
-                  textValue = JSON.stringify(textValue).slice(0, 50);
-                  if (textValue.length === 50) textValue += '...';
-                } catch (e) {
-                  textValue = '[Object]';
-                }
-              }
-            } else {
-              console.warn(`Empty custom path for actor: ${actor.id}`);
-              textValue = 'N/A (Empty Path)';
-            }
-          } catch (error) {
-            console.error(`Error getting data for custom path "${path}":`, error);
-            textValue = `Error: ${error.message}`;
-          }
+        // Better error handling for custom paths
+        if (path) {
+          console.log(`Getting custom path: ${path} for actor: ${actor.id}`);
+          textValue = foundry.utils.getProperty(actor, path);
           
-          // Ensure undefined or null values become 'N/A'
-          if (textValue === null || textValue === undefined) {
-            textValue = 'N/A';
+          // Convert objects to readable format
+          if (textValue && typeof textValue === 'object') {
+            try {
+              textValue = JSON.stringify(textValue).slice(0, 50);
+              if (textValue.length === 50) textValue += '...';
+            } catch (e) {
+              textValue = '[Object]';
+            }
           }
-        
         } else {
-          // Standard data path handling
-          textValue = foundry.utils.getProperty(actor, item.dataPath);
+          console.warn(`Empty custom path for actor: ${actor.id}`);
+          textValue = 'N/A (Empty Path)';
         }
       } catch (error) {
-        console.error(`Error getting data for ${item.dataPath || item.customPath}:`, error);
-        textValue = 'Error';
+        console.error(`Error getting data for custom path "${path}":`, error);
+        textValue = `Error: ${error.message}`;
       }
-      
-      // Add label if configured
-      if (item.addLabel) {
-        const labelMap = {
-          "name": "Name",
-          "system.attributes.hp.value": "HP",
-          "system.attributes.hp.max": "Max HP",
-          "hp": "HP",
-          "system.attributes.ac.value": "AC",
-          "system.details.level": "Level",
-          "system.details.class": "Class",
-          "system.details.race": "Race",
-          "system.abilities.str.value": "STR",
-          "system.abilities.dex.value": "DEX",
-          "system.abilities.con.value": "CON",
-          "system.abilities.int.value": "INT",
-          "system.abilities.wis.value": "WIS",
-          "system.abilities.cha.value": "CHA",
-          "custom": item.customPath || "Custom"
-        };
-      
-        const label = labelMap[item.dataPath] || '';
-        textValue = label ? `${label}: ${textValue}` : textValue;
-      }
-      
-      // Final check for null values
-      if (textValue === null || textValue === undefined) textValue = "N/A";
-      
-      // Convert to string if necessary
-      if (typeof textValue !== 'string') {
-        textValue = String(textValue);
-      }
-
-      return {
-        type: "data",
-        actorId: item.actorId,
-        dataPath: item.dataPath,
-        customPath: item.customPath || "",
-        data: textValue,
-        top: item.top ?? 0,
-        left: item.left ?? 0,
-        hide: item.hide ?? false,
-        fontSize: item.fontSize || 16,
-        bold: item.bold || false,
-        fontFamily: item.fontFamily || "Arial, sans-serif",
-        fontColor: item.fontColor || "#000000",
-        fontStroke: item.fontStroke || false,
-        fontStrokeColor: item.fontStrokeColor || "#000000",
-        fontStrokeWidth: item.fontStrokeWidth || 1,
-        order: item.order || 0,
-        animation,
-        animationDelay,
-        animationDuration,
-        entranceAnimation,
-        entranceDuration,
-        entranceDelay,
-        animations
-      };
+    } else {
+      // Standard data path handling
+      textValue = foundry.utils.getProperty(actor, item.dataPath);
     }
-  }).filter(Boolean);
+  } catch (error) {
+    console.error(`Error getting data for ${item.dataPath || item.customPath}:`, error);
+    textValue = 'Error';
+  }
   
-  items.sort((a, b) => a.order - b.order);
-  const max = items.length;
-  items.forEach((item, index) => {
-    item.renderOrder = max - index;
-  });
+  // Add label if configured
+  if (item.addLabel) {
+    const labelMap = {
+      "name": "Name",
+      "system.attributes.hp.value": "HP",
+      "system.attributes.hp.max": "Max HP",
+      "hp": "HP",
+      "system.attributes.ac.value": "AC",
+      "system.details.level": "Level",
+      "system.details.class": "Class",
+      "system.details.race": "Race",
+      "system.abilities.str.value": "STR",
+      "system.abilities.dex.value": "DEX",
+      "system.abilities.con.value": "CON",
+      "system.abilities.int.value": "INT",
+      "system.abilities.wis.value": "WIS",
+      "system.abilities.cha.value": "CHA",
+      "custom": item.customPath || "Custom"
+    };
   
-  for (const item of items) {
-    let element;
+    const label = labelMap[item.dataPath] || '';
+    textValue = label ? `${label}: ${textValue}` : textValue;
+  }
+  
+  // Final check for null values
+  if (textValue === null || textValue === undefined) textValue = "N/A";
+  
+  // Convert to string if necessary
+  if (typeof textValue !== 'string') {
+    textValue = String(textValue);
+  }
+  
+  // Return the processed item
+  return {
+    type: "data",
+    actorId: item.actorId,
+    dataPath: item.dataPath,
+    customPath: item.customPath || "",
+    data: textValue,
+    top: item.top ?? 0,
+    left: item.left ?? 0,
+    hide: item.hide ?? false,
+    fontSize: item.fontSize || 16,
+    bold: item.bold || false,
+    fontFamily: item.fontFamily || "Arial, sans-serif",
+    fontColor: item.fontColor || "#000000",
+    fontStroke: item.fontStroke || false,
+    fontStrokeColor: item.fontStrokeColor || "#000000",
+    fontStrokeWidth: item.fontStrokeWidth || 1,
+    order: item.order || 0,
+    animation: isPremium ? (item.animation || "none") : "none",
+    animationDelay: (item.animationDelay !== undefined) ? item.animationDelay : 0,
+    animationDuration: item.animationDuration || 1.5,
+    entranceAnimation: isPremium ? (item.entranceAnimation || "none") : "none",
+    entranceDuration: item.entranceDuration || 0.5,
+    entranceDelay: item.entranceDelay || 0,
+    animations: isPremium ? (item.animations || []) : [],
+    renderOrder: 0
+  };
+}
+
+// Helper function to create an image element
+function createImageElement(item, overlayWindow) {
+  const img = overlayWindow.document.createElement("img");
+  
+  img.className = "overlay-item";
+  img.src = item.imagePath;
+  
+  img.style.cssText = `
+    position: absolute;
+    top: ${item.top}px;
+    left: ${item.left}px;
+    width: ${item.imageSize}px;
+    z-index: ${item.renderOrder};
+  `;
+  
+  // Apply animations if needed
+  if (item.animations && item.animations.length > 0) {
+    renderItemWithAnimations(item, img, overlayWindow);
+  } 
+  else {
+    const hasEntrance = item.entranceAnimation !== "none";
+    const hasContinuous = item.animation !== "none";
     
-    if (item.type === "image") {
-      const img = overlayWindow.document.createElement("img");
+    if (hasEntrance) {
+      img.classList.add(item.entranceAnimation);
+      img.style.animationDelay = `${item.entranceDelay}s`;
+      img.style.animationDuration = `${item.entranceDuration}s`;
       
-      img.className = "overlay-item";
-      img.src = item.imagePath;
-      
-      img.style.cssText = `
-        position: absolute;
-        top: ${item.top}px;
-        left: ${item.left}px;
-        width: ${item.imageSize}px;
-        z-index: ${item.renderOrder};
-      `;
-      
-      element = img;
-      
-      if (isPremium && item.animations && item.animations.length > 0) {
-        renderItemWithAnimations(item, img, overlayWindow);
-      } 
-      else if (isPremium) {
-        const hasEntrance = item.entranceAnimation !== "none";
-        const hasContinuous = item.animation !== "none";
-        
-        if (hasEntrance) {
-          img.classList.add(item.entranceAnimation);
-          img.style.animationDelay = `${item.entranceDelay}s`;
-          img.style.animationDuration = `${item.entranceDuration}s`;
+      if (hasContinuous) {
+        img.addEventListener('animationend', () => {
+          img.className = "overlay-item";
           
-          if (hasContinuous) {
-            img.addEventListener('animationend', () => {
-              img.className = "overlay-item";
-              
-              void img.offsetWidth;
-              
-              const imgAnimation = overlayWindow.document.querySelector(`.img-${item.animation}`) ? 
-                               `img-${item.animation}` : item.animation;
-              
-              img.className = `overlay-item ${item.animation}`;
-              
-              img.style.animationDelay = `${item.animationDelay}s`;
-              img.style.animationDuration = `${item.animationDuration}s`;
-            }, {once: true});
-          }
-        } else if (hasContinuous) {
-          img.classList.add(item.animation);
+          void img.offsetWidth;
+          
+          const imgAnimation = overlayWindow.document.querySelector(`.img-${item.animation}`) ? 
+                         `img-${item.animation}` : item.animation;
+          
+          img.className = `overlay-item ${item.animation}`;
+          
           img.style.animationDelay = `${item.animationDelay}s`;
           img.style.animationDuration = `${item.animationDuration}s`;
-        }
+        }, {once: true});
       }
+    } else if (hasContinuous) {
+      img.classList.add(item.animation);
+      img.style.animationDelay = `${item.animationDelay}s`;
+      img.style.animationDuration = `${item.animationDuration}s`;
+    }
+  }
+  
+  return img;
+}
+
+// Helper function to create a text element
+function createTextElement(item, overlayWindow) {
+  const div = overlayWindow.document.createElement("div");
+  
+  div.className = "overlay-item";
+  
+  if (item.fontStroke) {
+    div.classList.add('text-stroked');
+    div.style.setProperty('--stroke-color', item.fontStrokeColor);
+  }
+  
+  let styleText = `
+    position: absolute;
+    top: ${item.top}px;
+    left: ${item.left}px;
+    font-size: ${item.fontSize}px;
+    font-family: ${item.fontFamily};
+    color: ${item.fontColor};
+    z-index: ${item.renderOrder};
+    ${item.bold ? 'font-weight: bold;' : ''}
+    text-align: center;
+    min-width: 80px;
+    transform-origin: center;
+    transform: translateX(-50%);
+  `;
+  
+  if (item.fontStroke) {
+    styleText += `
+      -webkit-text-stroke: ${item.fontStrokeWidth}px ${item.fontStrokeColor};
+      text-stroke: ${item.fontStrokeWidth}px ${item.fontStrokeColor};
+      paint-order: stroke fill;
+    `;
+  }
+  
+  div.style.cssText = styleText;
+  div.textContent = item.type === "static" ? item.content : item.data;
+  
+  // Store data path for debugging purposes
+  if (item.type === "data") {
+    div.dataset.path = item.dataPath === "custom" ? item.customPath : item.dataPath;
+  }
+  
+  // Apply animations if needed
+  if (item.animations && item.animations.length > 0) {
+    renderItemWithAnimations(item, div, overlayWindow);
+  } 
+  else {
+    const hasEntrance = item.entranceAnimation !== "none";
+    const hasContinuous = item.animation !== "none";
+    
+    if (hasEntrance) {
+      div.classList.add(item.entranceAnimation);
+      div.style.animationDelay = `${item.entranceDelay}s`;
+      div.style.animationDuration = `${item.entranceDuration}s`;
       
-      container.appendChild(img);
-    } else {
-      const div = overlayWindow.document.createElement("div");
-      
-      div.className = "overlay-item";
-      
-      if (item.fontStroke) {
-        div.classList.add('text-stroked');
-        div.style.setProperty('--stroke-color', item.fontStrokeColor);
-      }
-      
-      let styleText = `
-        position: absolute;
-        top: ${item.top}px;
-        left: ${item.left}px;
-        font-size: ${item.fontSize}px;
-        font-family: ${item.fontFamily};
-        color: ${item.fontColor};
-        z-index: ${item.renderOrder};
-        ${item.bold ? 'font-weight: bold;' : ''}
-        text-align: center;
-        min-width: 80px;
-        transform-origin: center;
-        transform: translateX(-50%);
-      `;
-      
-      if (item.fontStroke) {
-        styleText += `
-          -webkit-text-stroke: ${item.fontStrokeWidth}px ${item.fontStrokeColor};
-          text-stroke: ${item.fontStrokeWidth}px ${item.fontStrokeColor};
-          paint-order: stroke fill;
-        `;
-      }
-      
-      div.style.cssText = styleText;
-      div.textContent = item.type === "static" ? item.content : item.data;
-      
-      // Store data path for debugging purposes
-      if (item.type === "data") {
-        div.dataset.path = item.dataPath === "custom" ? item.customPath : item.dataPath;
-      }
-      
-      element = div;
-      
-      if (isPremium && item.animations && item.animations.length > 0) {
-        renderItemWithAnimations(item, div, overlayWindow);
-      } 
-      else if (isPremium) {
-        const hasEntrance = item.entranceAnimation !== "none";
-        const hasContinuous = item.animation !== "none";
-        
-        if (hasEntrance) {
-          div.classList.add(item.entranceAnimation);
-          div.style.animationDelay = `${item.entranceDelay}s`;
-          div.style.animationDuration = `${item.entranceDuration}s`;
-          
-          if (hasContinuous) {
-            div.addEventListener('animationend', () => {
-              div.className = "overlay-item";
-              if (item.fontStroke) {
-                div.classList.add('text-stroked');
-              }
-              
-              void div.offsetWidth;
-              
-              div.className = `overlay-item ${item.animation}`;
-              if (item.fontStroke) {
-                div.classList.add('text-stroked');
-              }
-              
-              div.style.animationDelay = `${item.animationDelay}s`;
-              div.style.animationDuration = `${item.animationDuration}s`;
-            }, {once: true});
+      if (hasContinuous) {
+        div.addEventListener('animationend', () => {
+          div.className = "overlay-item";
+          if (item.fontStroke) {
+            div.classList.add('text-stroked');
           }
-        } else if (hasContinuous) {
-          div.classList.add(item.animation);
+          
+          void div.offsetWidth;
+          
+          div.className = `overlay-item ${item.animation}`;
+          if (item.fontStroke) {
+            div.classList.add('text-stroked');
+          }
+          
           div.style.animationDelay = `${item.animationDelay}s`;
           div.style.animationDuration = `${item.animationDuration}s`;
-        }
+        }, {once: true});
       }
-      
-      container.appendChild(div);
-    }
-    
-    if (item.actorId) {
-      if (!window.overlayAnimatedElements[item.actorId]) {
-        window.overlayAnimatedElements[item.actorId] = [];
-      }
-      window.overlayAnimatedElements[item.actorId].push({
-        element: element,
-        item: item,
-        windowId: windowId
-      });
+    } else if (hasContinuous) {
+      div.classList.add(item.animation);
+      div.style.animationDelay = `${item.animationDelay}s`;
+      div.style.animationDuration = `${item.animationDuration}s`;
     }
   }
   
-  if (!isPremium) {
-    const promoFooter = overlayWindow.document.createElement("div");
-    promoFooter.style.cssText = `
-      position: absolute;
-      bottom: 5px;
-      right: 10px;
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.7);
-      font-family: Arial, sans-serif;
-      z-index: 9999;
-    `;
-    promoFooter.innerHTML = `Made by Jen. <a href="https://www.patreon.com/c/jenzelta" target="_blank" style="color:#FF424D;">Support on Patreon for premium features</a>`;
-    container.appendChild(promoFooter);
-  }
-  
-  if (windowId === "main" && window.overlayWindow) {
-    window.overlayWindow.document.body.style.backgroundColor = bg;
-  }
+  return div;
+}
+
+// Helper function to add the promotional footer
+function addPromoFooter(container, overlayWindow) {
+  const promoFooter = overlayWindow.document.createElement("div");
+  promoFooter.style.cssText = `
+    position: absolute;
+    bottom: 5px;
+    right: 10px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    font-family: Arial, sans-serif;
+    z-index: 9999;
+  `;
+  promoFooter.innerHTML = `Made by Jen. <a href="https://www.patreon.com/c/jenzelta" target="_blank" style="color:#FF424D;">Support on Patreon for premium features</a>`;
+  container.appendChild(promoFooter);
 }
 
 Hooks.on("updateActor", (actor, update, options, userId) => {
@@ -3954,8 +4028,22 @@ class OverlayWindowManager extends FormApplication {
   }
   
   getData() {
-    const windows = game.settings.get(MODULE_ID, "overlayWindows");
-    return { windows };
+    // Always get fresh data from OverlayData
+    const windows = OverlayData.getOverlayWindows() || {
+      "main": { 
+        id: "main", 
+        name: "Main Overlay",
+        activeLayout: "Default" 
+      }
+    };
+    
+    // Get premium status
+    const isPremium = OverlayData.getSetting("isPremium") || false;
+    
+    return { 
+      windows,
+      isPremium
+    };
   }
   
   activateListeners(html) {
@@ -3970,7 +4058,7 @@ class OverlayWindowManager extends FormApplication {
     event.preventDefault();
     
     const isPremium = OverlayData.getSetting("isPremium") || false;
-    const windows = game.settings.get(MODULE_ID, "overlayWindows");
+    const windows = OverlayData.getOverlayWindows() || {};
     
     // Check if non-premium user is trying to create a second window
     if (!isPremium && Object.keys(windows).length >= 1) {
@@ -3998,6 +4086,7 @@ class OverlayWindowManager extends FormApplication {
       return;
     }
     
+    // Prompt for window name
     const windowName = await Dialog.prompt({
       title: "New Overlay Window",
       content: `<p>Enter a name for the new overlay window:</p>
@@ -4007,17 +4096,24 @@ class OverlayWindowManager extends FormApplication {
     
     if (!windowName) return;
     
+    // Generate a unique window ID
     const windowId = Date.now().toString(36);
     
+    // Create new window config
     windows[windowId] = {
       id: windowId,
       name: windowName,
       activeLayout: "Default",
-      slideshowActive: false
+      slideshowActive: false,
+      width: 800,
+      height: 600
     };
     
-    await game.settings.set(MODULE_ID, "overlayWindows", windows);
-    this.render();
+    // Save the new window configuration
+    await OverlayData.setOverlayWindow(windowId, windows[windowId]);
+    
+    // Refresh the window manager
+    this.render(true);
   }
   
   async _onOpenWindow(event) {
@@ -4028,8 +4124,34 @@ class OverlayWindowManager extends FormApplication {
   
   async _onConfigureWindow(event) {
     event.preventDefault();
-    const windowId = event.currentTarget.dataset.window;
-    new OverlayWindowConfig(windowId).render(true);
+    try {
+      const windowId = event.currentTarget.dataset.window;
+      console.log(`Opening config for window: ${windowId}`);
+      
+      // Make sure the window exists in storage first
+      const windows = OverlayData.getOverlayWindows();
+      if (!windows[windowId]) {
+        console.log(`Window ${windowId} not found, creating default config`);
+        
+        // Create a default config
+        const defaultConfig = {
+          id: windowId,
+          name: `Window ${windowId}`,
+          activeLayout: "Default",
+          slideshowActive: false,
+          width: 800,
+          height: 600
+        };
+        
+        await OverlayData.setOverlayWindow(windowId, defaultConfig);
+      }
+      
+      // Open the config dialog
+      new OverlayWindowConfig(windowId).render(true);
+    } catch (error) {
+      console.error("Error configuring window:", error);
+      ui.notifications.error("There was an error opening the window configuration.");
+    }
   }
   
   async _onRemoveWindow(event) {
@@ -4048,24 +4170,29 @@ class OverlayWindowManager extends FormApplication {
     
     if (!confirmed) return;
     
-    const windows = game.settings.get(MODULE_ID, "overlayWindows");
-    delete windows[windowId];
-    await game.settings.set(MODULE_ID, "overlayWindows", windows);
-    
- 
-    if (window.overlayWindows && window.overlayWindows[windowId]) {
-      window.overlayWindows[windowId].close();
-      delete window.overlayWindows[windowId];
+    try {
+      // Delete the window configuration
+      await OverlayData.deleteOverlayWindow(windowId);
+      
+      // Close the window if it's open
+      if (window.overlayWindows && window.overlayWindows[windowId]) {
+        window.overlayWindows[windowId].close();
+        delete window.overlayWindows[windowId];
+      }
+      
+      // Update the window manager
+      this.render(true);
+    } catch (error) {
+      console.error("Error removing window:", error);
+      ui.notifications.error("Failed to remove window configuration");
     }
-    
-    this.render();
   }
 }
-
 class OverlayWindowConfig extends FormApplication {
-  constructor(windowId) {
+  constructor(windowId = "main") {
     super();
     this.windowId = windowId;
+    this.options = { windowId };
   }
   
   static get defaultOptions() {
@@ -4078,73 +4205,236 @@ class OverlayWindowConfig extends FormApplication {
       closeOnSubmit: false
     });
   }
-  
-  getData() {
-    const windows = OverlayData.getOverlayWindows();
-    const windowConfig = windows[this.windowId];
-    const layouts = OverlayData.getLayouts();
-    const slideshows = this._getSlideshowOptions();
-    
-    // Check if window is currently open
-    const isWindowOpen = window.overlayWindows?.[this.windowId] && 
-                         !window.overlayWindows[this.windowId].closed;
-    
-    return { 
-      windowId: this.windowId,
-      windowConfig, 
-      layouts,
-      slideshows,
-      isPremium: OverlayData.getSetting("isPremium"),
-      isWindowOpen
-    };
+
+  /**
+   * Use the built-in dialog as a fallback if the standard rendering fails
+   */
+  async _renderFallbackDialog() {
+    try {
+      // Get window data
+      const windows = OverlayData.getOverlayWindows();
+      const windowConfig = windows[this.windowId] || {
+        id: this.windowId,
+        name: `Window ${this.windowId}`,
+        activeLayout: "Default",
+        width: 800,
+        height: 600
+      };
+      
+      // Get all available layouts
+      const layouts = OverlayData.getLayouts() || { "Default": [] };
+      
+      // Create layout options HTML
+      let layoutOptionsHtml = '';
+      for (const [layoutName, layoutData] of Object.entries(layouts)) {
+        const selected = layoutName === windowConfig.activeLayout ? 'selected' : '';
+        layoutOptionsHtml += `<option value="${layoutName}" ${selected}>${layoutName}</option>`;
+      }
+      
+      // Create a dialog with basic controls
+      const dialog = new Dialog({
+        title: `Configure Window: ${windowConfig.name}`,
+        content: `
+          <form>
+            <div style="margin-bottom: 10px;">
+              <label for="win-name">Window Name:</label>
+              <input type="text" id="win-name" name="name" value="${windowConfig.name}">
+            </div>
+            
+            <div style="margin-bottom: 10px;">
+              <label for="win-layout">Active Layout:</label>
+              <select id="win-layout" name="activeLayout">
+                ${layoutOptionsHtml}
+              </select>
+            </div>
+            
+            <div style="margin-bottom: 10px;">
+              <label for="win-width">Width:</label>
+              <input type="number" id="win-width" name="width" value="${windowConfig.width || 800}">
+            </div>
+            
+            <div style="margin-bottom: 10px;">
+              <label for="win-height">Height:</label>
+              <input type="number" id="win-height" name="height" value="${windowConfig.height || 600}">
+            </div>
+            
+            <div style="margin-bottom: 10px;">
+              <button type="button" id="open-window-btn" 
+                      style="padding: 5px 10px; background-color: #4b8; color: white; border: none; border-radius: 3px;">
+                <i class="fas fa-external-link-alt"></i> Open Window
+              </button>
+              <small style="display: block; margin-top: 5px; font-style: italic; color: #666;">
+                Changes will be applied to the window when you save
+              </small>
+            </div>
+          </form>
+        `,
+        buttons: {
+          save: {
+            icon: '<i class="fas fa-save"></i>',
+            label: "Save Changes",
+            callback: async (html) => {
+              const name = html.find('#win-name').val();
+              const activeLayout = html.find('#win-layout').val();
+              const width = parseInt(html.find('#win-width').val()) || 800;
+              const height = parseInt(html.find('#win-height').val()) || 600;
+              
+              // Update window config with new values
+              const updatedConfig = {
+                ...windowConfig,
+                name,
+                activeLayout,
+                width,
+                height
+              };
+              
+              try {
+                // Save the updated configuration
+                await OverlayData.setOverlayWindow(this.windowId, updatedConfig);
+                
+                // Force the Window Manager to re-render if it's open
+                const windowManagers = Object.values(ui.windows).filter(w => 
+                  w.constructor.name === "OverlayWindowManager" ||
+                  w.options?.id === "foundrystreamoverlay-window-manager"
+                );
+                
+                for (const manager of windowManagers) {
+                  manager.render(true);
+                }
+                
+                ui.notifications.info("Window configuration saved");
+                
+                // Update the window if it's open
+                if (window.overlayWindows?.[this.windowId] && !window.overlayWindows[this.windowId].closed) {
+                  // Update the window title
+                  if (window.overlayWindows[this.windowId].document.title) {
+                    window.overlayWindows[this.windowId].document.title = `Foundry Stream Overlay - ${name}`;
+                  }
+                  
+                  // Update the window content
+                  updateOverlayWindow(this.windowId);
+                  
+                  // Apply size if specified
+                  window.overlayWindows[this.windowId].resizeTo(width, height);
+                }
+              } catch (error) {
+                console.error("Failed to save window config:", error);
+                ui.notifications.error("Failed to save window configuration");
+              }
+            }
+          },
+          cancel: {
+            icon: '<i class="fas fa-times"></i>',
+            label: "Cancel"
+          }
+        },
+        default: "save",
+        render: (html) => {
+          html.find('#open-window-btn').click(() => {
+            openOverlayWindow(this.windowId);
+            ui.notifications.info("Overlay window opened");
+          });
+        }
+      });
+      
+      dialog.render(true);
+      return dialog;
+    } catch (error) {
+      console.error("Even fallback dialog failed:", error);
+      ui.notifications.error("Could not open window configuration");
+      return null;
+    }
   }
-  
-  _getSlideshowOptions() {
-    return [
-      { id: "none", name: "No Slideshow" },
-      { id: "main", name: "Main Slideshow" }
-    ];
+
+  async _render(force = false, options = {}) {
+    try {
+      // Try standard rendering first
+      return await super._render(force, options);
+    } catch (error) {
+      console.error("Error in standard window config rendering:", error);
+      
+      // If standard rendering fails, use the fallback dialog
+      return this._renderFallbackDialog();
+    }
+  }
+
+  getData() {
+    try {
+      // Get essential data with safe fallbacks
+      const windows = OverlayData.getOverlayWindows() || {};
+      
+      // Ensure we have a valid window config
+      const windowConfig = windows[this.windowId] || {
+        id: this.windowId,
+        name: `Window ${this.windowId}`,
+        activeLayout: "Default",
+        width: 800,
+        height: 600
+      };
+      
+      // Get layouts safely
+      const layouts = OverlayData.getLayouts() || { "Default": [] };
+      
+      // Determine if window is open
+      const isWindowOpen = !!(window.overlayWindows && 
+                          window.overlayWindows[this.windowId] && 
+                          !window.overlayWindows[this.windowId].closed);
+      
+      // Return a clean object with primitive values
+      return {
+        windowId: this.windowId,
+        windowConfig: {
+          id: windowConfig.id || this.windowId,
+          name: windowConfig.name || `Window ${this.windowId}`,
+          activeLayout: windowConfig.activeLayout || "Default",
+          width: windowConfig.width || 800,
+          height: windowConfig.height || 600
+        },
+        layouts: Object.keys(layouts).map(key => ({ key, isActive: key === windowConfig.activeLayout })),
+        isWindowOpen: isWindowOpen
+      };
+    } catch (error) {
+      console.error("Error in OverlayWindowConfig getData:", error);
+      
+      // Return minimal safe data
+      return {
+        windowId: this.windowId,
+        windowConfig: {
+          name: "Window Configuration",
+          activeLayout: "Default",
+          width: 800,
+          height: 600
+        },
+        layouts: [{ key: "Default", isActive: true }],
+        isWindowOpen: false
+      };
+    }
   }
   
   activateListeners(html) {
     super.activateListeners(html);
-    html.find("input, select").on("change", this._onSettingChange.bind(this));
-    html.find(".open-window").click(this._onOpenWindow.bind(this));
-    html.find("#save-current-size").click(this._onSaveCurrentSize.bind(this));
+    
+    // Add listeners
+    html.find('.open-window').click(this._onOpenWindow.bind(this));
+    html.find('#save-current-size').click(this._onSaveCurrentSize.bind(this));
+    
+    // Add event listeners for input/select elements
+    html.find('input, select').on('change', this._onInputChange.bind(this));
   }
   
-  async _onSettingChange(event) {
-    const windows = OverlayData.getOverlayWindows();
-    const windowConfig = windows[this.windowId];
-    const field = event.currentTarget.name;
-    
-    // Parse numeric values appropriately
-    let value;
-    if (event.currentTarget.type === "checkbox") {
-      value = event.currentTarget.checked;
-    } else if (field === "width" || field === "height") {
-      value = parseInt(event.currentTarget.value) || (field === "width" ? 800 : 600);
-    } else {
-      value = event.currentTarget.value;
-    }
-    
-    // Create updated config
-    const updatedConfig = { 
-      ...windowConfig,
-      [field]: value 
-    };
-    
-    await OverlayData.setOverlayWindow(this.windowId, updatedConfig);
-    
-    if (window.overlayWindows && window.overlayWindows[this.windowId]) {
-      updateOverlayWindow(this.windowId);
-    }
+  async _onInputChange(event) {
+    // We don't auto-save here, just allow the form to be submitted
+  }
+  
+  async _onOpenWindow(event) {
+    event.preventDefault();
+    openOverlayWindow(this.windowId);
+    ui.notifications.info("Overlay window opened");
   }
   
   async _onSaveCurrentSize(event) {
     event.preventDefault();
     
-    // Check if the window is open
     if (!window.overlayWindows?.[this.windowId] || window.overlayWindows[this.windowId].closed) {
       ui.notifications.warn("Window must be open to capture its current size");
       return;
@@ -4152,89 +4442,71 @@ class OverlayWindowConfig extends FormApplication {
     
     try {
       const currentWindow = window.overlayWindows[this.windowId];
+      const width = currentWindow.outerWidth || 800;
+      const height = currentWindow.outerHeight || 600;
       
-      // Get the window's current dimensions
-      const width = currentWindow.outerWidth;
-      const height = currentWindow.outerHeight;
-      
-      if (!width || !height) {
-        ui.notifications.warn("Could not determine window dimensions");
-        return;
-      }
-      
-      // Update the form inputs to reflect the current size
+      // Set field values
       const form = $(event.currentTarget).closest('form');
       form.find('input[name="width"]').val(width);
       form.find('input[name="height"]').val(height);
       
-      // Save the new dimensions
-      const windows = OverlayData.getOverlayWindows();
-      const windowConfig = windows[this.windowId];
-      
-      const updatedConfig = {
-        ...windowConfig,
-        width,
-        height
-      };
-      
-      await OverlayData.setOverlayWindow(this.windowId, updatedConfig);
-      ui.notifications.info(`Saved current window size: ${width}×${height}`);
+      ui.notifications.info(`Current window size: ${width}×${height}`);
     } catch (error) {
-      console.error("Error saving window size:", error);
-      ui.notifications.error("Failed to save window size");
+      console.error("Error getting window size:", error);
+      ui.notifications.error("Failed to get window size");
     }
-  }
-  
-  async _onOpenWindow(event) {
-    event.preventDefault();
-    openOverlayWindow(this.windowId);
   }
   
   async _updateObject(event, formData) {
     try {
       // Get current window config
       const windows = OverlayData.getOverlayWindows();
-      const windowConfig = windows[this.windowId];
-      
-      // Create updated config with form data
-      const updatedConfig = { 
-        ...windowConfig
+      const windowConfig = windows[this.windowId] || {
+        id: this.windowId,
+        name: `Window ${this.windowId}`,
+        activeLayout: "Default",
+        width: 800,
+        height: 600
       };
       
-      // Update properties from form data
+      // Create updated config
+      const updatedConfig = { ...windowConfig };
+      
+      // Update from form data
       for (const [key, value] of Object.entries(formData)) {
         if (key === "width" || key === "height") {
           updatedConfig[key] = parseInt(value) || (key === "width" ? 800 : 600);
-        } else if (typeof value === "string" && value.match(/^(true|false)$/i)) {
-          updatedConfig[key] = value.toLowerCase() === "true";
         } else {
           updatedConfig[key] = value;
         }
       }
       
-      // Save changes through OverlayData
-      await OverlayData.setOverlayWindow(this.windowId, updatedConfig);
-      
-      ui.notifications.info(`Window configuration saved.`);
-      
-      // Apply size changes to the window if it's open
-      if (window.overlayWindows?.[this.windowId] && !window.overlayWindows[this.windowId].closed) {
-        if (formData.width && formData.height) {
-          const width = parseInt(formData.width) || 800;
-          const height = parseInt(formData.height) || 600;
-          window.overlayWindows[this.windowId].resizeTo(width, height);
-          ui.notifications.info(`Applied new size: ${width}×${height}`);
-        }
-      }
-      
-      // Update the window content if it's open
-      updateOverlayWindow(this.windowId);
-      
-      return true;
-    } catch (error) {
-      console.error("Failed to save window configuration:", error);
-      ui.notifications.error("Failed to save window configuration.");
-      return false;
-    }
+// Ensure essential properties
+if (!updatedConfig.name) updatedConfig.name = `Window ${this.windowId}`;
+if (!updatedConfig.activeLayout) updatedConfig.activeLayout = "Default";
+
+// Save changes
+await OverlayData.setOverlayWindow(this.windowId, updatedConfig);
+ui.notifications.info(`Window configuration saved.`);
+
+// Update window if open
+if (window.overlayWindows?.[this.windowId] && !window.overlayWindows[this.windowId].closed) {
+  updateOverlayWindow(this.windowId);
+  
+  // Apply size if specified
+  if (formData.width && formData.height) {
+    const width = parseInt(formData.width) || 800;
+    const height = parseInt(formData.height) || 600;
+    window.overlayWindows[this.windowId].resizeTo(width, height);
+    ui.notifications.info(`Window size set to ${width}×${height}`);
   }
+}
+
+return true;
+} catch (error) {
+console.error("Failed to save window configuration:", error);
+ui.notifications.error("Failed to save window configuration.");
+return false;
+}
+}
 }

@@ -49,7 +49,7 @@ class OverlayDataStorage {
       const storedData = await game.settings.get(MODULE_ID, "storedUserData");
       
       if (storedData) {
-        this.data = mergeObject(this.data, storedData);
+        this.data = foundry.utils.mergeObject(this.data, storedData);
         console.log(`${MODULE_ID} | Loaded user data from storage`);
       } else {
         console.log(`${MODULE_ID} | No stored data found, using defaults`);
@@ -154,7 +154,7 @@ class OverlayDataStorage {
           }
           
           // Merge imported data with default structure to ensure all required fields exist
-          this.data = mergeObject(this.data, importedData);
+          his.data = foundry.utils.mergeObject(this.data, importedData);
           
           // Save the imported data
           const saved = await this.save();
@@ -307,11 +307,20 @@ class OverlayDataStorage {
    * @returns {Promise<boolean>} Whether the save was successful
    */
   async setActiveLayout(name) {
-    if (this.data.layouts[name]) {
-      this.data.activeLayout = name;
-      return this.save();
+    // Ensure we have layouts object
+    if (!this.data.layouts) {
+      this.data.layouts = { "Default": [] };
     }
-    return false;
+    
+    // If the layout doesn't exist yet, create it
+    if (!this.data.layouts[name]) {
+      console.log(`${MODULE_ID} | Creating new layout: ${name}`);
+      this.data.layouts[name] = [];
+    }
+    
+    // Set as active
+    this.data.activeLayout = name;
+    return this.save();
   }
   
   /**

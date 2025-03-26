@@ -1,126 +1,66 @@
 <form>
-    <h2>Configure Window: {{windowConfig.name}}</h2>
-    
-    <div class="form-group">
-      <label>Window Name:</label>
-      <input type="text" name="name" value="{{windowConfig.name}}">
-    </div>
-    
-    <div class="form-group">
-      <label>Display Layout:</label>
-      <select name="activeLayout">
-        {{#each layouts}}
-          <option value="{{@key}}" {{#if (eq ../windowConfig.activeLayout @key)}}selected{{/if}}>{{@key}}</option>
-        {{/each}}
-      </select>
-    </div>
-    
-    <div class="form-group">
-      <label>
-        <input type="checkbox" name="slideshowActive" {{#if windowConfig.slideshowActive}}checked{{/if}}>
-        Enable Slideshow
-      </label>
-    </div>
-    
-    <div class="form-group" {{#unless windowConfig.slideshowActive}}style="display:none"{{/unless}}>
-      <label>Slideshow Configuration:</label>
-      <select name="slideshowId">
-        {{#each slideshows}}
-          <option value="{{this.id}}" {{#if (eq ../windowConfig.slideshowId this.id)}}selected{{/if}}>{{this.name}}</option>
-        {{/each}}
-      </select>
-    </div>
-    
-    <div class="form-group window-size-section">
-      <label>Window Size:</label>
-      <div class="window-size-inputs">
-        <div class="input-group">
-          <label>Width:</label>
-          <input type="number" name="width" value="{{windowConfig.width}}" min="200" step="10">
-        </div>
-        <div class="input-group">
-          <label>Height:</label>
-          <input type="number" name="height" value="{{windowConfig.height}}" min="200" step="10">
-        </div>
-      </div>
-      <p class="hint">Default size when opening the window (in pixels)</p>
+    <div class="window-config-container">
+      <h2>Configure Overlay Window</h2>
       
-      <div class="current-size-actions">
-        <button type="button" id="save-current-size" {{#unless isWindowOpen}}disabled{{/unless}}>
-          <i class="fas fa-save"></i> Save Current Size
-        </button>
-        <span class="hint save-size-hint">
-          {{#if isWindowOpen}}
-          Click to use the current window dimensions
-          {{else}}
-          Open the window first to save its size
-          {{/if}}
-        </span>
+      <div class="form-group">
+        <label for="window-name">Window Name:</label>
+        <input type="text" id="window-name" name="name" value="{{windowConfig.name}}">
       </div>
-    </div>
-    
-    <div style="margin-top:1em; text-align:center;">
-      <button type="button" class="open-window">Open Window</button>
-    </div>
-    
-    <hr>
-    
-    <div class="form-footer">
-      <button type="submit">Save Configuration</button>
+      
+      <div class="form-group">
+        <label for="active-layout">Active Layout:</label>
+        <select id="active-layout" name="activeLayout">
+          {{#each layouts}}
+            <option value="{{this.key}}" {{#if this.isActive}}selected{{/if}}>{{this.key}}</option>
+          {{/each}}
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="window-size">Window Size:</label>
+        <div class="size-inputs">
+          <input type="number" name="width" value="{{windowConfig.width}}" placeholder="Width" min="100">
+          ×
+          <input type="number" name="height" value="{{windowConfig.height}}" placeholder="Height" min="100">
+          <button type="button" id="save-current-size" {{#unless isWindowOpen}}disabled{{/unless}}>
+            Use Current Size
+          </button>
+        </div>
+        {{#unless isWindowOpen}}
+        <small>Window must be open to capture current size</small>
+        {{/unless}}
+      </div>
+      
+      <div class="form-actions">
+        <button type="submit">Save Changes</button>
+        <button type="button" class="open-window">Open Window</button>
+      </div>
     </div>
     
     <style>
+      .window-config-container {
+        padding: 10px;
+      }
       .form-group {
-        margin-bottom: 1em;
+        margin-bottom: 15px;
       }
-      
-      .window-size-section {
-        background-color: #f5f5f5;
-        padding: 1em;
-        border-radius: 4px;
-        border-left: 3px solid #4b8;
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
       }
-      
-      .window-size-inputs {
+      .size-inputs {
         display: flex;
-        gap: 1em;
-        margin-top: 0.5em;
+        align-items: center;
+        gap: 5px;
       }
-      
-      .input-group {
+      .size-inputs button {
+        margin-left: 10px;
+      }
+      .form-actions {
+        margin-top: 20px;
         display: flex;
-        flex-direction: column;
-      }
-      
-      .input-group input {
-        width: 80px;
-      }
-      
-      .hint {
-        font-style: italic;
-        color: #666;
-        font-size: 0.9em;
-        margin-top: 0.2em;
-      }
-      
-      .current-size-actions {
-        margin-top: 1em;
-        padding-top: 0.5em;
-        border-top: 1px dashed #ddd;
-      }
-      
-      .save-size-hint {
-        margin-left: 0.5em;
-      }
-      
-      .form-footer {
-        margin-top: 1em;
-        text-align: right;
-      }
-      
-      button[disabled] {
-        opacity: 0.5;
-        cursor: not-allowed;
+        gap: 10px;
       }
     </style>
   </form>
