@@ -2,10 +2,10 @@
   "id": "foundrystreamoverlay",
   "title": "Foundry Stream Overlay",
   "description": "Create stunning and dynamic green screen overlays for use with obs or other streaming software to show live data of your party!",
-  "version": "3.4.3",
+  "version": "3.5.0",
   "compatibility": {
     "minimum": "12",
-    "verified": "12"
+    "verified": "13"
   },
   "esmodules": [
     "data-storage.js",
