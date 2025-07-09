@@ -24,7 +24,7 @@
   ],
   "url": "https://github.com/darkjenso/FoundryStreamOverlay/",
   "manifest": "https://raw.githubusercontent.com/darkjenso/FoundryStreamOverlay/refs/heads/main/module.json",
-  "download": "https://github.com/darkjenso/FoundryStreamOverlay/releases/download/3.4.3/foundrystreamoverlay.zip",
+  "download": "https://github.com/darkjenso/FoundryStreamOverlay/releases/download/3.5.0/foundrystreamoverlay.zip",
   "socket": true,
   "relationships": {
     "requires": [
