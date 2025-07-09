@@ -32,7 +32,7 @@
             <th>Top (px)</th>
             <th>Left (px)</th>
             <th>Hide</th>
-            <th style="width: 50px;">Remove</th>
+            <th style="width: 60px;">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -338,7 +338,12 @@
               <input type="checkbox" name="hide-{{this.idx}}" {{#if this.hide}}checked{{/if}}>
             </td>
             <td style="text-align:center;">
-              <button type="button" class="remove-row" data-index="{{this.idx}}">X</button>
+                <button type="button" class="remove-row" data-index="{{this.idx}}" title="Remove this item" style="display:block; margin-bottom:2px; width:100%;">
+                  <i class="fas fa-trash"></i>
+                </button>
+                <button type="button" class="duplicate-row" data-index="{{this.idx}}" title="Duplicate this item" style="display:block; width:100%;">
+                  <i class="fas fa-copy"></i>
+                </button>
             </td>
           </tr>
           {{/each}}
