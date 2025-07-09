@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [3.5.0] - 2025-07-09
 - Added a duplicate button on the overlay items to make it easier to add more of the same items with formating and more
+- Verified functionality for foundry 13
 
 ## [3.4.3] - 2025-03-26
 ### Bug Fixes
