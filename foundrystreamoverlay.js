@@ -1293,6 +1293,7 @@ class OverlayConfig extends FormApplication {
     
     // Handle remove and move buttons
     html.on("click", ".remove-row", this._onRemoveRow.bind(this));
+    html.find(".duplicate-row").click(this._onDuplicateRow.bind(this));
     html.find(".move-up").click(this._onMoveUp.bind(this));
     html.find(".move-down").click(this._onMoveDown.bind(this));
     
@@ -1633,7 +1634,59 @@ class OverlayConfig extends FormApplication {
       this.render();
     }
   }
+
+async _onDuplicateRow(event) {
+  event.preventDefault();
+  const index = Number(event.currentTarget.dataset.index);
   
+  // Get the current layout name - use the selected layout
+  const layoutName = this._selectedLayout || "Default";
+  console.log(`Duplicating row from layout: ${layoutName} at index ${index}`);
+  
+  // Get all layouts
+  const layouts = OverlayData.getLayouts();
+  
+  // Ensure we're working with an array
+  const current = Array.isArray(layouts[layoutName]) ? layouts[layoutName] : [];
+
+  if (index >= 0 && index < current.length) {
+    // Create a deep copy of the item at the specified index
+    const originalItem = current[index];
+    const duplicatedItem = JSON.parse(JSON.stringify(originalItem));
+    
+    // Modify the duplicated item to distinguish it from the original
+    // Offset the position slightly so it's not exactly on top
+    duplicatedItem.top = (duplicatedItem.top || 0) + 20;
+    duplicatedItem.left = (duplicatedItem.left || 0) + 20;
+    
+    // If it's a static text item, add "(Copy)" to the content
+    if (duplicatedItem.type === "static" && duplicatedItem.content) {
+      duplicatedItem.content = duplicatedItem.content + " (Copy)";
+    }
+    
+    // Reset the order to place it at the beginning
+    for (let i = 0; i < current.length; i++) {
+      current[i].order = (current[i].order || 0) + 1;
+    }
+    duplicatedItem.order = 0;
+    
+    // Insert the duplicated item right after the original
+    current.splice(index + 1, 0, duplicatedItem);
+    
+    // Save the updated layout
+    await OverlayData.setLayout(layoutName, current);
+    
+    // Update all open windows
+    this._updateAllWindows();
+    
+    // Show success message
+    ui.notifications.info("Item duplicated successfully!");
+    
+    // Re-render the form
+    this.render();
+  }
+}
+ 
   async _onMoveUp(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
