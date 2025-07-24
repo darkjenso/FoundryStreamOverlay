@@ -1,39 +1,53 @@
-<form>
-  <h2>Manage Overlay Windows</h2>
-  <table style="width: 100%; text-align: left;">
-    <thead>
-      <tr>
-        <th>Window Name</th>
-        <th>Current Layout</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{#each windows}}
-      <tr>
-        <td>{{this.name}}</td>
-        <td>{{this.activeLayout}}</td>
-        <td>
-          <button type="button" class="open-window" data-window="{{this.id}}">Open</button>
-          <button type="button" class="configure-window" data-window="{{this.id}}">Configure</button>
-          {{#if (ne this.id "main")}}
-            <button type="button" class="remove-window" data-window="{{this.id}}">Remove</button>
-          {{/if}}
-        </td>
-      </tr>
-      {{/each}}
-    </tbody>
-  </table>
-  <div style="margin-top:1em; text-align:center;">
-    <button type="button" class="create-new-window">Create New Window</button>
+<form class="fso-scene-manager">
+  <div class="fso-scene-manager-header">
+    <h2>Manage Overlay Windows</h2>
+    <p class="fso-scene-manager-description">Create, open and configure overlay windows.</p>
   </div>
-  
-  {{#unless isPremium}}
-  <div style="margin-top:1.5em; padding-top:1em; border-top:1px solid #ddd; text-align:center; font-size:0.9em; color:#666;">
-    <div style="margin-bottom:0.5em;"><i class="fas fa-info-circle"></i> Multiple overlay windows are a premium feature</div>
-    <a href="https://www.patreon.com/c/jenzelta" target="_blank" style="display:inline-block; background-color:#FF424D; color:white; padding:0.3em 0.8em; border-radius:4px; text-decoration:none;">
-      <i class="fab fa-patreon"></i> Support on Patreon
-    </a>
+
+  <div class="fso-scenes-list-container">
+    <table class="fso-scenes-table">
+      <thead>
+        <tr>
+          <th>Window Name</th>
+          <th>Current Layout</th>
+          <th class="fso-actions-col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each windows}}
+        <tr class="fso-scene-row">
+          <td>{{this.name}}</td>
+          <td>{{this.activeLayout}}</td>
+          <td class="fso-scene-actions">
+            <div class="fso-action-buttons-grid">
+              <button type="button" class="fso-action-btn open-window" data-window="{{this.id}}">Open</button>
+              <button type="button" class="fso-action-btn configure-window" data-window="{{this.id}}">Configure</button>
+              {{#if (ne this.id "main")}}
+                <button type="button" class="fso-action-btn fso-delete-btn remove-window" data-window="{{this.id}}">Remove</button>
+              {{/if}}
+            </div>
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
   </div>
-  {{/unless}}
+
+  <div class="fso-scene-actions-section">
+    <div class="fso-primary-actions">
+      <button type="button" class="fso-primary-btn create-new-window">Create New Window</button>
+    </div>
+
+    {{#unless isPremium}}
+    <div class="fso-premium-limitation-notice">
+      <div class="fso-premium-notice">
+        <div class="fso-premium-content">
+          <i class="fso-premium-icon fas fa-gem"></i>
+          <div class="fso-premium-text">Multiple overlay windows are a premium feature</div>
+          <a href="https://www.patreon.com/c/jenzelta" target="_blank" class="fso-premium-link">Support on Patreon</a>
+        </div>
+      </div>
+    </div>
+    {{/unless}}
+  </div>
 </form>

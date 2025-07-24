@@ -1,57 +1,62 @@
-# FOUNDRY STREAM OVERLAY MODULE LICENSE
+**Foundry Stream Overlay – Proprietary, Source‑Available Licence v1.1**  
+Copyright © 2025 Jennifer Murray (“Licensor”)
 
-Copyright (c) 2025 Jen
+> *Plain English summary*: Use it in your own games/streams (commercial use of the output is fine) and read the code, but you cannot redistribute the code or bypass premium checks/keys. Premium for the Foundry module is unlocked with a **one‑time activation key via Patreon** (Section 5). The standalone companion app will require an **active monthly Patreon subscription** to run. The Licensor may change how premium is sold/activated for future versions.
 
-All rights reserved.
+## 1. Definitions
+- **Software**: The Foundry Stream Overlay module and all accompanying source code, assets and documentation.  
+- **Premium Features**: Functionality gated by a licence key, premium check, subscription or similar.  
+- **Licence Key**: Any code, token, file or mechanism issued to unlock Premium Features.  
+- **Output**: Material produced by the Software during normal use (e.g. overlay video, screenshots).  
+- **Studio**: A company, organisation, channel/network or group producing content with >1 regular collaborator under a shared brand.  
+- **Studio Licence**: Permits a Studio to share one or more keys internally for a defined number of Seats.  
+- **Seat**: A single person authorised under a Studio Licence, non‑transferable except to replace staff.  
+- **You**: The individual or entity exercising rights under this Licence.
 
-This software, Foundry Stream Overlay (the "Software"), is proprietary software 
-owned exclusively by Jen (the "Author"). By downloading, installing, or using 
-the Software, you agree to be bound by the terms of this license.
+## 2. Licence Grant (What You May Do)
+Subject to compliance:  
+1. **Install & run** the Software on your Foundry VTT instances.  
+2. **Use the Output** (stream, record, publish) commercially or personally.  
+3. **Make private modifications** for your own use only (no sharing of modified code).
 
-## TERMS AND CONDITIONS:
+## 3. Prohibitions (What You May Not Do)
+You must **not**:  
+1. Redistribute or publish the Software’s source code (modified or not) without written permission.  
+2. Sell, lease, sublicense or commercialise the Software itself.  
+3. Bypass, disable or circumvent Premium checks or licence enforcement.  
+4. Share or sell any Licence Key without express consent.  
+5. Distribute derivatives whose primary purpose is to enable Premium Features without authorisation.  
+6. Reverse engineer except for lawful interoperability (never to circumvent checks).
 
-### 1. USAGE RIGHTS
-Users are granted a non-exclusive, non-transferable license to use the 
-Software solely for streaming and display purposes within Foundry Virtual 
-Tabletop. Premium features require a valid activation key obtained through 
-the Author's Patreon.
+## 4. Third‑Party Components
+Third‑party code/assets may carry their own licences, which govern their use.
 
-### 2. RESTRICTIONS
-You may NOT:
-   a. Modify, adapt, alter, translate, or create derivative works of the Software
-   b. Reverse engineer, decompile, disassemble, or attempt to derive the source code
-   c. Redistribute, sell, rent, lease, sublicense, or otherwise transfer rights to the Software
-   d. Remove or alter any proprietary notices or labels on the Software
-   e. Use the Software for any commercial purpose without explicit written permission
+## 5. Premium Access & Activation
+- **How to get a key**: Premium access via Patreon—join the eligible tier to receive your key.  
+- **One‑time activation**: 4.x uses a one‑time activation per Foundry instance, no always‑online check.  
+- **Premium customisation**: Premium users may modify fonts, animations or visual assets locally; do not distribute those code changes.  
+- **Studio licences**: Distribute Studio keys only to authorised Seats; keep records and reassign seats internally.  
+- **Standalone Companion App subscription**: Requires active monthly Patreon subscription; lapsing may disable app access.  
+- **Future changes**: The Licensor may alter distribution, pricing or activation for later versions.
 
-### 3. OWNERSHIP
-The Software, including all intellectual property rights therein, is owned by
-the Author and is protected by copyright laws and international treaty provisions.
+## 6. Feedback & Contributions
+All feedback or PRs may be used at the Licensor’s discretion under terms they specify.
 
-### 4. WARRANTY DISCLAIMER
-THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
-PURPOSE AND NONINFRINGEMENT.
+## 7. Termination
+Breach of Sections 3 will terminate this licence. Upon termination destroy all copies.
 
-### 5. LIMITATION OF LIABILITY
-IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+## 8. Warranty Disclaimer
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND.
 
-### 6. TERMINATION
-This license is effective until terminated. It will terminate automatically without
-notice if you fail to comply with any provision of this license. Upon termination,
-you must cease all use of the Software and destroy all copies.
+## 9. Limitation of Liability
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE LICENSOR IS NOT LIABLE FOR ANY INDIRECT OR CONSEQUENTIAL DAMAGES.
 
-### 7. PREMIUM FEATURES
-Premium features require a valid activation key obtained through the Author's Patreon.
-Use of premium features without a valid key is prohibited.
+## 10. Governing Law & Jurisdiction
+Governed by the laws of England and Wales. Disputes go to the courts of England and Wales.
 
-### 8. UPDATES AND SUPPORT
-The Author is under no obligation to provide updates, maintenance, or support for
-the Software but may do so at their discretion.
+## 11. Updates to this Licence
+The Licensor may publish new versions; you may stick with your version or adopt a later one.
 
-By using this Software, you acknowledge that you have read this license, understand it,
-and agree to be bound by its terms.
+---
 
-For questions about this license, contact Jen on Patreon.
+*Not legal advice. Contact the Licensor or a solicitor for formal agreements.*

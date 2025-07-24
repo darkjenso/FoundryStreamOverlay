@@ -1,0 +1,95 @@
+/* ===================================================================
+   CORE OVERLAY STYLES - Base functionality and overlay window setup
+   ================================================================== */
+
+/* ===================================================================
+   1. RESET & BASE STYLES
+   ================================================================== */
+
+/* Prevent overlay styles from affecting Foundry UI */
+body:not(.overlay-window) .fso-overlay-item {
+  all: unset !important;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ===================================================================
+   2. OVERLAY WINDOW STYLES
+   ================================================================== */
+
+.foundry-stream-overlay {
+  color: #000;
+  padding: 0;
+  font-family: inherit;
+  border: none;
+  background: none !important;
+  background-color: transparent !important;
+}
+
+.no-header .window-title {
+  display: none;
+}
+
+/* Core overlay item styles */
+.fso-overlay-item,
+body.overlay-window .overlay-item,
+#overlay-container .overlay-item {
+  position: absolute;
+  background: none !important;
+  background-color: transparent !important;
+  color: inherit;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  cursor: default;
+  user-select: none;
+  transform-origin: center;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  outline: none !important;
+}
+
+/* Text items maintain centering */
+.fso-overlay-item:not(img),
+.overlay-item:not(img) {
+  text-align: center;
+  min-width: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Image elements */
+img.fso-overlay-item,
+img.overlay-item {
+  transform: none;
+  left: auto;
+}
+
+/* Text stroke support */
+.fso-overlay-item.text-stroked {
+  paint-order: stroke fill;
+}
+
+@supports not (paint-order: stroke) {
+  .fso-overlay-item.text-stroked {
+    text-shadow:
+      -1px -1px 0 var(--stroke-color),  
+       1px -1px 0 var(--stroke-color),
+      -1px  1px 0 var(--stroke-color),
+       1px  1px 0 var(--stroke-color);
+  }
+  }
+
+/* HP bar styling */
+.hp-bar {
+  background: transparent;
+}
+
+.hp-bar-fill {
+  transition: width 0.3s ease, height 0.3s ease;
+  border-radius: inherit;
+
+}

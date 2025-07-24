@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+All notable changes to **Foundry Stream Overlay** will be documented here.  
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [4.0.0] – 24 July 2025
+
+###  Breaking
+- **Codebase refactor**: The monolithic `foundrystreamoverlay.js`/`foundrystreamoverlay-layouts.js` files have been replaced by a modular structure under `js/core`, `js/ui`, and `js/overlay`. Any macros, scripts, or modules that imported functions directly from the old files will need updating.
+- **Socket usage removed**: The module no longer opens a socket and no longer depends on `socketlib`. If you relied on socket events from previous versions, migrate to the new hook/events exposed in `js/core/hooks.js`.
+- **Template paths changed**: HTML templates have moved/been renamed (e.g. `templates/window-manager.html`, `templates/animation-manager.html`). Update any custom overrides.
+- **CSS restructuring**: Styles have been split into multiple files (`styles/animations.css`, `styles/core-overlay.css`, etc.). Custom CSS that targeted the old selectors may need adjusting.
+- **Upgrade impact**: Upgrading to 4.0 may delete or reset layouts created in 3.x. Be sure to back up your overlay data before upgrading!
+
+### Added
+- **Animation Manager UI** to create entrance and continuous animations per item.  
+- **Full animation system** for overlay items (`animation-system.js`) with queueing, event hooks, and critical/fumble cues.  
+- **Enhanced dice-roll detection** (`dice-roll-handler.js`) with richer roll metadata and improved modifier/critical detection.  
+- **Overlay Data Management panel** to import/export/reset all layouts and settings in a single JSON file.  
+- **Window & layout management improvements**: dedicated templates and controllers for opening, duplicating, and managing multiple overlay windows.  
+- **Responsive CSS utilities** and separate stylesheets for cleaner theming and easier customisation.  
+- **Premium validation layer** (`js/premium/validation.js`) centralised and surfaced in relevant UIs with clearer notices.  
+- **New macros pack structure** (LMDB based) to ship example macros more reliably.  
+- **Media metadata** (icon/cover) and author fields added to `module.json` for nicer display.  
+- **Standalone companion app (alpha/coming soon)**: local server provides true transparent overlays (no green screen/window capture).
+
+### Changed
+- **Module initialisation** moved to `js/core/module-init.js`; all hooks consolidated in `js/core/hooks.js`.  
+- **Storage handling** centralised in `data-storage.js` with safer reads/writes.  
+- **Config & settings UIs** reworked (`foundrystreamoverlay-config.html`, `window-config.html`) for clarity and consistency.  
+- **Premium checks** now run on render rather than at construction time to prevent hard crashes.
+
+### Removed
+- `blank-config.json` (obsolete).  
+- Legacy templates (`foundrystreamoverlay.html`, `window-manager.htm`).  
+- Direct dependency on `socketlib` and related socket code.
+
+### Fixed
+- Numerous issues with multiple windows/layouts not updating in real time.  
+- Dice animations occasionally failing to trigger for inline rolls.  
+- Various race conditions around HP change animations and overlay refreshes.
+
+
 ## [3.5.1] - 2025-07-09
 - Added a duplicate button on the overlay items to make it easier to add more of the same items with formating and more
 - Verified functionality for foundry 13

@@ -1,0 +1,331 @@
+/* ===================================================================
+   STANDARD ANIMATIONS - All non-dice overlay animations
+   ================================================================== */
+
+/* ===================================================================
+   CONTINUOUS ANIMATIONS
+   ================================================================== */
+
+/* Hover animations */
+@keyframes hover {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-5px); }
+}
+.fso-overlay-item.hover:not(img) { animation: hover 2s infinite; }
+
+@keyframes img-hover {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+img.fso-overlay-item.hover { animation: img-hover 2s infinite; }
+
+/* Pulse animations */
+@keyframes pulse {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.3); }
+}
+.fso-overlay-item.pulse:not(img) { animation: pulse 1.5s infinite; }
+
+@keyframes img-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+}
+img.fso-overlay-item.pulse { animation: img-pulse 1.5s infinite; }
+
+/* Heartbeat animations */
+@keyframes heartbeat {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  14% { transform: translateX(-50%) scale(1.1); }
+  28% { transform: translateX(-50%) scale(1); }
+  42% { transform: translateX(-50%) scale(1.1); }
+  70% { transform: translateX(-50%) scale(1); }
+}
+.fso-overlay-item.heartbeat:not(img) { animation: heartbeat 1.5s infinite; }
+
+@keyframes img-heartbeat {
+  0%, 100% { transform: scale(1); }
+  14% { transform: scale(1.1); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.1); }
+  70% { transform: scale(1); }
+}
+img.fso-overlay-item.heartbeat { animation: img-heartbeat 1.5s infinite; }
+
+/* Rotate animations */
+@keyframes rotate {
+  0% { transform: translateX(-50%) rotate(0deg); }
+  100% { transform: translateX(-50%) rotate(360deg); }
+}
+.fso-overlay-item.rotate:not(img) { animation: rotate 3s infinite linear; }
+
+@keyframes img-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+img.fso-overlay-item.rotate { animation: img-rotate 3s infinite linear; }
+
+/* Wiggle animations */
+@keyframes wiggle {
+  0%, 100% { transform: translateX(-50%) rotate(0deg); }
+  25% { transform: translateX(-50%) rotate(-3deg); }
+  75% { transform: translateX(-50%) rotate(3deg); }
+}
+.fso-overlay-item.wiggle:not(img) { animation: wiggle 0.8s infinite ease-in-out; }
+
+@keyframes img-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+img.fso-overlay-item.wiggle { animation: img-wiggle 0.8s infinite ease-in-out; }
+
+/* Shake animations */
+@keyframes shake {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-50%) translateY(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(-50%) translateY(2px); }
+}
+.fso-overlay-item.shake:not(img) { animation: shake 0.5s infinite; }
+
+@keyframes img-shake {
+  0%, 100% { transform: translateY(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateY(-2px); }
+  20%, 40%, 60%, 80% { transform: translateY(2px); }
+}
+img.fso-overlay-item.shake { animation: img-shake 0.5s infinite; }
+
+/* Shimmer animations */
+@keyframes shimmer {
+  0% { transform: translateX(-50%); opacity: 1; }
+  50% { transform: translateX(-50%); opacity: 0.5; }
+  100% { transform: translateX(-50%); opacity: 1; }
+}
+.fso-overlay-item.shimmer:not(img) { animation: shimmer 1.5s infinite ease-in-out; }
+
+@keyframes img-shimmer {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+img.fso-overlay-item.shimmer { animation: img-shimmer 1.5s infinite ease-in-out; }
+
+/* Breathe animations */
+@keyframes breathe {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.05); }
+}
+.fso-overlay-item.breathe:not(img) { animation: breathe 3s infinite ease-in-out; }
+
+@keyframes img-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+img.fso-overlay-item.breathe { animation: img-breathe 3s infinite ease-in-out; }
+
+/* Emphasis animations */
+@keyframes emphasis {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.1); }
+}
+.fso-overlay-item.emphasis:not(img) { animation: emphasis 1s infinite ease-in-out; }
+
+@keyframes img-emphasis {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+img.fso-overlay-item.emphasis { animation: img-emphasis 1s infinite ease-in-out; }
+
+/* Jitter animations */
+@keyframes jitter {
+  0%, 100% { transform: translateX(-50%) translate(0, 0); }
+  10% { transform: translateX(-50%) translate(-1px, -1px); }
+  20% { transform: translateX(-50%) translate(1px, 1px); }
+  30% { transform: translateX(-50%) translate(-1px, 1px); }
+  40% { transform: translateX(-50%) translate(1px, -1px); }
+  50% { transform: translateX(-50%) translate(-1px, -1px); }
+  60% { transform: translateX(-50%) translate(1px, 1px); }
+  70% { transform: translateX(-50%) translate(-1px, 1px); }
+  80% { transform: translateX(-50%) translate(1px, -1px); }
+  90% { transform: translateX(-50%) translate(-1px, -1px); }
+}
+.fso-overlay-item.jitter:not(img) { animation: jitter 0.2s infinite; }
+
+@keyframes img-jitter {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-1px, -1px); }
+  20% { transform: translate(1px, 1px); }
+  30% { transform: translate(-1px, 1px); }
+  40% { transform: translate(1px, -1px); }
+  50% { transform: translate(-1px, -1px); }
+  60% { transform: translate(1px, 1px); }
+  70% { transform: translate(-1px, 1px); }
+  80% { transform: translate(1px, -1px); }
+  90% { transform: translate(-1px, -1px); }
+}
+img.fso-overlay-item.jitter { animation: img-jitter 0.2s infinite; }
+
+/* Glitch animations */
+@keyframes glitch {
+  0%, 100% { transform: translateX(-50%); filter: none; }
+  20% { transform: translateX(-50%) translateX(2px); filter: hue-rotate(90deg); }
+  40% { transform: translateX(-50%) translateX(-2px); filter: hue-rotate(180deg); }
+  60% { transform: translateX(-50%) translateX(2px); filter: hue-rotate(270deg); }
+  80% { transform: translateX(-50%) translateX(-2px); filter: hue-rotate(360deg); }
+}
+.fso-overlay-item.glitch:not(img) { animation: glitch 0.3s infinite; }
+
+@keyframes img-glitch {
+  0%, 100% { transform: translateX(0); filter: none; }
+  20% { transform: translateX(2px); filter: hue-rotate(90deg); }
+  40% { transform: translateX(-2px); filter: hue-rotate(180deg); }
+  60% { transform: translateX(2px); filter: hue-rotate(270deg); }
+  80% { transform: translateX(-2px); filter: hue-rotate(360deg); }
+}
+img.fso-overlay-item.glitch { animation: img-glitch 0.3s infinite; }
+
+/* Slide animations */
+@keyframes slide {
+  0%, 100% { transform: translateX(-50%); }
+  50% { transform: translateX(-45%); }
+}
+.fso-overlay-item.slide:not(img) { animation: slide 2s infinite ease-in-out; }
+
+@keyframes img-slide {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(10px); }
+}
+img.fso-overlay-item.slide { animation: img-slide 2s infinite ease-in-out; }
+
+/* Flash animations */
+@keyframes flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.fso-overlay-item.flash { animation: flash 1s infinite; }
+
+/* ===================================================================
+   ENTRANCE ANIMATIONS
+   ================================================================== */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.fso-overlay-item.fadeIn { animation: fadeIn 0.5s forwards; }
+
+@keyframes slideInRight {
+  from { transform: translateX(-50%) translateX(40px); opacity: 0; }
+  to { transform: translateX(-50%); opacity: 1; }
+}
+.fso-overlay-item.slideInRight:not(img) { animation: slideInRight 0.7s forwards; }
+
+@keyframes img-slideInRight {
+  from { transform: translateX(40px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+img.fso-overlay-item.slideInRight { animation: img-slideInRight 0.7s forwards; }
+
+@keyframes slideInLeft {
+  from { transform: translateX(-50%) translateX(-40px); opacity: 0; }
+  to { transform: translateX(-50%); opacity: 1; }
+}
+.fso-overlay-item.slideInLeft:not(img) { animation: slideInLeft 0.7s forwards; }
+
+@keyframes img-slideInLeft {
+  from { transform: translateX(-40px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+img.fso-overlay-item.slideInLeft { animation: img-slideInLeft 0.7s forwards; }
+
+@keyframes slideInUp {
+  from { transform: translateX(-50%) translateY(40px); opacity: 0; }
+  to { transform: translateX(-50%); opacity: 1; }
+}
+.fso-overlay-item.slideInUp:not(img) { animation: slideInUp 0.7s forwards; }
+
+@keyframes img-slideInUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+img.fso-overlay-item.slideInUp { animation: img-slideInUp 0.7s forwards; }
+
+@keyframes slideInDown {
+  from { transform: translateX(-50%) translateY(-40px); opacity: 0; }
+  to { transform: translateX(-50%); opacity: 1; }
+}
+.fso-overlay-item.slideInDown:not(img) { animation: slideInDown 0.7s forwards; }
+
+@keyframes img-slideInDown {
+  from { transform: translateY(-40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+img.fso-overlay-item.slideInDown { animation: img-slideInDown 0.7s forwards; }
+
+@keyframes bounceIn {
+  0% { transform: translateX(-50%) scale(0.3); opacity: 0; }
+  50% { transform: translateX(-50%) scale(1.05); }
+  70% { transform: translateX(-50%) scale(0.9); }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+.fso-overlay-item.bounceIn:not(img) { animation: bounceIn 0.6s forwards; }
+
+@keyframes img-bounceIn {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.05); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); opacity: 1; }
+}
+img.fso-overlay-item.bounceIn { animation: img-bounceIn 0.6s forwards; }
+
+@keyframes zoomIn {
+  from { transform: translateX(-50%) scale(0); opacity: 0; }
+  to { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+.fso-overlay-item.zoomIn:not(img) { animation: zoomIn 0.5s forwards; }
+
+@keyframes img-zoomIn {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+img.fso-overlay-item.zoomIn { animation: img-zoomIn 0.5s forwards; }
+
+@keyframes flipIn {
+  from { transform: translateX(-50%) perspective(400px) rotateY(90deg); opacity: 0; }
+  40% { transform: translateX(-50%) perspective(400px) rotateY(-20deg); }
+  60% { transform: translateX(-50%) perspective(400px) rotateY(10deg); }
+  80% { transform: translateX(-50%) perspective(400px) rotateY(-5deg); }
+  to { transform: translateX(-50%) perspective(400px) rotateY(0deg); opacity: 1; }
+}
+.fso-overlay-item.flipIn:not(img) { animation: flipIn 0.6s forwards; }
+
+@keyframes img-flipIn {
+  from { transform: perspective(400px) rotateY(90deg); opacity: 0; }
+  40% { transform: perspective(400px) rotateY(-20deg); }
+  60% { transform: perspective(400px) rotateY(10deg); }
+  80% { transform: perspective(400px) rotateY(-5deg); }
+  to { transform: perspective(400px) rotateY(0deg); opacity: 1; }
+}
+img.fso-overlay-item.flipIn { animation: img-flipIn 0.6s forwards; }
+
+/* ===================================================================
+   TRIGGERED ANIMATIONS (HP, STATUS EFFECTS)
+   ================================================================== */
+
+/* HP Change animations */
+@keyframes hpDamage {
+  0% { transform: translateX(-50%) scale(1); color: inherit; }
+  30% { transform: translateX(-50%) scale(1.4); color: #ff3333; }
+  40% { transform: translateX(-50%) scale(1.35) rotate(-3deg); color: #ff3333; }
+  50% { transform: translateX(-50%) scale(1.35) rotate(3deg); color: #ff3333; }
+  75% { transform: translateX(-50%) scale(1.1); color: #ff9999; }
+  100% { transform: translateX(-50%) scale(1); color: inherit; }
+}
+.fso-overlay-item.hp-damage { animation: hpDamage 1.5s ease-out; }
+
+@keyframes hpHealing {
+  0% { transform: translateX(-50%) scale(1); color: inherit; }
+  30% { transform: translateX(-50%) scale(1.3); color: #33ff33; }
+  60% { transform: translateX(-50%) scale(1.2); color: #66ff66; }
+  100% { transform: translateX(-50%) scale(1); color: inherit; }
+}
+.fso-overlay-item.hp-healing { animation: hpHealing 1.2s ease-out; }

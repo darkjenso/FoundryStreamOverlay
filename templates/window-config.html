@@ -1,66 +1,41 @@
-<form>
-    <div class="window-config-container">
-      <h2>Configure Overlay Window</h2>
-      
-      <div class="form-group">
-        <label for="window-name">Window Name:</label>
-        <input type="text" id="window-name" name="name" value="{{windowConfig.name}}">
-      </div>
-      
-      <div class="form-group">
-        <label for="active-layout">Active Layout:</label>
-        <select id="active-layout" name="activeLayout">
-          {{#each layouts}}
-            <option value="{{this.key}}" {{#if this.isActive}}selected{{/if}}>{{this.key}}</option>
-          {{/each}}
-        </select>
-      </div>
-      
-      <div class="form-group">
-        <label for="window-size">Window Size:</label>
-        <div class="size-inputs">
-          <input type="number" name="width" value="{{windowConfig.width}}" placeholder="Width" min="100">
-          ×
-          <input type="number" name="height" value="{{windowConfig.height}}" placeholder="Height" min="100">
-          <button type="button" id="save-current-size" {{#unless isWindowOpen}}disabled{{/unless}}>
-            Use Current Size
-          </button>
-        </div>
-        {{#unless isWindowOpen}}
-        <small>Window must be open to capture current size</small>
-        {{/unless}}
-      </div>
-      
-      <div class="form-actions">
-        <button type="submit">Save Changes</button>
-        <button type="button" class="open-window">Open Window</button>
-      </div>
+<form class="fso-overlay-config">
+  <div class="fso-scene-manager-header">
+    <h2>Configure Overlay Window</h2>
+  </div>
+
+  <div class="fso-overlay-config-container">
+    <div class="fso-config-row">
+      <label for="window-name">Window Name:</label>
+      <input type="text" id="window-name" name="name" value="{{windowConfig.name}}">
     </div>
-    
-    <style>
-      .window-config-container {
-        padding: 10px;
-      }
-      .form-group {
-        margin-bottom: 15px;
-      }
-      .form-group label {
-        display: block;
-        margin-bottom: 5px;
-        font-weight: bold;
-      }
-      .size-inputs {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-      }
-      .size-inputs button {
-        margin-left: 10px;
-      }
-      .form-actions {
-        margin-top: 20px;
-        display: flex;
-        gap: 10px;
-      }
-    </style>
-  </form>
+
+    <div class="fso-config-row">
+      <label for="active-layout">Active Layout:</label>
+      <select id="active-layout" name="activeLayout">
+        {{#each layouts}}
+          <option value="{{this.key}}" {{#if this.isActive}}selected{{/if}}>{{this.key}}</option>
+        {{/each}}
+      </select>
+    </div>
+
+    <div class="fso-config-row">
+      <label for="window-size">Window Size:</label>
+      <div class="size-inputs">
+        <input type="number" name="width" value="{{windowConfig.width}}" placeholder="Width" min="100">
+        ×
+        <input type="number" name="height" value="{{windowConfig.height}}" placeholder="Height" min="100">
+        <button type="button" id="save-current-size" class="fso-secondary-btn" {{#unless isWindowOpen}}disabled{{/unless}}>
+          Use Current Size
+        </button>
+      </div>
+      {{#unless isWindowOpen}}
+      <small class="fso-help-text">Window must be open to capture current size</small>
+      {{/unless}}
+    </div>
+
+    <div class="fso-form-actions">
+      <button type="submit" class="fso-primary-btn">Save Changes</button>
+      <button type="button" class="fso-secondary-btn open-window">Open Window</button>
+    </div>
+  </div>
+</form>

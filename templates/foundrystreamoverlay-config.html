@@ -1,482 +1,674 @@
-<form>
-  <div class="overlay-config-container">
-    <div class="overlay-config-header">
-      <h2>Configure Active Layout Items</h2>
-      <div>
-        <label for="active-layout">Select Layout:</label>
-        <select id="active-layout" name="activeLayout">
-          {{#each layouts}}
-            <option value="{{@key}}" {{#ifEquals ../activeLayout @key}}selected{{/ifEquals}}>
-              {{@key}} {{#ifEquals ../activeLayout @key}}(Active){{/ifEquals}}
-            </option>
-          {{/each}}
-        </select>
-        <button type="button" class="manage-layouts" onclick="new ManageLayouts().render(true)">Manage Layouts</button>
+<form class="fso-overlay-config">
+  <!-- Scene selector header -->
+  <div class="fso-scene-selector-header">
+    <div class="fso-scene-info">
+      <h2>Edit Scene: <span class="fso-current-scene">{{currentLayout}}</span></h2>
+      {{#if isPremium}}
+      <small class="fso-scene-count">{{sceneCount}} scenes available</small>
+      {{else}}
+      <small class="fso-free-limitation">Free version - Default scene only</small>
+      {{/if}}
+    </div>
+    
+    <div class="fso-scene-controls">
+      {{#if isPremium}}
+      <select id="scene-selector" name="selectedScene" class="fso-scene-select">
+        {{#each layouts}}
+          <option value="{{@key}}" {{#ifEquals ../currentLayout @key}}selected{{/ifEquals}}>
+            {{@key}}
+          </option>
+        {{/each}}
+      </select>
+      {{else}}
+      <select id="scene-selector" name="selectedScene" class="fso-scene-select" disabled>
+        <option value="Default" selected>Default</option>
+      </select>
+      {{/if}}
+      
+      <button type="button" class="fso-secondary-btn" id="manage-scenes-btn" {{#unless isPremium}}disabled{{/unless}}>
+        Manage Scenes
+      </button>
+    </div>
+  </div>
+
+  <div class="fso-overlay-config-container">
+    <!-- Existing items -->
+    <div class="fso-overlay-items-section">
+      {{#if rows.length}}
+        {{#each rows}}
+        <div class="fso-item-card {{#if this.hide}}fso-hidden-item{{/if}}" data-index="{{@index}}">
+          <!-- REDESIGNED: Compact header with horizontal action buttons -->
+          <div class="fso-item-header-compact">
+            <div class="fso-item-type-info">
+              <span class="fso-item-type-badge {{this.type}}">
+                {{#ifEquals this.type "data"}}📊{{/ifEquals}}
+                {{#ifEquals this.type "static"}}📝{{/ifEquals}}
+                {{#ifEquals this.type "image"}}🖼️{{/ifEquals}}
+                {{#ifEquals this.type "dice"}}🎲{{/ifEquals}}
+              </span>
+              
+              <div class="fso-item-details">
+                {{#ifEquals this.type "data"}}
+                  {{#if this.actorId}}
+                    <span class="fso-item-title">
+                      {{#each ../allActors}}
+                        {{#ifEquals this.id ../this.actorId}}{{this.name}}{{/ifEquals}}
+                      {{/each}}
+                    </span>
+                    <span class="fso-item-subtitle">{{#if (eq this.dataPath "custom")}}{{this.customPath}}{{else}}{{this.dataPath}}{{/if}}</span>
+                  {{else}}
+                    <span class="fso-item-title incomplete">No character selected</span>
+                  {{/if}}
+                {{else ifEquals this.type "static"}}
+                  <span class="fso-item-title">{{#if this.content}}"{{this.content}}"{{else}}Empty text{{/if}}</span>
+                {{else ifEquals this.type "dice"}}
+                  <span class="fso-item-title">{{this.diceType}} Roll Display</span>
+                  <span class="fso-item-subtitle">{{#if this.alwaysVisible}}Always visible{{else}}Show on roll{{/if}}</span>
+                {{else ifEquals this.type "hpBar"}}
+                  <span class="fso-item-title">HP Bar</span>
+                  {{#if this.actorId}}
+                    <span class="fso-item-subtitle">
+                      {{#each ../allActors}}
+                        {{#ifEquals this.id ../this.actorId}}{{this.name}}{{/ifEquals}}
+                      {{/each}}
+                    </span>
+                  {{else}}
+                    <span class="fso-item-subtitle incomplete">No character selected</span>
+                  {{/if}}
+                  {{else}}
+                  <span class="fso-item-title">{{#if this.imagePath}}Image{{else}}No image{{/if}}</span>
+                  {{#if this.imagePath}}<span class="fso-item-subtitle">{{this.imagePath}}</span>{{/if}}
+                {{/ifEquals}}
+              </div>
+            </div>
+            
+            <!-- FIXED: Horizontal action buttons -->
+            <div class="fso-item-actions-horizontal">
+              <button type="button" class="fso-action-btn-small fso-move-up" data-index="{{this.idx}}" title="Move Up">↑</button>
+              <button type="button" class="fso-action-btn-small fso-move-down" data-index="{{this.idx}}" title="Move Down">↓</button>
+              <button type="button" class="fso-action-btn-small fso-duplicate-item" data-index="{{this.idx}}" title="Duplicate">📋</button>
+              <button type="button" class="fso-action-btn-small fso-remove-item" data-index="{{this.idx}}" title="Remove">🗑️</button>
+              <label class="fso-checkbox-label fso-hide-toggle" title="Hide Item">
+                <input type="checkbox" name="hide-{{this.idx}}" {{#if this.hide}}checked{{/if}}>
+                Hide
+              </label>
+            </div>
+          </div>
+
+          <!-- NEW: Two-column layout for settings -->
+          <div class="fso-item-content">
+            <div class="fso-item-content-two-column">
+               <input type="hidden" name="type-{{this.idx}}" value="{{this.type}}">
+
+            <!-- LEFT COLUMN: Object-specific settings -->
+            <div class="fso-left-column">
+              <h4 class="fso-column-title">{{#ifEquals this.type "data"}}Character Data{{else ifEquals this.type "static"}}Text Content{{else ifEquals this.type "dice"}}Dice Settings{{else ifEquals this.type "hpBar"}}HP Bar Settings{{else}}Image Settings{{/ifEquals}}</h4>              
+              {{#ifEquals this.type "data"}}
+                <div class="fso-data-selector">
+                  <div class="fso-config-row">
+                    <label>Character:</label>
+                    <select name="actorId-{{this.idx}}" class="fso-actor-select">
+                      <option value="">Select Character</option>
+                      {{#each ../allActors}}
+                        <option value="{{this.id}}" {{#ifEquals this.id ../this.actorId}}selected{{/ifEquals}}>
+                          {{this.name}}
+                        </option>
+                      {{/each}}
+                    </select>
+                  </div>
+                  
+                  <div class="fso-config-row">
+                    <label>Show:</label>
+                    <select name="dataPath-{{this.idx}}" class="fso-data-path-select">
+                      <optgroup label="Common Data">
+                        <option value="name" {{#ifEquals dataPath "name"}}selected{{/ifEquals}}>Character Name</option>
+                        <option value="system.attributes.hp.value" {{#ifEquals dataPath "system.attributes.hp.value"}}selected{{/ifEquals}}>Current HP</option>
+                        <option value="hp" {{#ifEquals dataPath "hp"}}selected{{/ifEquals}}>HP (Current/Max)</option>
+                        <option value="system.attributes.ac.value" {{#ifEquals dataPath "system.attributes.ac.value"}}selected{{/ifEquals}}>Armor Class</option>
+                        <option value="system.details.level" {{#ifEquals dataPath "system.details.level"}}selected{{/ifEquals}}>Level</option>
+                      </optgroup>
+                      <optgroup label="Advanced">
+                        <option value="custom" {{#ifEquals dataPath "custom"}}selected{{/ifEquals}}>Custom Data Path...</option>
+                      </optgroup>
+                    </select>
+                  </div>
+                  
+                  <div class="fso-custom-path-section" {{#unless (eq dataPath 'custom')}}style="display:none;"{{/unless}}>
+                    <div class="fso-config-row">
+                      <label>Custom Path:</label>
+                      <input type="text" name="customPath-{{this.idx}}" value="{{customPath}}" 
+                             placeholder="e.g., system.resources.power.value" class="fso-custom-path-input">
+                    </div>
+                  </div>
+                  
+                  <div class="fso-config-row fso-style-row">
+                    <label class="fso-checkbox-label">
+                      <input type="checkbox" name="addLabel-{{this.idx}}" {{#if addLabel}}checked{{/if}}>
+                      Add Label to Display
+                    </label>
+                  </div>
+                </div>
+              {{else ifEquals this.type "static"}}
+                <div class="fso-static-text-config">
+                  <div class="fso-config-row">
+                    <label>Text Content:</label>
+                    <textarea name="content-{{this.idx}}" rows="3" placeholder="Enter your text here...">{{this.content}}</textarea>
+                  </div>
+                </div>
+              {{else ifEquals this.type "dice"}}
+                <div class="fso-dice-config">
+                  <div class="fso-config-row">
+                    <label>Dice Type:</label>
+                    <select name="diceType-{{this.idx}}">
+                      <option value="d4" {{#ifEquals this.diceType "d4"}}selected{{/ifEquals}}>d4</option>
+                      <option value="d6" {{#ifEquals this.diceType "d6"}}selected{{/ifEquals}}>d6</option>
+                      <option value="d8" {{#ifEquals this.diceType "d8"}}selected{{/ifEquals}}>d8</option>
+                      <option value="d10" {{#ifEquals this.diceType "d10"}}selected{{/ifEquals}}>d10</option>
+                      <option value="d12" {{#ifEquals this.diceType "d12"}}selected{{/ifEquals}}>d12</option>
+                      <option value="d20" {{#ifEquals this.diceType "d20"}}selected{{/ifEquals}}>d20</option>
+                      <option value="d100" {{#ifEquals this.diceType "d100"}}selected{{/ifEquals}}>d100</option>
+                    </select>
+                  </div>
+                  
+                  <div class="fso-config-row fso-style-row">
+                    <label class="fso-checkbox-label">
+                      <input type="checkbox" name="alwaysVisible-{{this.idx}}" {{#if this.alwaysVisible}}checked{{/if}}>
+                      Always Visible
+                    </label>
+                    <small class="fso-help-text">If unchecked, only shows during dice rolls</small>
+                  </div>
+                  
+                  <div class="fso-config-row">
+                    <label>Style:</label>
+                    <select name="style-{{this.idx}}">
+                      <option value="diceOnly" {{#ifEquals this.style "diceOnly"}}selected{{/ifEquals}}>Dice Only</option>
+                      <option value="total" {{#ifEquals this.style "total"}}selected{{/ifEquals}}>Total</option>
+                      <option value="expanded" {{#ifEquals this.style "expanded"}}selected{{/ifEquals}}>Expanded with bonuses</option>
+                      <option value="expandedNoBonuses" {{#ifEquals this.style "expandedNoBonuses"}}selected{{/ifEquals}}>Expanded no bonuses</option>
+                      {{#if ../isPremium}}
+                      <option value="flyingBonuses" {{#ifEquals this.style "flyingBonuses"}}selected{{/ifEquals}}>Flying Bonuses</option>
+                      {{/if}}
+                    </select>
+                  </div>
+                  
+                  <div class="fso-config-row">
+                    <label>Target Users:</label>
+                    <select name="targetUsers-{{this.idx}}" multiple style="height: 80px;">
+                      <option value="">All Users</option>
+                      {{#each ../allUsers}}
+                        <option value="{{this.id}}" {{#if (lookup ../this.targetUsers this.id)}}selected{{/if}}>
+                          {{this.name}}
+                        </option>
+                      {{/each}}
+                    </select>
+                    <small class="fso-help-text">Leave empty to show rolls from all users</small>
+                  </div>
+                </div>
+                              {{else ifEquals this.type "hpBar"}}
+                <div class="fso-hpbar-config">
+                  <div class="fso-config-row">
+                    <label>Character:</label>
+                    <select name="actorId-{{this.idx}}" class="fso-actor-select">
+                      <option value="">Select Character</option>
+                      {{#each ../allActors}}
+                        <option value="{{this.id}}" {{#ifEquals this.id ../this.actorId}}selected{{/ifEquals}}>{{this.name}}</option>
+                      {{/each}}
+                    </select>
+                  </div>
+                  <div class="fso-config-row">
+                    <label>Width:</label>
+                    <input type="number" name="barWidth-{{this.idx}}" value="{{this.barWidth}}" min="10">
+                  </div>
+                  <div class="fso-config-row">
+                    <label>Height:</label>
+                    <input type="number" name="barHeight-{{this.idx}}" value="{{this.barHeight}}" min="5">
+                  </div>
+                  <div class="fso-config-row">
+                    <label>Direction:</label>
+                    <select name="orientation-{{this.idx}}">
+                      <option value="ltr" {{#ifEquals this.orientation "ltr"}}selected{{/ifEquals}}>Left → Right</option>
+                      <option value="rtl" {{#ifEquals this.orientation "rtl"}}selected{{/ifEquals}}>Right → Left</option>
+                      <option value="ttb" {{#ifEquals this.orientation "ttb"}}selected{{/ifEquals}}>Top → Bottom</option>
+                      <option value="btt" {{#ifEquals this.orientation "btt"}}selected{{/ifEquals}}>Bottom → Top</option>
+                    </select>
+                  </div>
+                  <div class="fso-config-row">
+                    <label class="fso-checkbox-label">
+                      <input type="checkbox" name="rounded-{{this.idx}}" {{#if this.rounded}}checked{{/if}} class="fso-rounded-toggle">
+                      Rounded Corners
+                    </label>
+                  </div>
+                  <div class="fso-config-row fso-radius-row" {{#unless this.rounded}}style="display:none;"{{/unless}}>
+                    <label>Radius:</label>
+                    <input type="number" name="cornerRadius-{{this.idx}}" value="{{this.cornerRadius}}" min="0">
+                  </div>
+                  <div class="fso-config-row fso-style-row">
+                    <label class="fso-checkbox-label">
+                      <input type="checkbox" name="outline-{{this.idx}}" {{#if this.outline}}checked{{/if}} class="fso-outline-toggle">
+                      Outline
+                    </label>
+                    <div class="fso-outline-options" {{#unless this.outline}}style="display:none;"{{/unless}}>
+                      <label>Color: <input type="color" name="outlineColor-{{this.idx}}" value="{{this.outlineColor}}"></label>
+                      <label>Width: <input type="number" step="0.5" min="0" name="outlineWidth-{{this.idx}}" value="{{this.outlineWidth}}"></label>
+                    </div>
+                  </div>
+                  <div class="fso-config-row">
+                    <label class="fso-checkbox-label">
+                      <input type="checkbox" name="dropShadow-{{this.idx}}" {{#if this.dropShadow}}checked{{/if}}>
+                      Drop Shadow
+                    </label>
+                  </div>
+                  <div class="fso-config-row">
+                    <label class="fso-checkbox-label">
+                      <input type="checkbox" name="gradient-{{this.idx}}" {{#if this.gradient}}checked{{/if}} class="fso-gradient-toggle">
+                      Use Gradient
+                    </label>
+                    <div class="fso-gradient-options" {{#unless this.gradient}}style="display:none;"{{/unless}}>
+                      <label>Start <input type="color" name="startColor-{{this.idx}}" value="{{this.startColor}}"></label>
+                      <label>End <input type="color" name="endColor-{{this.idx}}" value="{{this.endColor}}"></label>
+                    </div>
+                    <div class="fso-single-color" {{#if this.gradient}}style="display:none;"{{/if}}>
+                      <label>Color <input type="color" name="singleColor-{{this.idx}}" value="{{this.singleColor}}"></label>
+                    </div>
+                  </div>
+                  <div class="fso-config-row">
+                    <label class="fso-checkbox-label">
+                      <input type="checkbox" name="showBackground-{{this.idx}}" {{#if this.showBackground}}checked{{/if}} class="fso-bg-toggle">
+                      Add Background
+                    </label>
+                    <div class="fso-bg-color" {{#unless this.showBackground}}style="display:none;"{{/unless}}>
+                      <label>Color <input type="color" name="backgroundColor-{{this.idx}}" value="{{this.backgroundColor}}"></label>
+                    </div>
+                  </div>
+                </div>
+              {{else}}
+                <div class="fso-image-config">
+                  <div class="fso-config-row">
+                    <label>Image:</label>
+                    <div class="fso-file-input-group">
+                      <input type="text" name="imagePath-{{this.idx}}" value="{{this.imagePath}}" readonly>
+                      <button type="button" class="fso-file-picker fso-compact-btn" data-index="{{this.idx}}">Choose</button>
+                    </div>
+                  </div>
+                  <div class="fso-config-row">
+                    <label>Size:</label>
+                    <div class="fso-input-group">
+                      <input type="number" name="imageSize-{{this.idx}}" value="{{this.imageSize}}" min="10" max="500">
+                      <span class="fso-input-suffix">px</span>
+                    </div>
+                  </div>
+                </div>
+              {{/ifEquals}}
+            </div>
+
+            <!-- RIGHT COLUMN: Generic collapsible sections -->
+            <div class="fso-right-column">
+              <h4 class="fso-column-title">Appearance & Behavior</h4>
+              
+              {{#if (ne this.type "hpBar")}}
+
+              {{#unless (eq this.type "image")}}
+              <details class="fso-config-section" open>
+                <summary>🎨 Styling</summary>
+                <div class="fso-styling-grid">
+                  <div class="fso-style-row">
+                    <label>Size:</label>
+                    <input type="number" name="fontSize-{{this.idx}}" value="{{this.fontSize}}" min="8" max="200">
+                  </div>
+                  <div class="fso-style-row">
+                    <label>Color:</label>
+                    <input type="color" name="fontColor-{{this.idx}}" value="{{this.fontColor}}">
+                  </div>
+                  <div class="fso-style-row">
+                    <label class="fso-checkbox-label">
+                      <input type="checkbox" name="bold-{{this.idx}}" {{#if this.bold}}checked{{/if}}>
+                      Bold
+                    </label>
+                  </div>
+                  <div class="fso-style-row fso-full-width">
+                    <label>Font:</label>
+                    <select name="fontFamily-{{this.idx}}" class="fso-font-select">
+                      {{#each ../fontFamilies}}
+                        <option value="{{this.value}}" {{#ifEquals this.value ../this.fontFamily}}selected{{/ifEquals}}>
+                          {{this.label}}
+                        </option>
+                      {{/each}}
+                    </select>
+                  </div>
+                  <div class="fso-style-row fso-full-width">
+                    <label class="fso-checkbox-label">
+                      <input type="checkbox" name="fontStroke-{{this.idx}}" {{#if this.fontStroke}}checked{{/if}} class="fso-outline-toggle">
+                      Text Outline
+                    </label>
+                    <div class="fso-outline-options" {{#unless this.fontStroke}}style="display:none;"{{/unless}}>
+                      <label>
+                        Color:
+                        <input type="color" name="fontStrokeColor-{{this.idx}}" value="{{this.fontStrokeColor}}" title="Outline Color">
+                      </label>
+                      <label>
+                        Width:
+                        <input type="number" step="0.5" min="0.5" max="5" name="fontStrokeWidth-{{this.idx}}" value="{{this.fontStrokeWidth}}" title="Outline Width">
+                      </label>
+                    </div>
+                  </div>
+                                    <div class="fso-style-row">
+                    <label class="fso-checkbox-label">
+                      <input type="checkbox" name="dropShadow-{{this.idx}}" {{#if this.dropShadow}}checked{{/if}}>
+                      Drop Shadow
+                    </label>
+                  </div>
+                </div>
+              </details>
+              {{/unless}}
+              {{/if}}
+
+              <details class="fso-config-section">
+                <summary>✨ Effects {{#if this.hasAnimations}}<span class="fso-active-indicator">●</span>{{/if}}</summary>
+                <div class="fso-effects-content">
+                  {{#ifEquals this.type "dice"}}
+                  <div class="fso-config-row">
+                    <label class="fso-checkbox-label">
+                      <input type="checkbox" name="rollAnimation-{{this.idx}}" {{#if this.rollAnimation}}checked{{/if}} {{#unless ../isPremium}}disabled{{/unless}}>
+                      Roll Animation
+                    </label>
+                    {{#unless ../isPremium}}<small class="fso-premium-hint">Premium</small>{{/unless}}
+                  </div>
+                  <div class="fso-config-row" {{#unless this.rollAnimation}}style="display:none;"{{/unless}}>
+                    <label>Roll Duration (ms):</label>
+                    <input type="number" name="rollDuration-{{this.idx}}" value="{{this.rollDuration}}" min="0" step="100" {{#unless ../isPremium}}disabled{{/unless}}>
+                  </div>
+                  <div class="fso-config-row" {{#unless this.rollAnimation}}style="display:none;"{{/unless}}>
+                    <label>Animation Speed (ms):</label>
+                    <input type="number" name="rollSpeed-{{this.idx}}" value="{{this.rollSpeed}}" min="1" step="1" {{#unless ../isPremium}}disabled{{/unless}}>
+                  </div>
+                  {{/ifEquals}}
+                  <button type="button" class="fso-manage-animations fso-compact-btn" data-index="{{this.idx}}">
+                    {{#if ../isPremium}}Animation Manager{{else}}🔒 Animations (Premium){{/if}}
+                    {{#if this.hasAnimations}}<i class="fas fa-check-circle"></i>{{/if}}
+                  </button>
+                  {{#unless ../isPremium}}
+                  <small class="fso-premium-hint">Unlock advanced animations with premium</small>
+                  {{/unless}}
+                </div>
+              </details>
+
+              <details class="fso-config-section">
+                <summary>📍 Position</summary>
+                <div class="fso-position-grid">
+                  <div class="fso-pos-row">
+                    <label>Top:</label>
+                    <div class="fso-input-group">
+                      <input type="number" name="top-{{this.idx}}" value="{{this.top}}">
+                      <span class="fso-input-suffix">px</span>
+                    </div>
+                  </div>
+                  <div class="fso-pos-row">
+                    <label>Left:</label>
+                    <div class="fso-input-group">
+                      <input type="number" name="left-{{this.idx}}" value="{{this.left}}">
+                      <span class="fso-input-suffix">px</span>
+                    </div>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+        </div>
+        {{/each}}
+      {{else}}
+        <div class="fso-empty-scene-message">
+          <div class="fso-empty-icon">📺</div>
+          <h3>Your scene is empty</h3>
+          <p>Add some items below to get started with your overlay</p>
+        </div>
+      {{/if}}
+    </div>
+
+    <!-- Add new items section -->
+    <div class="fso-add-items-section">
+      <h3>Add New Item</h3>
+      <div class="fso-add-buttons-grid">
+        <button type="button" class="fso-add-item-btn" data-type="data">
+          <div class="fso-add-item-icon">📊</div>
+          <div class="fso-add-item-content">
+            <div class="fso-add-item-title">Live Data</div>
+            <div class="fso-add-item-description">Character HP, name, stats</div>
+          </div>
+        </button>
+        
+        <button type="button" class="fso-add-item-btn" data-type="static">
+          <div class="fso-add-item-icon">📝</div>
+          <div class="fso-add-item-content">
+            <div class="fso-add-item-title">Custom Text</div>
+            <div class="fso-add-item-description">Labels, titles, static info</div>
+          </div>
+        </button>
+        
+        <button type="button" class="fso-add-item-btn" data-type="image">
+          <div class="fso-add-item-icon">🖼️</div>
+          <div class="fso-add-item-content">
+            <div class="fso-add-item-title">Image</div>
+            <div class="fso-add-item-description">Logos, backgrounds, graphics</div>
+          </div>
+        </button>
+        
+        <button type="button" class="fso-add-item-btn" data-type="dice">
+          <div class="fso-add-item-icon">🎲</div>
+          <div class="fso-add-item-content">
+            <div class="fso-add-item-title">Dice Roll</div>
+            <div class="fso-add-item-description">Animated dice roll display</div>
+          </div>
+
+        <button type="button" class="fso-add-item-btn" data-type="hpBar">
+          <div class="fso-add-item-icon">❤️</div>
+          <div class="fso-add-item-content">
+            <div class="fso-add-item-title">HP Bar</div>
+            <div class="fso-add-item-description">Track character health</div>
+          </div>
+        </button>
+        </button>
       </div>
     </div>
-    
-    <div class="overlay-config-items">
-      <table style="width: 100%; text-align: left;">
-        <thead>
-          <tr>
-            <th>Type</th>
-            <th style="width: 50px;">Order</th>
-            <th style="width:20%;">Content</th>
-            <th>
-              Extra 
-              <button type="button" class="toggle-extras-column" title="Toggle Extra Details">
-                <i class="fas fa-chevron-down"></i>
-              </button>
-            </th>
-            <th>Animation</th>
-            <th>Top (px)</th>
-            <th>Left (px)</th>
-            <th>Hide</th>
-            <th style="width: 60px;">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{#each rows}}
-          <tr>
-            <input type="hidden" name="type-{{this.idx}}" value="{{this.type}}">
-            <td>{{this.type}}</td>
-            <td style="width:50px;">
-              <button type="button" class="move-up" data-index="{{this.idx}}">↑</button>
-              <button type="button" class="move-down" data-index="{{this.idx}}">↓</button>
-            </td>
-            
-            {{#ifEquals this.type "data"}}
-            <td>
-              Actor:
-              <select name="actorId-{{this.idx}}">
-                <option value="">(None)</option>
-                {{#each ../allActors}}
-                  <option value="{{this.id}}" {{#ifEquals this.id ../this.actorId}}selected{{/ifEquals}}>
-                    {{this.name}}
-                  </option>
-                {{/each}}
-              </select>
-              <br>
-              Data Field:
-              <select name="dataPath-{{this.idx}}">
-                {{#each ../dataPathChoices}}
-                  <option value="{{this.path}}" {{#ifEquals this.path ../this.dataPath}}selected{{/ifEquals}}>
-                    {{this.label}}
-                  </option>
-                {{/each}}
-              </select>
-              <div class="custom-path-input" data-index="{{this.idx}}" style="{{#ifEquals this.dataPath 'custom'}}display:block;{{else}}display:none;{{/ifEquals}}">
-                <input type="text" name="customPath-{{this.idx}}" value="{{this.customPath}}" placeholder="e.g., system.resources.power.value">
-                <small>Enter the exact data path to access the character data</small>
-                <button type="button" class="debug-actor-data" style="font-size: 0.8em; margin-top: 4px;">
-                  <i class="fas fa-search"></i> Explore Actor Data
-                </button>
-                
-                <div class="system-examples-container field-specific" data-index="{{this.idx}}" style="margin-top: 10px; display: {{#ifEquals this.dataPath 'custom'}}block{{else}}none{{/ifEquals}};">
-                </div>
-              </div>
-              <div class="custom-path-help">
-                <i class="fas fa-question-circle"></i>
-                <div class="help-tooltip">
-                  <p>To find the data path:</p>
-                  <ol>
-                    <li>Right-click on an actor and select "Export Data"</li>
-                    <li>Look through the JSON data for the value you want</li>
-                    <li>Enter the path to that value (e.g., "system.resources.spell.value")</li>
-                  </ol>
-                  <p>Common paths by system:</p>
-                  <ul>
-                    <li>PF2e Speed: "system.attributes.speed.value"</li>
-                    <li>Alien RPG Stress: "system.general.stress.value"</li>
-                    <li>Savage Worlds Bennies: "system.bennies.value"</li>
-                  </ul>
-                </div>
-              </div>
-              
-              <br>
-              <label>
-                <input type="checkbox" name="addLabel-{{this.idx}}" {{#if this.addLabel}}checked{{/if}}>
-                Add Label to Display
-              </label>
-            </td>
-            <td class="extras-column">
-              <div class="extras-content">
-                Font Size:
-                <input type="number" name="fontSize-{{this.idx}}" value="{{this.fontSize}}" style="width:60px;">
-                <br>
-                Bold:
-                <input type="checkbox" name="bold-{{this.idx}}" {{#if this.bold}}checked{{/if}}>
-                <br>
-                Font:
-                <select name="fontFamily-{{this.idx}}">
-                  <option value="Arial, sans-serif" {{#ifEquals this.fontFamily "Arial, sans-serif"}}selected{{/ifEquals}}>Arial</option>
-                  <option value="Verdana, sans-serif" {{#ifEquals this.fontFamily "Verdana, sans-serif"}}selected{{/ifEquals}}>Verdana</option>
-                  <option value="Helvetica, sans-serif" {{#ifEquals this.fontFamily "Helvetica, sans-serif"}}selected{{/ifEquals}}>Helvetica</option>
-                  <option value="Tahoma, sans-serif" {{#ifEquals this.fontFamily "Tahoma, sans-serif"}}selected{{/ifEquals}}>Tahoma</option>
-                  <option value="Trebuchet MS, sans-serif" {{#ifEquals this.fontFamily "Trebuchet MS, sans-serif"}}selected{{/ifEquals}}>Trebuchet MS</option>
-                  <option value="Impact, sans-serif" {{#ifEquals this.fontFamily "Impact, sans-serif"}}selected{{/ifEquals}}>Impact</option>
-                  <option value="Calibri, sans-serif" {{#ifEquals this.fontFamily "Calibri, sans-serif"}}selected{{/ifEquals}}>Calibri</option>
-                  <option value="Century Gothic, sans-serif" {{#ifEquals this.fontFamily "Century Gothic, sans-serif"}}selected{{/ifEquals}}>Century Gothic</option>
-                  <option value="Franklin Gothic Medium, sans-serif" {{#ifEquals this.fontFamily "Franklin Gothic Medium, sans-serif"}}selected{{/ifEquals}}>Franklin Gothic</option>
-                  <option value="Geneva, sans-serif" {{#ifEquals this.fontFamily "Geneva, sans-serif"}}selected{{/ifEquals}}>Geneva</option>
-                  <option value="Segoe UI, sans-serif" {{#ifEquals this.fontFamily "Segoe UI, sans-serif"}}selected{{/ifEquals}}>Segoe UI</option>
-                  <option value="Optima, sans-serif" {{#ifEquals this.fontFamily "Optima, sans-serif"}}selected{{/ifEquals}}>Optima</option>
-                  <option value="Futura, sans-serif" {{#ifEquals this.fontFamily "Futura, sans-serif"}}selected{{/ifEquals}}>Futura</option>
-                  <option value="Avenir, sans-serif" {{#ifEquals this.fontFamily "Avenir, sans-serif"}}selected{{/ifEquals}}>Avenir</option>
-                  <option value="Gill Sans, sans-serif" {{#ifEquals this.fontFamily "Gill Sans, sans-serif"}}selected{{/ifEquals}}>Gill Sans</option>
-                  
-                  <!-- Serif fonts -->
-                  <option value="Times New Roman, serif" {{#ifEquals this.fontFamily "Times New Roman, serif"}}selected{{/ifEquals}}>Times New Roman</option>
-                  <option value="Georgia, serif" {{#ifEquals this.fontFamily "Georgia, serif"}}selected{{/ifEquals}}>Georgia</option>
-                  <option value="Garamond, serif" {{#ifEquals this.fontFamily "Garamond, serif"}}selected{{/ifEquals}}>Garamond</option>
-                  <option value="Palatino, serif" {{#ifEquals this.fontFamily "Palatino, serif"}}selected{{/ifEquals}}>Palatino</option>
-                  <option value="Baskerville, serif" {{#ifEquals this.fontFamily "Baskerville, serif"}}selected{{/ifEquals}}>Baskerville</option>
-                  <option value="Cambria, serif" {{#ifEquals this.fontFamily "Cambria, serif"}}selected{{/ifEquals}}>Cambria</option>
-                  <option value="Didot, serif" {{#ifEquals this.fontFamily "Didot, serif"}}selected{{/ifEquals}}>Didot</option>
-                  <option value="Book Antiqua, serif" {{#ifEquals this.fontFamily "Book Antiqua, serif"}}selected{{/ifEquals}}>Book Antiqua</option>
-                  <option value="Goudy Old Style, serif" {{#ifEquals this.fontFamily "Goudy Old Style, serif"}}selected{{/ifEquals}}>Goudy Old Style</option>
-                  <option value="Perpetua, serif" {{#ifEquals this.fontFamily "Perpetua, serif"}}selected{{/ifEquals}}>Perpetua</option>
-                  <option value="Bookman, serif" {{#ifEquals this.fontFamily "Bookman, serif"}}selected{{/ifEquals}}>Bookman</option>
-                  <option value="Lucida Bright, serif" {{#ifEquals this.fontFamily "Lucida Bright, serif"}}selected{{/ifEquals}}>Lucida Bright</option>
-                  
-                  <!-- Monospace fonts -->
-                  <option value="Courier New, monospace" {{#ifEquals this.fontFamily "Courier New, monospace"}}selected{{/ifEquals}}>Courier New</option>
-                  <option value="Consolas, monospace" {{#ifEquals this.fontFamily "Consolas, monospace"}}selected{{/ifEquals}}>Consolas</option>
-                  <option value="Monaco, monospace" {{#ifEquals this.fontFamily "Monaco, monospace"}}selected{{/ifEquals}}>Monaco</option>
-                  <option value="Lucida Console, monospace" {{#ifEquals this.fontFamily "Lucida Console, monospace"}}selected{{/ifEquals}}>Lucida Console</option>
-                  <option value="Andale Mono, monospace" {{#ifEquals this.fontFamily "Andale Mono, monospace"}}selected{{/ifEquals}}>Andale Mono</option>
-                  <option value="Menlo, monospace" {{#ifEquals this.fontFamily "Menlo, monospace"}}selected{{/ifEquals}}>Menlo</option>
-                  <option value="Source Code Pro, monospace" {{#ifEquals this.fontFamily "Source Code Pro, monospace"}}selected{{/ifEquals}}>Source Code Pro</option>
-                  <option value="Ubuntu Mono, monospace" {{#ifEquals this.fontFamily "Ubuntu Mono, monospace"}}selected{{/ifEquals}}>Ubuntu Mono</option>
-                  <option value="Fira Mono, monospace" {{#ifEquals this.fontFamily "Fira Mono, monospace"}}selected{{/ifEquals}}>Fira Mono</option>
-                  
-                  <!-- Fun and Decorative fonts -->
-                  <option value="Comic Sans MS, cursive" {{#ifEquals this.fontFamily "Comic Sans MS, cursive"}}selected{{/ifEquals}}>Comic Sans</option>
-                  <option value="Papyrus, fantasy" {{#ifEquals this.fontFamily "Papyrus, fantasy"}}selected{{/ifEquals}}>Papyrus</option>
-                  <option value="Brush Script MT, cursive" {{#ifEquals this.fontFamily "Brush Script MT, cursive"}}selected{{/ifEquals}}>Brush Script</option>
-                  <option value="Lucida Handwriting, cursive" {{#ifEquals this.fontFamily "Lucida Handwriting, cursive"}}selected{{/ifEquals}}>Lucida Handwriting</option>
-                  <option value="Chalkboard, fantasy" {{#ifEquals this.fontFamily "Chalkboard, fantasy"}}selected{{/ifEquals}}>Chalkboard</option>
-                  <option value="Bauhaus 93, fantasy" {{#ifEquals this.fontFamily "Bauhaus 93, fantasy"}}selected{{/ifEquals}}>Bauhaus 93</option>
-                  <option value="Broadway, fantasy" {{#ifEquals this.fontFamily "Broadway, fantasy"}}selected{{/ifEquals}}>Broadway</option>
-                  <option value="Jokerman, fantasy" {{#ifEquals this.fontFamily "Jokerman, fantasy"}}selected{{/ifEquals}}>Jokerman</option>
-                  <option value="Curlz MT, cursive" {{#ifEquals this.fontFamily "Curlz MT, cursive"}}selected{{/ifEquals}}>Curlz MT</option>
-                  <option value="Showcard Gothic, fantasy" {{#ifEquals this.fontFamily "Showcard Gothic, fantasy"}}selected{{/ifEquals}}>Showcard Gothic</option>
-                  <option value="Ravie, fantasy" {{#ifEquals this.fontFamily "Ravie, fantasy"}}selected{{/ifEquals}}>Ravie</option>
-                  <option value="Snap ITC, fantasy" {{#ifEquals this.fontFamily "Snap ITC, fantasy"}}selected{{/ifEquals}}>Snap ITC</option>
-                  <option value="Lobster, cursive" {{#ifEquals this.fontFamily "Lobster, cursive"}}selected{{/ifEquals}}>Lobster</option>
-                  <option value="Arial Rounded MT Bold, sans-serif" {{#ifEquals this.fontFamily "Arial Rounded MT Bold, sans-serif"}}selected{{/ifEquals}}>Arial Rounded</option>
-                  
-                  <!-- Gaming/Fantasy themed fonts -->
-                  <option value="Blackletter, fantasy" {{#ifEquals this.fontFamily "Blackletter, fantasy"}}selected{{/ifEquals}}>Blackletter</option>
-                  <option value="Old English Text MT, fantasy" {{#ifEquals this.fontFamily "Old English Text MT, fantasy"}}selected{{/ifEquals}}>Old English</option>
-                  <option value="Algerian, fantasy" {{#ifEquals this.fontFamily "Algerian, fantasy"}}selected{{/ifEquals}}>Algerian</option>
-                  <option value="Copperplate, fantasy" {{#ifEquals this.fontFamily "Copperplate, fantasy"}}selected{{/ifEquals}}>Copperplate</option>
-                  <option value="Luminari, fantasy" {{#ifEquals this.fontFamily "Luminari, fantasy"}}selected{{/ifEquals}}>Luminari</option>
-                  <option value="Cinzel, serif" {{#ifEquals this.fontFamily "Cinzel, serif"}}selected{{/ifEquals}}>Cinzel</option>
-                  <option value="MedievalSharp, fantasy" {{#ifEquals this.fontFamily "MedievalSharp, fantasy"}}selected{{/ifEquals}}>Medieval Sharp</option>
-                  <option value="Ringbearer, fantasy" {{#ifEquals this.fontFamily "Ringbearer, fantasy"}}selected{{/ifEquals}}>Ringbearer</option>
-                  <option value="Trajan Pro, serif" {{#ifEquals this.fontFamily "Trajan Pro, serif"}}selected{{/ifEquals}}>Trajan Pro</option>
-                  <option value="Uncial Antiqua, fantasy" {{#ifEquals this.fontFamily "Uncial Antiqua, fantasy"}}selected{{/ifEquals}}>Uncial Antiqua</option>
-                  <option value="Skull and Crossbones, fantasy" {{#ifEquals this.fontFamily "Skull and Crossbones, fantasy"}}selected{{/ifEquals}}>Skull and Crossbones</option>
-                  
-                  <!-- Modern and Stylish fonts -->
-                  <option value="Montserrat, sans-serif" {{#ifEquals this.fontFamily "Montserrat, sans-serif"}}selected{{/ifEquals}}>Montserrat</option>
-                  <option value="Raleway, sans-serif" {{#ifEquals this.fontFamily "Raleway, sans-serif"}}selected{{/ifEquals}}>Raleway</option>
-                  <option value="Roboto, sans-serif" {{#ifEquals this.fontFamily "Roboto, sans-serif"}}selected{{/ifEquals}}>Roboto</option>
-                  <option value="Open Sans, sans-serif" {{#ifEquals this.fontFamily "Open Sans, sans-serif"}}selected{{/ifEquals}}>Open Sans</option>
-                  <option value="Lato, sans-serif" {{#ifEquals this.fontFamily "Lato, sans-serif"}}selected{{/ifEquals}}>Lato</option>
-                  <option value="Playfair Display, serif" {{#ifEquals this.fontFamily "Playfair Display, serif"}}selected{{/ifEquals}}>Playfair Display</option>
-                  <option value="Oswald, sans-serif" {{#ifEquals this.fontFamily "Oswald, sans-serif"}}selected{{/ifEquals}}>Oswald</option>
-                  <option value="Bebas Neue, sans-serif" {{#ifEquals this.fontFamily "Bebas Neue, sans-serif"}}selected{{/ifEquals}}>Bebas Neue</option>
-                  
-                  <!-- Pixel/Retro fonts -->
-                  <option value="Press Start 2P, cursive" {{#ifEquals this.fontFamily "Press Start 2P, cursive"}}selected{{/ifEquals}}>Press Start 2P</option>
-                  <option value="VT323, monospace" {{#ifEquals this.fontFamily "VT323, monospace"}}selected{{/ifEquals}}>VT323</option>
-                  <option value="Pixel, monospace" {{#ifEquals this.fontFamily "Pixel, monospace"}}selected{{/ifEquals}}>Pixel</option>
-                  <option value="Silkscreen, monospace" {{#ifEquals this.fontFamily "Silkscreen, monospace"}}selected{{/ifEquals}}>Silkscreen</option>
-                  <option value="Arcadepix, monospace" {{#ifEquals this.fontFamily "Arcadepix, monospace"}}selected{{/ifEquals}}>Arcadepix</option>
-                  
-                  <!-- Handwriting fonts -->
-                  <option value="Indie Flower, cursive" {{#ifEquals this.fontFamily "Indie Flower, cursive"}}selected{{/ifEquals}}>Indie Flower</option>
-                  <option value="Caveat, cursive" {{#ifEquals this.fontFamily "Caveat, cursive"}}selected{{/ifEquals}}>Caveat</option>
-                  <option value="Pacifico, cursive" {{#ifEquals this.fontFamily "Pacifico, cursive"}}selected{{/ifEquals}}>Pacifico</option>
-                  <option value="Satisfy, cursive" {{#ifEquals this.fontFamily "Satisfy, cursive"}}selected{{/ifEquals}}>Satisfy</option>
-                  <option value="Dancing Script, cursive" {{#ifEquals this.fontFamily "Dancing Script, cursive"}}selected{{/ifEquals}}>Dancing Script</option>
-                  <option value="Cedarville Cursive, cursive" {{#ifEquals this.fontFamily "Cedarville Cursive, cursive"}}selected{{/ifEquals}}>Cedarville Cursive</option>
-                  <option value="Reenie Beanie, cursive" {{#ifEquals this.fontFamily "Reenie Beanie, cursive"}}selected{{/ifEquals}}>Reenie Beanie</option>
-                  
-                  <!-- Themed fonts -->
-                  <option value="Creepster, fantasy" {{#ifEquals this.fontFamily "Creepster, fantasy"}}selected{{/ifEquals}}>Creepster (Horror)</option>
-                  <option value="Orbitron, sans-serif" {{#ifEquals this.fontFamily "Orbitron, sans-serif"}}selected{{/ifEquals}}>Orbitron (Sci-Fi)</option>
-                  <option value="Bangers, cursive" {{#ifEquals this.fontFamily "Bangers, cursive"}}selected{{/ifEquals}}>Bangers (Comic)</option>
-                  <option value="Special Elite, cursive" {{#ifEquals this.fontFamily "Special Elite, cursive"}}selected{{/ifEquals}}>Special Elite (Typewriter)</option>
-                  <option value="UnifrakturMaguntia, fantasy" {{#ifEquals this.fontFamily "UnifrakturMaguntia, fantasy"}}selected{{/ifEquals}}>UnifrakturMaguntia (Gothic)</option>
-                  <option value="Rye, fantasy" {{#ifEquals this.fontFamily "Rye, fantasy"}}selected{{/ifEquals}}>Rye (Western)</option>
-                  <option value="Jolly Lodger, fantasy" {{#ifEquals this.fontFamily "Jolly Lodger, fantasy"}}selected{{/ifEquals}}>Jolly Lodger (Pirate)</option>
-                  <option value="Fondamento, fantasy" {{#ifEquals this.fontFamily "Fondamento, fantasy"}}selected{{/ifEquals}}>Fondamento (Renaissance)</option>
-                  <option value="Almendra, serif" {{#ifEquals this.fontFamily "Almendra, serif"}}selected{{/ifEquals}}>Almendra (Medieval)</option>
-                  <option value="Fontdiner Swanky, fantasy" {{#ifEquals this.fontFamily "Fontdiner Swanky, fantasy"}}selected{{/ifEquals}}>Fontdiner Swanky (Retro)</option>
-                  <option value="Kranky, fantasy" {{#ifEquals this.fontFamily "Kranky, fantasy"}}selected{{/ifEquals}}>Kranky (Monster)</option>
-                </select>
-                <br>
-                Colour:
-                <input type="color" name="fontColor-{{this.idx}}" value="{{this.fontColor}}" style="width:80px;">
-                
-                <hr style="margin: 8px 0;">
-                <div style="margin-top: 8px;">
-                  <label>
-                    <input type="checkbox" name="fontStroke-{{this.idx}}" {{#if this.fontStroke}}checked{{/if}}>
-                    Text Outline
-                  </label>
-                  <div {{#if this.fontStroke}}style="display:block;"{{else}}style="display:none;"{{/if}} class="stroke-options-{{this.idx}}">
-                    Outline Color:
-                    <input type="color" name="fontStrokeColor-{{this.idx}}" value="{{this.fontStrokeColor}}" style="width:80px;">
-                    <br>
-                    Outline Width:
-                    <input type="number" step="0.5" min="0.5" max="5" name="fontStrokeWidth-{{this.idx}}" value="{{this.fontStrokeWidth}}" style="width:60px;"> px
-                  </div>
-                </div>
-              </div>
-            </td>
-            {{else ifEquals this.type "static"}}
-            <td>
-              Static Text:
-              <input type="text" name="content-{{this.idx}}" value="{{this.content}}" style="width:100%;">
-            </td>
-            <td class="extras-column">
-              <div class="extras-content">
-                Font Size:
-                <input type="number" name="fontSize-{{this.idx}}" value="{{this.fontSize}}" style="width:60px;">
-                <br>
-                Bold:
-                <input type="checkbox" name="bold-{{this.idx}}" {{#if this.bold}}checked{{/if}}>
-                <br>
-                Font:
-                <select name="fontFamily-{{this.idx}}">
-                  <option value="Arial, sans-serif" {{#ifEquals this.fontFamily "Arial, sans-serif"}}selected{{/ifEquals}}>Arial</option>
-                  <option value="Verdana, sans-serif" {{#ifEquals this.fontFamily "Verdana, sans-serif"}}selected{{/ifEquals}}>Verdana</option>
-                  <option value="Helvetica, sans-serif" {{#ifEquals this.fontFamily "Helvetica, sans-serif"}}selected{{/ifEquals}}>Helvetica</option>
-                  <option value="Tahoma, sans-serif" {{#ifEquals this.fontFamily "Tahoma, sans-serif"}}selected{{/ifEquals}}>Tahoma</option>
-                  <option value="Trebuchet MS, sans-serif" {{#ifEquals this.fontFamily "Trebuchet MS, sans-serif"}}selected{{/ifEquals}}>Trebuchet MS</option>
-                  <option value="Impact, sans-serif" {{#ifEquals this.fontFamily "Impact, sans-serif"}}selected{{/ifEquals}}>Impact</option>
-                  <option value="Calibri, sans-serif" {{#ifEquals this.fontFamily "Calibri, sans-serif"}}selected{{/ifEquals}}>Calibri</option>
-                  <option value="Century Gothic, sans-serif" {{#ifEquals this.fontFamily "Century Gothic, sans-serif"}}selected{{/ifEquals}}>Century Gothic</option>
-                  <option value="Franklin Gothic Medium, sans-serif" {{#ifEquals this.fontFamily "Franklin Gothic Medium, sans-serif"}}selected{{/ifEquals}}>Franklin Gothic</option>
-                  <option value="Geneva, sans-serif" {{#ifEquals this.fontFamily "Geneva, sans-serif"}}selected{{/ifEquals}}>Geneva</option>
-                  <option value="Segoe UI, sans-serif" {{#ifEquals this.fontFamily "Segoe UI, sans-serif"}}selected{{/ifEquals}}>Segoe UI</option>
-                  <option value="Optima, sans-serif" {{#ifEquals this.fontFamily "Optima, sans-serif"}}selected{{/ifEquals}}>Optima</option>
-                  <option value="Futura, sans-serif" {{#ifEquals this.fontFamily "Futura, sans-serif"}}selected{{/ifEquals}}>Futura</option>
-                  <option value="Avenir, sans-serif" {{#ifEquals this.fontFamily "Avenir, sans-serif"}}selected{{/ifEquals}}>Avenir</option>
-                  <option value="Gill Sans, sans-serif" {{#ifEquals this.fontFamily "Gill Sans, sans-serif"}}selected{{/ifEquals}}>Gill Sans</option>
-                  
-                  <!-- Serif fonts -->
-                  <option value="Times New Roman, serif" {{#ifEquals this.fontFamily "Times New Roman, serif"}}selected{{/ifEquals}}>Times New Roman</option>
-                  <option value="Georgia, serif" {{#ifEquals this.fontFamily "Georgia, serif"}}selected{{/ifEquals}}>Georgia</option>
-                  <option value="Garamond, serif" {{#ifEquals this.fontFamily "Garamond, serif"}}selected{{/ifEquals}}>Garamond</option>
-                  <option value="Palatino, serif" {{#ifEquals this.fontFamily "Palatino, serif"}}selected{{/ifEquals}}>Palatino</option>
-                  <option value="Baskerville, serif" {{#ifEquals this.fontFamily "Baskerville, serif"}}selected{{/ifEquals}}>Baskerville</option>
-                  <option value="Cambria, serif" {{#ifEquals this.fontFamily "Cambria, serif"}}selected{{/ifEquals}}>Cambria</option>
-                  <option value="Didot, serif" {{#ifEquals this.fontFamily "Didot, serif"}}selected{{/ifEquals}}>Didot</option>
-                  <option value="Book Antiqua, serif" {{#ifEquals this.fontFamily "Book Antiqua, serif"}}selected{{/ifEquals}}>Book Antiqua</option>
-                  <option value="Goudy Old Style, serif" {{#ifEquals this.fontFamily "Goudy Old Style, serif"}}selected{{/ifEquals}}>Goudy Old Style</option>
-                  <option value="Perpetua, serif" {{#ifEquals this.fontFamily "Perpetua, serif"}}selected{{/ifEquals}}>Perpetua</option>
-                  <option value="Bookman, serif" {{#ifEquals this.fontFamily "Bookman, serif"}}selected{{/ifEquals}}>Bookman</option>
-                  <option value="Lucida Bright, serif" {{#ifEquals this.fontFamily "Lucida Bright, serif"}}selected{{/ifEquals}}>Lucida Bright</option>
-                  
-                  <!-- And other font options as in the original template... -->
-                </select>
-                <br>
-                Colour:
-                <input type="color" name="fontColor-{{this.idx}}" value="{{this.fontColor}}" style="width:80px;">
-                
-                <hr style="margin: 8px 0;">
-                <div style="margin-top: 8px;">
-                  <label>
-                    <input type="checkbox" name="fontStroke-{{this.idx}}" {{#if this.fontStroke}}checked{{/if}}>
-                    Text Outline
-                  </label>
-                  <div {{#if this.fontStroke}}style="display:block;"{{else}}style="display:none;"{{/if}} class="stroke-options-{{this.idx}}">
-                    Outline Color:
-                    <input type="color" name="fontStrokeColor-{{this.idx}}" value="{{this.fontStrokeColor}}" style="width:80px;">
-                    <br>
-                    Outline Width:
-                    <input type="number" step="0.5" min="0.5" max="5" name="fontStrokeWidth-{{this.idx}}" value="{{this.fontStrokeWidth}}" style="width:60px;"> px
-                  </div>
-                </div>
-              </div>
-            </td>
-            {{else}}
-            <td>
-              Image Path:
-              <input type="text" name="imagePath-{{this.idx}}" value="{{this.imagePath}}" style="width:100%;" readonly>
-              <button type="button" class="file-picker" data-index="{{this.idx}}">Choose</button>
-            </td>
-            <td class="extras-column">
-              <div class="extras-content">
-                Size:
-                <input type="number" name="imageSize-{{this.idx}}" value="{{this.imageSize}}" style="width:60px;">
-              </div>
-            </td>
-            {{/ifEquals}}
-            
-            <td>
-              <button type="button" class="manage-animations" data-index="{{this.idx}}">
-                Manage Animations
-                {{#if this.hasAnimations}}
-                <span class="animation-indicator"><i class="fas fa-check-circle"></i></span>
-                {{/if}}
-              </button>
-            </td>
-            
-            <td>
-              <input type="number" name="top-{{this.idx}}" value="{{this.top}}" style="width:60px;">
-            </td>
-            <td>
-              <input type="number" name="left-{{this.idx}}" value="{{this.left}}" style="width:60px;">
-            </td>
-            <td style="text-align:center;">
-              <input type="checkbox" name="hide-{{this.idx}}" {{#if this.hide}}checked{{/if}}>
-            </td>
-            <td style="text-align:center;">
-                <button type="button" class="remove-row" data-index="{{this.idx}}" title="Remove this item" style="display:block; margin-bottom:2px; width:100%;">
-                  <i class="fas fa-trash"></i>
-                </button>
-                <button type="button" class="duplicate-row" data-index="{{this.idx}}" title="Duplicate this item" style="display:block; width:100%;">
-                  <i class="fas fa-copy"></i>
-                </button>
-            </td>
-          </tr>
-          {{/each}}
-        </tbody>
-      </table>
-    </div>
-    
-    <div class="overlay-config-footer">
-      <div class="overlay-config-buttons">
-        <div class="left-buttons">
-          <button type="button" class="add-row">Add Data</button>
-          <button type="button" class="add-static">Add Static Text</button>
-          <button type="button" class="add-image">Add Image</button>
-        </div>
 
+    <!-- Quick actions footer -->
+    <div class="fso-quick-actions-footer">
+      <div class="fso-actions-left">
+        <button type="button" class="fso-secondary-btn" id="manage-scenes-btn-footer">
+          {{#if isPremium}}Manage Scenes{{else}}🔒 Manage Scenes{{/if}}
+        </button>
       </div>
       
-      {{#unless isPremium}}
-      <div style="text-align: right; margin-top:0.5em; font-size: 0.8em; opacity: 0.8;">
-        Made by Jen.
-        <a href="https://www.patreon.com/c/jenzelta" target="_blank">Support on Patreon for premium features</a>
+      <div class="fso-actions-center">
+        <span class="fso-auto-save-status">
+          <i class="fas fa-save"></i> Auto-saving enabled
+        </span>
       </div>
-      {{else}}
-      <div style="text-align: right; margin-top:0.5em; font-size: 0.8em; opacity: 0.8;">
-        Made by Jen. Premium activated!
+      
+      <div class="fso-actions-right">
+        <button type="button" class="fso-primary-btn" id="open-overlay-btn">
+          🚀 Open Overlay
+        </button>
       </div>
-      {{/unless}}
     </div>
+  </div>
 
-<style>
-  .toggle-extras-column {
-    background: none;
-    border: none;
-    cursor: pointer;
-    margin-left: 5px;
-    padding: 0;
-    color: #666;
-    transition: color 0.2s;
-  }
+  <!-- Premium notice for free users -->
+  {{#unless isPremium}}
+  <div class="fso-footer-branding">
+    <div class="fso-branding-content">
+      Made by Jen • 
+      <a href="https://www.patreon.com/c/jenzelta" target="_blank" class="fso-premium-upgrade-link">
+        <i class="fab fa-patreon"></i> Unlock Premium Features
+      </a>
+    </div>
+  </div>
+  {{else}}
+  <div class="fso-footer-branding fso-premium">
+    <div class="fso-branding-content">
+      Made by Jen • Premium activated ✨
+    </div>
+  </div>
+  {{/unless}}
 
-  .toggle-extras-column:hover {
-    color: #333;
-  }
-
-  .extras-column {
-    vertical-align: top;
-  }
-
-  .extras-content {
-    transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
-    overflow: hidden;
-  }
-  
-  .custom-path-help {
-    position: relative;
-    display: inline-block;
-    margin-left: 5px;
-  }
-  
-  .custom-path-help i {
-    cursor: help;
-    color: #666;
-  }
-  
-  .help-tooltip {
-    display: none;
-    position: absolute;
-    bottom: 25px;
-    left: 0;
-    width: 300px;
-    background: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    z-index: 1000;
-  }
-  
-  .custom-path-help:hover .help-tooltip {
-    display: block;
-  }
-  
-  .custom-path-input {
-    margin-top: 5px;
-    padding: 5px;
-    background-color: rgba(0, 0, 0, 0.05);
-    border-radius: 3px;
-  }
-  
-  .custom-path-input input {
-    width: 100%;
-    margin-bottom: 4px;
-  }
-  
-  .custom-path-input small {
-    display: block;
-    font-style: italic;
-    color: #666;
-  }
-  
-  .debug-actor-data {
-    cursor: pointer;
-    background-color: #f5f5f5;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    padding: 2px 5px;
-    transition: background-color 0.2s;
-  }
-  
-  .debug-actor-data:hover {
-    background-color: #e0e0e0;
-  }
-  
-  .system-examples-container {
-    margin-top: 10px;
-    font-size: 0.9em;
-    padding: 8px;
-    background-color: rgba(0, 0, 0, 0.03);
-    border-radius: 4px;
-    border-left: 3px solid #4b8;
-  }
-  
-  .data-path-examples code {
-    background: rgba(0,0,0,0.05);
-    padding: 2px 4px;
-    border-radius: 3px;
-    font-family: monospace;
-  }
-
-  .animation-indicator {
-    display: inline-block;
-    margin-left: 5px;
-    color: #4CAF50;
-  }
-</style>
+  <style>
+    /* NEW: Two-column layout styling */
+    .fso-item-card.fso-two-column {
+      max-width: none;
+      margin-bottom: 20px;
+    }
+    
+    .fso-item-header-compact {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-bottom: 1px solid #dee2e6;
+      min-height: 60px; /* FIXED: Consistent header height */
+    }
+    
+    .fso-item-actions-horizontal {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    
+    .fso-action-btn-small {
+      width: 32px;
+      height: 32px;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      transition: all 0.2s ease;
+    }
+    
+    .fso-action-btn-small:hover {
+      background: #f0f0f0;
+      border-color: #007bff;
+      transform: translateY(-1px);
+    }
+    
+    .fso-item-content-two-column {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      padding: 16px;
+    }
+    
+    .fso-left-column,
+    .fso-right-column {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .fso-column-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #495057;
+      margin: 0 0 12px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e9ecef;
+    }
+    
+    .fso-config-row {
+      margin-bottom: 12px;
+    }
+    
+    .fso-config-row label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 500;
+      color: #495057;
+      font-size: 13px;
+    }
+    
+    .fso-config-row input,
+    .fso-config-row select,
+    .fso-config-row textarea {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    
+    .fso-config-row textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+    
+    /* Help text styling */
+    .fso-help-text {
+      font-size: 11px;
+      color: #666;
+      font-style: italic;
+      margin-top: 2px;
+      display: block;
+    }
+    
+    /* Responsive design */
+    @media (max-width: 1024px) {
+      .fso-item-content-two-column {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .fso-item-header-compact {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        min-height: auto;
+        padding: 12px;
+      }
+      
+      .fso-item-actions-horizontal {
+        align-self: stretch;
+        justify-content: space-between;
+      }
+      
+      .fso-action-btn-small {
+        flex: 1;
+        max-width: 60px;
+      }
+    }
+    
+    /* Premium hint styling */
+    .fso-premium-hint {
+      font-size: 11px;
+      color: #666;
+      font-style: italic;
+      margin-top: 4px;
+      display: block;
+    }
+    
+    /* Active indicator for animations */
+    .fso-active-indicator {
+      color: #28a745;
+      font-size: 12px;
+      margin-left: 4px;
+    }
+    
+    /* Collapsible sections in right column */
+    .fso-right-column .fso-config-section {
+      margin-bottom: 8px;
+    }
+    
+    .fso-right-column .fso-config-section summary {
+      padding: 8px 10px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    
+    .fso-right-column .fso-config-section[open] summary {
+      margin-bottom: 8px;
+    }
+  </style>
 </form>

@@ -1,0 +1,458 @@
+/* ===================================================================
+   UTILITY CLASSES - Helper classes and performance optimizations
+   ================================================================== */
+
+/* ===================================================================
+   VISIBILITY AND DISPLAY UTILITIES
+   ================================================================== */
+
+.fso-hidden { 
+  display: none !important; 
+}
+
+.fso-invisible {
+  visibility: hidden !important;
+}
+
+.fso-visible {
+  visibility: visible !important;
+}
+
+.fso-show {
+  display: block !important;
+}
+
+.fso-flex {
+  display: flex !important;
+}
+
+.fso-inline {
+  display: inline !important;
+}
+
+.fso-inline-block {
+  display: inline-block !important;
+}
+
+/* ===================================================================
+   TEXT ALIGNMENT UTILITIES
+   ================================================================== */
+
+.fso-text-center { 
+  text-align: center; 
+}
+
+.fso-text-left { 
+  text-align: left; 
+}
+
+.fso-text-right { 
+  text-align: right; 
+}
+
+.fso-text-justify {
+  text-align: justify;
+}
+
+/* ===================================================================
+   SPACING UTILITIES
+   ================================================================== */
+
+/* Margin utilities */
+.fso-mb-0 { margin-bottom: 0; }
+.fso-mb-1 { margin-bottom: 0.25rem; }
+.fso-mb-2 { margin-bottom: 0.5rem; }
+.fso-mb-3 { margin-bottom: 1rem; }
+.fso-mb-4 { margin-bottom: 1.5rem; }
+.fso-mb-5 { margin-bottom: 3rem; }
+
+.fso-mt-0 { margin-top: 0; }
+.fso-mt-1 { margin-top: 0.25rem; }
+.fso-mt-2 { margin-top: 0.5rem; }
+.fso-mt-3 { margin-top: 1rem; }
+.fso-mt-4 { margin-top: 1.5rem; }
+.fso-mt-5 { margin-top: 3rem; }
+
+.fso-ml-0 { margin-left: 0; }
+.fso-ml-1 { margin-left: 0.25rem; }
+.fso-ml-2 { margin-left: 0.5rem; }
+.fso-ml-3 { margin-left: 1rem; }
+
+.fso-mr-0 { margin-right: 0; }
+.fso-mr-1 { margin-right: 0.25rem; }
+.fso-mr-2 { margin-right: 0.5rem; }
+.fso-mr-3 { margin-right: 1rem; }
+
+.fso-mx-auto { margin-left: auto; margin-right: auto; }
+.fso-my-auto { margin-top: auto; margin-bottom: auto; }
+
+/* Padding utilities */
+.fso-p-0 { padding: 0; }
+.fso-p-1 { padding: 0.25rem; }
+.fso-p-2 { padding: 0.5rem; }
+.fso-p-3 { padding: 1rem; }
+.fso-p-4 { padding: 1.5rem; }
+
+.fso-px-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
+.fso-px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+.fso-px-3 { padding-left: 1rem; padding-right: 1rem; }
+
+.fso-py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+.fso-py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.fso-py-3 { padding-top: 1rem; padding-bottom: 1rem; }
+
+/* ===================================================================
+   FLEXBOX UTILITIES
+   ================================================================== */
+
+.fso-justify-start { justify-content: flex-start; }
+.fso-justify-center { justify-content: center; }
+.fso-justify-end { justify-content: flex-end; }
+.fso-justify-between { justify-content: space-between; }
+.fso-justify-around { justify-content: space-around; }
+
+.fso-items-start { align-items: flex-start; }
+.fso-items-center { align-items: center; }
+.fso-items-end { align-items: flex-end; }
+.fso-items-stretch { align-items: stretch; }
+
+.fso-flex-col { flex-direction: column; }
+.fso-flex-row { flex-direction: row; }
+
+.fso-flex-wrap { flex-wrap: wrap; }
+.fso-flex-nowrap { flex-wrap: nowrap; }
+
+.fso-flex-1 { flex: 1; }
+.fso-flex-auto { flex: auto; }
+.fso-flex-none { flex: none; }
+
+/* ===================================================================
+   POSITIONING UTILITIES
+   ================================================================== */
+
+.fso-relative { position: relative; }
+.fso-absolute { position: absolute; }
+.fso-fixed { position: fixed; }
+.fso-sticky { position: sticky; }
+
+.fso-top-0 { top: 0; }
+.fso-right-0 { right: 0; }
+.fso-bottom-0 { bottom: 0; }
+.fso-left-0 { left: 0; }
+
+.fso-z-10 { z-index: 10; }
+.fso-z-20 { z-index: 20; }
+.fso-z-30 { z-index: 30; }
+.fso-z-40 { z-index: 40; }
+.fso-z-50 { z-index: 50; }
+
+/* ===================================================================
+   SIZE UTILITIES
+   ================================================================== */
+
+.fso-w-full { width: 100%; }
+.fso-w-auto { width: auto; }
+.fso-w-1\/2 { width: 50%; }
+.fso-w-1\/3 { width: 33.333333%; }
+.fso-w-2\/3 { width: 66.666667%; }
+.fso-w-1\/4 { width: 25%; }
+.fso-w-3\/4 { width: 75%; }
+
+.fso-h-full { height: 100%; }
+.fso-h-auto { height: auto; }
+.fso-h-screen { height: 100vh; }
+
+.fso-max-w-full { max-width: 100%; }
+.fso-max-w-sm { max-width: 24rem; }
+.fso-max-w-md { max-width: 28rem; }
+.fso-max-w-lg { max-width: 32rem; }
+.fso-max-w-xl { max-width: 36rem; }
+
+/* ===================================================================
+   COLOR UTILITIES
+   ================================================================== */
+
+.fso-text-primary { color: #007bff; }
+.fso-text-secondary { color: #6c757d; }
+.fso-text-success { color: #28a745; }
+.fso-text-warning { color: #ffc107; }
+.fso-text-danger { color: #dc3545; }
+.fso-text-info { color: #17a2b8; }
+.fso-text-muted { color: #6c757d; }
+
+.fso-bg-primary { background-color: #007bff; }
+.fso-bg-secondary { background-color: #6c757d; }
+.fso-bg-success { background-color: #28a745; }
+.fso-bg-warning { background-color: #ffc107; }
+.fso-bg-danger { background-color: #dc3545; }
+.fso-bg-info { background-color: #17a2b8; }
+.fso-bg-light { background-color: #f8f9fa; }
+.fso-bg-dark { background-color: #343a40; }
+
+/* ===================================================================
+   FONT UTILITIES
+   ================================================================== */
+
+.fso-font-normal { font-weight: 400; }
+.fso-font-medium { font-weight: 500; }
+.fso-font-semibold { font-weight: 600; }
+.fso-font-bold { font-weight: 700; }
+
+.fso-text-xs { font-size: 0.75rem; }
+.fso-text-sm { font-size: 0.875rem; }
+.fso-text-base { font-size: 1rem; }
+.fso-text-lg { font-size: 1.125rem; }
+.fso-text-xl { font-size: 1.25rem; }
+.fso-text-2xl { font-size: 1.5rem; }
+
+.fso-uppercase { text-transform: uppercase; }
+.fso-lowercase { text-transform: lowercase; }
+.fso-capitalize { text-transform: capitalize; }
+
+.fso-italic { font-style: italic; }
+.fso-underline { text-decoration: underline; }
+.fso-line-through { text-decoration: line-through; }
+.fso-no-underline { text-decoration: none; }
+
+/* ===================================================================
+   BORDER UTILITIES
+   ================================================================== */
+
+.fso-border { border: 1px solid #e9ecef; }
+.fso-border-0 { border: none; }
+.fso-border-t { border-top: 1px solid #e9ecef; }
+.fso-border-r { border-right: 1px solid #e9ecef; }
+.fso-border-b { border-bottom: 1px solid #e9ecef; }
+.fso-border-l { border-left: 1px solid #e9ecef; }
+
+.fso-rounded { border-radius: 0.25rem; }
+.fso-rounded-md { border-radius: 0.375rem; }
+.fso-rounded-lg { border-radius: 0.5rem; }
+.fso-rounded-full { border-radius: 9999px; }
+.fso-rounded-none { border-radius: 0; }
+
+/* ===================================================================
+   SHADOW UTILITIES
+   ================================================================== */
+
+.fso-shadow { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); }
+.fso-shadow-md { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+.fso-shadow-lg { box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1); }
+.fso-shadow-none { box-shadow: none; }
+
+/* ===================================================================
+   ANIMATION AND FEEDBACK UTILITIES
+   ================================================================== */
+
+/* Auto-save feedback */
+.fso-auto-save-feedback {
+  background: rgba(40, 167, 69, 0.1);
+  border-left: 3px solid #28a745;
+  padding-left: 12px;
+  animation: fadeInOut 2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+/* Help tooltips */
+.fso-help-tooltip {
+  position: absolute;
+  background: #333;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 1000;
+  max-width: 250px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+/* Loading states */
+.fso-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.fso-pulse {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Transition utilities */
+.fso-transition { transition: all 0.2s ease; }
+.fso-transition-fast { transition: all 0.1s ease; }
+.fso-transition-slow { transition: all 0.3s ease; }
+.fso-transition-none { transition: none; }
+
+/* ===================================================================
+   PERFORMANCE OPTIMIZATIONS
+   ================================================================== */
+
+/* Use will-change for animated elements */
+.fso-overlay-item[class*="hover"],
+.fso-overlay-item[class*="pulse"],
+.fso-overlay-item[class*="heartbeat"],
+.fso-overlay-item[class*="rotate"],
+.fso-overlay-item[class*="wiggle"],
+.fso-overlay-item[class*="shake"],
+.fso-overlay-item[class*="jitter"] {
+  will-change: transform;
+}
+
+.fso-overlay-item[class*="shimmer"],
+.fso-overlay-item[class*="flash"] {
+  will-change: opacity;
+}
+
+.fso-overlay-item[class*="glitch"] {
+  will-change: transform, filter;
+}
+
+/* Use transform3d to trigger hardware acceleration */
+.fso-overlay-item.animated {
+  transform: translate3d(0, 0, 0);
+}
+
+/* Performance hints for complex layouts */
+.fso-complex-layout {
+  contain: layout style paint;
+}
+
+.fso-gpu-layer {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* ===================================================================
+   LEGACY SUPPORT (for backward compatibility)
+   ================================================================== */
+
+/* Keep old class names working */
+.overlay-item { 
+  /* Legacy class - use .fso-overlay-item instead */
+}
+
+.scene-manager { 
+  /* Legacy class - use .fso-scene-manager instead */
+}
+
+.item-card { 
+  /* Legacy class - use .fso-item-card instead */
+}
+
+.premium-notice { 
+  /* Legacy class - use .fso-premium-notice instead */
+}
+
+/* ===================================================================
+   PRINT UTILITIES
+   ================================================================== */
+
+@media print {
+  .fso-print-hidden { display: none !important; }
+  .fso-print-visible { display: block !important; }
+}
+
+/* ===================================================================
+   INTERACTION UTILITIES
+   ================================================================== */
+
+.fso-cursor-pointer { cursor: pointer; }
+.fso-cursor-default { cursor: default; }
+.fso-cursor-not-allowed { cursor: not-allowed; }
+
+.fso-select-none { user-select: none; }
+.fso-select-text { user-select: text; }
+.fso-select-all { user-select: all; }
+
+.fso-pointer-events-none { pointer-events: none; }
+.fso-pointer-events-auto { pointer-events: auto; }
+
+/* Hover states */
+.fso-hover-shadow:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+.fso-hover-scale:hover { transform: scale(1.05); }
+.fso-hover-opacity:hover { opacity: 0.8; }
+
+/* Focus states */
+.fso-focus-outline:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+/* ===================================================================
+   LAYOUT UTILITIES
+   ================================================================== */
+
+.fso-container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.fso-grid {
+  display: grid;
+}
+
+.fso-grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.fso-grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.fso-grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.fso-grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.fso-gap-1 { gap: 0.25rem; }
+.fso-gap-2 { gap: 0.5rem; }
+.fso-gap-3 { gap: 0.75rem; }
+.fso-gap-4 { gap: 1rem; }
+.fso-gap-6 { gap: 1.5rem; }
+.fso-gap-8 { gap: 2rem; }
+
+.fso-col-span-1 { grid-column: span 1 / span 1; }
+.fso-col-span-2 { grid-column: span 2 / span 2; }
+.fso-col-span-3 { grid-column: span 3 / span 3; }
+.fso-col-span-4 { grid-column: span 4 / span 4; }
+
+/* ===================================================================
+   ACCESSIBILITY UTILITIES
+   ================================================================== */
+
+.fso-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.fso-focus-visible:focus-visible {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+/* Skip to content link */
+.fso-skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: #000;
+  color: #fff;
+  padding: 8px;
+  text-decoration: none;
+  z-index: 100;
+}
+
+.fso-skip-link:focus {
+  top: 6px;
+}

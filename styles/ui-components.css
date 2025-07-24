@@ -1,0 +1,1161 @@
+/* ===================================================================
+   UI COMPONENTS - Configuration interface and form styling
+   Enhanced with improved readability and collapsible functionality
+   ================================================================== */
+
+/* ===================================================================
+   SCENE MANAGER
+   ================================================================== */
+
+.fso-scene-manager {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: #1e293b;
+}
+
+.fso-scene-manager-header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e2e8f0;
+  background: linear-gradient(to bottom, #1f2937, #374151);
+  color: #f9fafb;
+}
+
+.fso-scene-manager-header h2 {
+  margin: 0 0 8px 0;
+  color: #f9fafb;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.fso-scene-manager-description {
+  margin: 0;
+  color: #e5e7eb;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* ===================================================================
+   SCENE LIST
+   ================================================================== */
+
+.fso-scenes-list-container {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  margin-bottom: 25px;
+}
+
+.fso-scenes-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.fso-scenes-table th {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 14px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #334155;
+  border-bottom: 2px solid #e2e8f0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fso-scenes-table td {
+  padding: 16px;
+  border-bottom: 1px solid #f1f3f4;
+  vertical-align: middle;
+  color: #475569;
+}
+
+.fso-scene-row:hover {
+  background: #f8fafc;
+  transition: background 0.15s ease;
+}
+
+.fso-scene-row.active-scene {
+  background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+}
+
+/* ===================================================================
+   ENHANCED ITEM CARDS (With Collapsible Functionality)
+   ================================================================== */
+
+.fso-item-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  margin-bottom: 20px;
+  animation: cardFadeIn 0.3s ease;
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fso-item-card:hover {
+  border-color: #0066cc;
+  box-shadow: 0 4px 16px rgba(0,102,204,0.12);
+  transform: translateY(-1px);
+}
+
+.fso-item-card.fso-two-column {
+  max-width: none;
+  margin-bottom: 20px;
+}
+
+/* Enhanced collapsible header */
+.fso-item-header-compact {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 16px 16px 36px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+  min-height: 72px;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.fso-item-header-compact:hover {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+}
+
+/* Collapse indicator */
+.fso-item-header-compact::before {
+  content: '▼';
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%) rotate(0deg);
+  transition: transform 0.3s ease;
+  color: #64748b;
+  font-size: 12px;
+  font-family: monospace;
+}
+
+.fso-item-card.collapsed .fso-item-header-compact::before {
+  transform: translateY(-50%) rotate(-90deg);
+}
+
+/* Hide content when collapsed */
+.fso-item-card.collapsed .fso-item-content {
+  display: none;
+}
+
+.fso-item-card.collapsed {
+  margin-bottom: 12px;
+}
+
+.fso-item-card.collapsed .fso-item-header-compact {
+  border-bottom: none;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+/* Highlight hidden items */
+.fso-item-card.fso-hidden-item .fso-item-header-compact {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* Item type information */
+.fso-item-type-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+/* Enhanced type badges */
+.fso-item-type-badge {
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
+}
+
+.fso-item-type-badge.data { 
+  background: #dbeafe; 
+  color: #1e40af;
+  border-color: #93c5fd;
+}
+
+.fso-item-type-badge.static { 
+  background: #d1fae5; 
+  color: #065f46;
+  border-color: #86efac;
+}
+
+.fso-item-type-badge.image { 
+  background: #fed7aa; 
+  color: #92400e;
+  border-color: #fdba74;
+}
+
+.fso-item-type-badge.dice {
+  background: #e9d5ff;
+  color: #6b21a8;
+  border-color: #d8b4fe;
+}
+
+.fso-item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fso-item-title {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.fso-item-title.incomplete {
+  color: #dc2626;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.fso-item-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.3;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Courier New', monospace;
+}
+
+/* Enhanced action buttons */
+.fso-item-actions-horizontal {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.fso-action-btn-small {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  position: relative;
+  color: #64748b;
+}
+
+.fso-action-btn-small:hover {
+  background: #f8fafc;
+  border-color: #0066cc;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  color: #0066cc;
+}
+
+/* Tooltip for action buttons */
+.fso-action-btn-small:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  animation: tooltipFadeIn 0.2s ease forwards;
+  margin-bottom: 4px;
+  z-index: 1000;
+}
+
+@keyframes tooltipFadeIn {
+  to { opacity: 1; }
+}
+
+/* ===================================================================
+   TWO-COLUMN ITEM CONTENT LAYOUT
+   ================================================================== */
+
+.fso-item-content-two-column {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 20px;
+  background: #ffffff;
+}
+
+.fso-left-column,
+.fso-right-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.fso-column-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 16px 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e2e8f0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ===================================================================
+   CONFIGURATION SECTIONS
+   ================================================================== */
+
+.fso-config-section {
+  margin: 15px 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.fso-config-section:hover {
+  border-color: #cbd5e1;
+}
+
+.fso-config-section summary {
+  padding: 12px 16px;
+  background: #f8fafc;
+  cursor: pointer;
+  font-weight: 500;
+  color: #334155;
+  user-select: none;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.fso-config-section summary:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.fso-config-section[open] summary {
+  border-bottom: 1px solid #e2e8f0;
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.fso-right-column .fso-config-section {
+  margin-bottom: 8px;
+}
+
+.fso-right-column .fso-config-section summary {
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.fso-right-column .fso-config-section[open] summary {
+  margin-bottom: 0;
+}
+
+/* ===================================================================
+   FORM ELEMENTS
+   ================================================================== */
+
+.fso-form-group {
+  margin-bottom: 15px;
+}
+
+.fso-form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #334155;
+  font-size: 13px;
+}
+
+.fso-config-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.fso-config-row:last-child {
+  margin-bottom: 0;
+}
+
+.fso-config-row label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #334155;
+  font-size: 13px;
+  letter-spacing: 0.2px;
+}
+
+.fso-config-row input,
+.fso-config-row select,
+.fso-config-row textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #94a3b8;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #f8fafc;
+  transition: all 0.2s ease;
+  color: #1e293b;
+}
+
+.fso-config-row input:hover,
+.fso-config-row select:hover,
+.fso-config-row textarea:hover {
+  border-color: #94a3b8;
+}
+
+.fso-config-row input:focus,
+.fso-config-row select:focus,
+.fso-config-row textarea:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
+}
+
+.fso-config-row textarea {
+  resize: vertical;
+  min-height: 60px;
+  font-family: inherit;
+}
+
+.fso-checkbox-label {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: #334155;
+  font-size: 13px;
+  margin-bottom: 0 !important;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.fso-checkbox-label:hover {
+  color: #1e293b;
+}
+
+.fso-checkbox-label input[type="checkbox"] {
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #0066cc;
+}
+
+/* ===================================================================
+   BUTTONS
+   ================================================================== */
+
+.fso-primary-btn {
+  background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0,102,204,0.25);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.3px;
+}
+
+.fso-primary-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,102,204,0.35);
+  background: linear-gradient(135deg, #0052a3 0%, #003d7a 100%);
+}
+
+.fso-primary-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0,102,204,0.25);
+}
+
+.fso-primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fso-secondary-btn {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #94a3b8;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fso-secondary-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.fso-secondary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fso-action-btn {
+  min-height: 32px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  padding: 4px 8px;
+  color: #64748b;
+}
+
+.fso-action-btn:hover {
+  background: #f8fafc;
+  border-color: #0066cc;
+  color: #0066cc;
+  transform: translateY(-1px);
+}
+
+.fso-compact-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #475569;
+  font-weight: 500;
+}
+
+.fso-compact-btn:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+/* ===================================================================
+   ADD ITEM BUTTONS
+   ================================================================== */
+
+.fso-add-buttons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.fso-add-item-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.fso-add-item-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+}
+
+.fso-add-item-btn:hover {
+  border-color: #0066cc;
+  background: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,102,204,0.15);
+  border-style: solid;
+}
+
+.fso-add-item-btn:hover::before {
+  opacity: 0.05;
+}
+
+.fso-add-item-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+  filter: grayscale(0.2);
+  transition: all 0.2s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.fso-add-item-btn:hover .fso-add-item-icon {
+  filter: grayscale(0);
+  transform: scale(1.1);
+}
+
+.fso-add-item-content {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.fso-add-item-title {
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+
+.fso-add-item-description {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* ===================================================================
+   PREMIUM NOTICES
+   ================================================================== */
+
+.fso-premium-notice {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 20px 0;
+  box-shadow: 0 2px 8px rgba(245,158,11,0.15);
+}
+
+.fso-premium-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fso-premium-icon {
+  color: #dc2626;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.fso-premium-text {
+  flex: 1;
+  color: #92400e;
+  font-weight: 500;
+}
+
+.fso-premium-link {
+  background: #dc2626;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.fso-premium-link:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(220,38,38,0.3);
+}
+
+/* ===================================================================
+   HELP TEXT AND HINTS
+   ================================================================== */
+
+.fso-help-text {
+  font-size: 12px;
+  color: #64748b;
+  font-style: italic;
+  margin-top: 4px;
+  display: block;
+  line-height: 1.4;
+}
+
+.fso-premium-hint {
+  font-size: 12px;
+  color: #64748b;
+  font-style: italic;
+  margin-top: 4px;
+  display: block;
+}
+
+.fso-active-indicator {
+  color: #10b981;
+  font-size: 12px;
+  margin-left: 4px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ===================================================================
+   STYLING GRIDS AND INPUTS
+   ================================================================== */
+
+.fso-styling-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 12px;
+}
+
+.fso-style-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fso-style-row.fso-full-width {
+  grid-column: 1 / -1;
+}
+
+.fso-style-row label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+}
+
+.fso-style-row input,
+.fso-style-row select {
+  padding: 6px 10px;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  font-size: 13px;
+  background: #f8fafc;
+}
+
+.fso-position-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 12px;
+}
+
+.fso-pos-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fso-pos-row label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+}
+
+.fso-input-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fso-input-suffix {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.fso-file-input-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.fso-file-input-group input {
+  flex: 1;
+}
+
+.fso-outline-options {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.fso-outline-options input {
+  width: auto !important;
+}
+
+/* ===================================================================
+   SCENE SELECTOR HEADER
+   ================================================================== */
+
+.fso-scene-selector-header {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.fso-scene-info h2 {
+  color: #1e293b;
+  margin: 0 0 4px 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.fso-current-scene {
+  color: #0066cc;
+  font-weight: 600;
+}
+
+.fso-scene-count,
+.fso-free-limitation {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.fso-scene-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.fso-scene-select {
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  color: #1e293b;
+  min-width: 180px;
+}
+
+/* ===================================================================
+   FOOTER AND ACTIONS
+   ================================================================== */
+
+.fso-quick-actions-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-top: 2px solid #e2e8f0;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  margin-top: 32px;
+  border-radius: 0 0 12px 12px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.fso-actions-left,
+.fso-actions-center,
+.fso-actions-right {
+  flex: 1;
+  min-width: 150px;
+}
+
+.fso-actions-center {
+  text-align: center;
+}
+
+.fso-actions-right {
+  text-align: right;
+}
+
+.fso-auto-save-status {
+  font-size: 13px;
+  color: #10b981;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.fso-auto-save-status i {
+  animation: saveRotate 2s ease-in-out infinite;
+}
+
+@keyframes saveRotate {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(180deg); }
+}
+
+.fso-footer-branding {
+  text-align: center;
+  padding: 16px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  margin-top: 8px;
+}
+
+.fso-footer-branding.fso-premium {
+  background: linear-gradient(135deg, #f0f9ff 0%, #faf5ff 100%);
+}
+
+.fso-branding-content {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.fso-premium-upgrade-link {
+  color: #dc2626;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.fso-premium-upgrade-link:hover {
+  text-decoration: underline;
+  color: #b91c1c;
+}
+
+/* ===================================================================
+   EMPTY STATES
+   ================================================================== */
+
+.fso-empty-scene-message {
+  text-align: center;
+  padding: 60px 20px;
+  color: #64748b;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  margin: 20px 0;
+  border: 2px dashed #e2e8f0;
+}
+
+.fso-empty-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  opacity: 0.3;
+  animation: emptyBounce 2s ease-in-out infinite;
+}
+
+@keyframes emptyBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.fso-empty-scene-message h3 {
+  margin: 0 0 8px 0;
+  color: #334155;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.fso-empty-scene-message p {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+/* ===================================================================
+   SEARCH AND FILTER BAR (Future Enhancement)
+   ================================================================== */
+
+.fso-search-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.fso-search-bar input[type="text"] {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.fso-search-bar select {
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  min-width: 150px;
+}
+
+/* ===================================================================
+   LOADING STATES
+   ================================================================== */
+
+.fso-loading {
+  opacity: 0.6;
+  pointer-events: none;
+  position: relative;
+}
+
+.fso-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #0066cc;
+  border-radius: 50%;
+  animation: loadingSpin 0.8s linear infinite;
+}
+
+@keyframes loadingSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===================================================================
+   CONTEXT MENU (Future Enhancement)
+   ================================================================== */
+
+.fso-context-menu {
+  position: fixed;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  padding: 4px;
+  z-index: 10000;
+  min-width: 160px;
+}
+
+.fso-context-menu .menu-item {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #334155;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.fso-context-menu .menu-item:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.fso-context-menu .menu-item.danger {
+  color: #dc2626;
+}
+
+.fso-context-menu .menu-item.danger:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.fso-context-menu hr {
+  margin: 4px 8px;
+  border: none;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* ===================================================================
+   DRAG AND DROP STYLES (Future Enhancement)
+   ================================================================== */
+
+.fso-sortable-ghost {
+  opacity: 0.4;
+  background: #f1f5f9;
+  border: 2px dashed #0066cc;
+}
+
+.fso-drag-handle {
+  cursor: move;
+  color: #94a3b8;
+  padding: 4px;
+  transition: color 0.2s ease;
+}
+
+.fso-drag-handle:hover {
+  color: #64748b;
+}
+
+/* ===================================================================
+   ACTION BUTTONS GRID FIX
+   ================================================================== */
+
+.fso-action-buttons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 4px;
+  max-width: 100%;
+}
+
+.fso-actions-col {
+  width: 200px;
+  min-width: 200px;
+}
+
+/* Coming soon text styling */
+.fso-coming-soon {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #999;
+}

@@ -1,15 +1,15 @@
 {
   "id": "foundrystreamoverlay",
   "title": "Foundry Stream Overlay",
-  "description": "Create stunning and dynamic green screen overlays for use with obs or other streaming software to show live data of your party!",
-  "version": "3.5.1",
+  "description": "Create stunning and dynamic green screen overlays for streaming with live character data, animations, and professional effects.",
+  "version": "4.0.0",
   "compatibility": {
     "minimum": "12",
     "verified": "13"
   },
   "esmodules": [
     "data-storage.js",
-    "foundrystreamoverlay.js"
+    "js/core/module-init.js"
   ],
   "styles": [
     "foundrystreamoverlay.css"
@@ -24,22 +24,12 @@
   ],
   "url": "https://github.com/darkjenso/FoundryStreamOverlay/",
   "manifest": "https://raw.githubusercontent.com/darkjenso/FoundryStreamOverlay/refs/heads/main/module.json",
-  "download": "https://github.com/darkjenso/FoundryStreamOverlay/releases/download/3.5.1/foundrystreamoverlay.zip",
-  "socket": true,
-  "relationships": {
-    "requires": [
-      {
-        "id": "socketlib",
-        "type": "module",
-        "manifest": "https://raw.githubusercontent.com/manuelVo/foundryvtt-socketlib/master/module.json",
-        "compatibility": {}
-      }
-    ]
-  },
+  "download": "https://github.com/darkjenso/FoundryStreamOverlay/releases/download/4.0.0/foundrystreamoverlay.zip",
+  "socket": false,
   "packs": [
     {
       "name": "macros",
-      "label": "Macros",
+      "label": "Example Macros",
       "path": "packs/macros",
       "type": "Macro",
       "ownership": {
@@ -47,5 +37,25 @@
         "ASSISTANT": "OWNER"
       }
     }
-  ]
+  ],
+  "media": [
+    {
+      "type": "icon",
+      "url": "https://raw.githubusercontent.com/darkjenso/FoundryStreamOverlay/main/assets/icon.png"
+    },
+    {
+      "type": "cover",
+      "url": "https://raw.githubusercontent.com/darkjenso/FoundryStreamOverlay/main/assets/cover.png"
+    }
+  ],
+  "authors": [
+    {
+      "name": "Jen",
+      "url": "https://www.patreon.com/c/jenzelta",
+      "discord": "jenzelta"
+    }
+  ],
+  "bugs": "https://github.com/darkjenso/FoundryStreamOverlay/issues",
+  "changelog": "https://github.com/darkjenso/FoundryStreamOverlay/blob/main/CHANGELOG.md",
+  "readme": "https://github.com/darkjenso/FoundryStreamOverlay/blob/main/README.md"
 }

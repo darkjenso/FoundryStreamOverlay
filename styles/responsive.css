@@ -1,0 +1,392 @@
+/* ===================================================================
+   RESPONSIVE DESIGN - Media queries and adaptive layouts
+   ================================================================== */
+
+/* ===================================================================
+   TABLET BREAKPOINT (1024px and below)
+   ================================================================== */
+
+@media (max-width: 1024px) {
+  /* Two-column layout becomes single column */
+  .fso-item-content-two-column {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  /* Reduce scene manager padding */
+  .fso-scene-manager {
+    padding: 15px;
+    max-width: 100%;
+  }
+  
+  /* Adjust add buttons grid */
+  .fso-add-buttons-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  
+  /* Smaller styling grid */
+  .fso-styling-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .fso-position-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===================================================================
+   MOBILE BREAKPOINT (768px and below)
+   ================================================================== */
+
+@media (max-width: 768px) {
+  /* Header adjustments */
+  .fso-item-header-compact {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    min-height: auto;
+    padding: 12px;
+  }
+  
+  .fso-item-actions-horizontal {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+  
+  .fso-action-btn-small {
+    flex: 1;
+    max-width: 60px;
+  }
+  
+  /* Scene table adjustments */
+  .fso-scenes-table {
+    font-size: 14px;
+  }
+
+  .fso-scenes-table th,
+  .fso-scenes-table td {
+    padding: 8px 12px;
+  }
+  
+  /* Action buttons become more compact */
+  .fso-action-buttons-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .fso-action-btn {
+    font-size: 10px;
+    padding: 2px 4px;
+  }
+  
+  /* Single column for add buttons */
+  .fso-add-buttons-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  /* Config row becomes vertical */
+  .fso-config-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  /* Footer becomes stacked */
+  .fso-quick-actions-footer {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+  
+  .fso-actions-left,
+  .fso-actions-center,
+  .fso-actions-right {
+    text-align: center;
+  }
+  
+  /* Adjust scene selector header */
+  .fso-scene-selector-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .fso-scene-controls {
+    width: 100%;
+  }
+  
+  .fso-scene-select {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  /* Smaller buttons on mobile */
+  .fso-primary-btn,
+  .fso-secondary-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+}
+
+/* ===================================================================
+   SMALL MOBILE BREAKPOINT (480px and below)
+   ================================================================== */
+
+@media (max-width: 480px) {
+  /* Even more compact spacing */
+  .fso-scene-manager {
+    padding: 10px;
+  }
+  
+  .fso-item-card {
+    margin-bottom: 12px;
+  }
+  
+  .fso-item-content-two-column {
+    padding: 12px;
+    gap: 12px;
+  }
+  
+  /* Smaller text inputs */
+  .fso-config-row input,
+  .fso-config-row select,
+  .fso-config-row textarea {
+    font-size: 12px;
+    padding: 5px 6px;
+  }
+  
+  /* Compact add item buttons */
+  .fso-add-item-btn {
+    padding: 12px;
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+  
+  .fso-add-item-icon {
+    font-size: 20px;
+  }
+  
+  .fso-add-item-title {
+    font-size: 13px;
+  }
+  
+  .fso-add-item-description {
+    font-size: 11px;
+  }
+}
+
+/* ===================================================================
+   DICE-SPECIFIC RESPONSIVE DESIGN
+   ================================================================== */
+
+@media (max-width: 768px) {
+  .dice-item {
+    font-size: 0.9em;
+  }
+  
+  .dice-item[data-dice-type="d20"] {
+    font-size: 1.1em;
+  }
+  
+  .modifier-element {
+    font-size: 0.8em;
+  }
+}
+
+/* ===================================================================
+   LARGE SCREEN OPTIMIZATIONS (1200px and above)
+   ================================================================== */
+
+@media (min-width: 1200px) {
+  /* Wider scene manager */
+  .fso-scene-manager {
+    max-width: 1000px;
+  }
+  
+  /* More columns for add buttons */
+  .fso-add-buttons-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  /* Better use of space in two-column layout */
+  .fso-item-content-two-column {
+    gap: 24px;
+  }
+  
+  /* Wider styling grids */
+  .fso-styling-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .fso-position-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ===================================================================
+   PRINT STYLES (for documentation/export)
+   ================================================================== */
+
+@media print {
+  .fso-item-actions-horizontal,
+  .fso-quick-actions-footer,
+  .fso-add-items-section,
+  .fso-premium-notice {
+    display: none !important;
+  }
+  
+  .fso-item-card {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+  
+  .fso-scene-manager {
+    padding: 0;
+  }
+}
+
+/* ===================================================================
+   HIGH DPI / RETINA DISPLAY OPTIMIZATIONS
+   ================================================================== */
+
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Sharper borders and shadows */
+  .fso-item-card {
+    border-width: 1px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  }
+  
+  .fso-primary-btn {
+    box-shadow: 0 1px 2px rgba(0,123,255,0.3);
+  }
+  
+  /* Crisper text rendering */
+  .fso-item-title,
+  .fso-column-title {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ===================================================================
+   DARK MODE SUPPORT (if user prefers dark)
+   ================================================================== */
+
+@media (prefers-color-scheme: dark) {
+  .fso-item-card {
+    background: #2d3748;
+    border-color: #4a5568;
+    color: #e2e8f0;
+  }
+  
+  .fso-item-header-compact {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+    color: #e2e8f0;
+  }
+
+  .fso-item-card.fso-hidden-item .fso-item-header-compact {
+    background: #7f1d1d;
+    color: #fee2e2;
+  }
+  
+  .fso-column-title {
+    color: #e2e8f0;
+    border-color: #4a5568;
+  }
+  
+  .fso-config-row input,
+  .fso-config-row select,
+  .fso-config-row textarea {
+    background: #374151;
+    border-color: #64748b;
+    color: #e2e8f0;
+  }
+
+  .fso-style-row input,
+  .fso-style-row select {
+    background: #374151;
+    border-color: #64748b;
+    color: #e2e8f0;
+  }
+  
+  .fso-scene-manager {
+    background: #1a202c;
+    color: #e2e8f0;
+  }
+  
+  .fso-scenes-table th {
+    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+    color: #e2e8f0;
+  }
+}
+
+/* ===================================================================
+   ACCESSIBILITY IMPROVEMENTS
+   ================================================================== */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .fso-item-card {
+    border-width: 2px;
+    border-color: #000;
+  }
+  
+  .fso-primary-btn {
+    background: #000;
+    color: #fff;
+  }
+  
+  .fso-secondary-btn {
+    background: #333;
+    border: 2px solid #000;
+  }
+  
+  .dice-item {
+    text-shadow: 3px 3px 6px rgba(0,0,0,1) !important;
+    filter: drop-shadow(0 0 10px rgba(255,255,255,0.6));
+  }
+  
+  .modifier-element {
+    text-shadow: 2px 2px 4px rgba(0,0,0,1) !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .fso-item-card,
+  .fso-primary-btn,
+  .fso-secondary-btn,
+  .fso-add-item-btn,
+  .fso-action-btn-small {
+    transition: none !important;
+  }
+  
+  .dice-item,
+  .dice-item *,
+  .modifier-element {
+    animation-duration: 0.3s !important;
+    animation-iteration-count: 1 !important;
+  }
+  
+  .dice-item.critical-hit,
+  .dice-item.critical-fumble,
+  .dice-item.final-flourish {
+    animation: none;
+    color: inherit !important;
+  }
+  
+  .dice-item.fading-out {
+    transition: opacity 1s ease !important;
+  }
+}
+
+/* Focus indicators for keyboard navigation */
+@media (prefers-reduced-motion: no-preference) {
+  .fso-primary-btn:focus,
+  .fso-secondary-btn:focus,
+  .fso-add-item-btn:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+  }
+}

@@ -1,0 +1,704 @@
+/* ===================================================================
+   DICE ROLL ANIMATIONS - Baldur's Gate 3 style and dice-specific styling
+   Enhanced with Flying Bonuses and Dramatic Final Flourishes
+   ================================================================== */
+
+/* ===================================================================
+   DICE ELEMENT BASE STYLES
+   ================================================================== */
+
+/* Special styling for dice elements */
+.dice-item {
+  font-weight: bold !important;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.8) !important;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
+  transition: all 0.3s ease !important;
+  z-index: 1100 !important; /* Higher than regular overlay items */
+  will-change: transform, opacity, color, text-shadow;
+}
+
+.dice-item.dice-stroked {
+  paint-order: stroke fill;
+  -webkit-text-stroke: 2px #000000;
+}
+
+/* Dice visibility states */
+.dice-item.hidden {
+  opacity: 0 !important;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.dice-item.visible {
+  opacity: 1 !important;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.dice-item.fading-out {
+  opacity: 0 !important;
+  transition: opacity 3s ease; /* 3 second fade out */
+}
+
+.dice-item.animating {
+  position: relative !important;
+  z-index: 1500 !important;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* ===================================================================
+   BALDUR'S GATE 3 STYLE ANIMATIONS
+   ================================================================== */
+
+/* Enhanced dice flip animation for rapid cycling */
+@keyframes diceFlipEnhanced {
+  0% { 
+    transform: translateX(-50%) scale(1) rotateY(0deg);
+    color: inherit;
+  }
+  25% { 
+    transform: translateX(-50%) scale(1.2) rotateY(90deg);
+    color: #ffdd44;
+  }
+  50% { 
+    transform: translateX(-50%) scale(1.1) rotateY(180deg);
+    color: #ffaa22;
+  }
+  75% { 
+    transform: translateX(-50%) scale(1.2) rotateY(270deg);
+    color: #ffdd44;
+  }
+  100% { 
+    transform: translateX(-50%) scale(1) rotateY(360deg);
+    color: inherit;
+  }
+}
+
+.dice-item.flipping {
+  animation: diceFlipEnhanced 0.8s ease-in-out;
+}
+
+/* Enhanced dice landing effect with more dramatic scaling */
+@keyframes diceLandingEnhanced {
+  0% { 
+    transform: translateX(-50%) scale(1);
+    color: inherit;
+    filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+  }
+  30% { 
+    transform: translateX(-50%) scale(1.4);
+    color: #ffdd44;
+    filter: drop-shadow(0 0 20px rgba(255,221,68,0.8));
+    text-shadow: 0 0 25px rgba(255,221,68,0.9);
+  }
+  60% {
+    transform: translateX(-50%) scale(1.2);
+    color: #ffaa22;
+    filter: drop-shadow(0 0 15px rgba(255,170,34,0.7));
+    text-shadow: 0 0 20px rgba(255,170,34,0.8);
+  }
+  100% { 
+    transform: translateX(-50%) scale(1);
+    color: inherit;
+    filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+  }
+}
+
+.dice-item.landing {
+  animation: diceLandingEnhanced 1s ease-out;
+}
+
+/* Enhanced critical hit effects */
+@keyframes criticalHitDice {
+  0%, 100% { 
+    transform: translateX(-50%) scale(1);
+    color: inherit;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+  }
+  20% { 
+    transform: translateX(-50%) scale(1.6);
+    color: #00ff00;
+    text-shadow: 0 0 30px rgba(0,255,0,1);
+  }
+  40% { 
+    transform: translateX(-50%) scale(1.4);
+    color: #44ff44;
+    text-shadow: 0 0 25px rgba(68,255,68,0.9);
+  }
+  60% { 
+    transform: translateX(-50%) scale(1.5);
+    color: #88ff88;
+    text-shadow: 0 0 20px rgba(136,255,136,0.8);
+  }
+  80% { 
+    transform: translateX(-50%) scale(1.3);
+    color: #aaffaa;
+    text-shadow: 0 0 15px rgba(170,255,170,0.7);
+  }
+}
+
+.dice-item.critical-hit {
+  animation: criticalHitDice 2s ease-out;
+}
+
+/* Enhanced critical fumble effects */
+@keyframes criticalFumbleDice {
+  0%, 100% { 
+    transform: translateX(-50%) scale(1);
+    color: inherit;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+  }
+  25% { 
+    transform: translateX(-50%) scale(0.8);
+    color: #ff0000;
+    text-shadow: 0 0 25px rgba(255,0,0,1);
+  }
+  50% { 
+    transform: translateX(-50%) scale(0.9);
+    color: #ff4444;
+    text-shadow: 0 0 20px rgba(255,68,68,0.9);
+  }
+  75% { 
+    transform: translateX(-50%) scale(0.85);
+    color: #ff6666;
+    text-shadow: 0 0 15px rgba(255,102,102,0.8);
+  }
+}
+
+.dice-item.critical-fumble {
+  animation: criticalFumbleDice 1.5s ease-out;
+}
+
+/* Final flourish animation */
+@keyframes finalFlourish {
+  0% { 
+    transform: translateX(-50%) scale(1);
+    color: inherit;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+  }
+  25% { 
+    transform: translateX(-50%) scale(1.3);
+    color: #ffffff;
+    text-shadow: 0 0 25px rgba(255,255,255,0.9);
+  }
+  50% { 
+    transform: translateX(-50%) scale(1.1);
+    color: #ffdd44;
+    text-shadow: 0 0 15px rgba(255,221,68,0.7);
+  }
+  100% { 
+    transform: translateX(-50%) scale(1);
+    color: inherit;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+  }
+}
+
+.dice-item.final-flourish {
+  animation: finalFlourish 0.6s ease-out;
+}
+
+/* ===================================================================
+   MODIFIER ANIMATIONS (Flying Bonuses)
+   ================================================================== */
+
+.modifier-element {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 1200 !important;
+  font-weight: bold;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.4));
+  font-size: 0.85em; /* Slightly smaller than main dice */
+  white-space: nowrap;
+  opacity: 0; /* Start invisible, let JS animation handle visibility */
+}
+
+/* Enhanced modifier crash effect when combining with main roll */
+@keyframes modifierCrashEnhanced {
+  0% { 
+    transform: translateX(-50%) scale(1);
+    color: inherit;
+  }
+  30% {
+    transform: translateX(-50%) scale(1.4);
+    color: #ffdd44;
+    text-shadow: 0 0 15px rgba(255,221,68,0.8);
+  }
+  60% {
+    transform: translateX(-50%) scale(1.1);
+    color: #ffaa22;
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+    color: inherit;
+  }
+}
+
+.dice-item.modifier-crash {
+  animation: modifierCrashEnhanced 0.7s ease-out;
+}
+
+/* Improved dice number styling during flying bonuses */
+.dice-item.animating .dice-number {
+  position: relative;
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+/* ===================================================================
+   BG3-STYLE FINAL FLOURISH ANIMATIONS
+   ================================================================== */
+
+/* Regular Final Flourish - Gold/yellow effect */
+@keyframes bg3FinalFlourish {
+  0% { 
+    transform: translateX(-50%) scale(1);
+    color: inherit;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
+  }
+  15% { 
+    transform: translateX(-50%) scale(1.6);
+    color: #ffd700;
+    text-shadow: 
+      0 0 20px #ffd700,
+      0 0 40px #ffaa00,
+      0 0 60px #ff8800,
+      2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 25px rgba(255,215,0,1));
+  }
+  30% { 
+    transform: translateX(-50%) scale(1.4);
+    color: #ffef94;
+    text-shadow: 
+      0 0 25px #ffd700,
+      0 0 50px #ffaa00,
+      0 0 75px #ff8800,
+      2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 30px rgba(255,215,0,0.9));
+  }
+  45% { 
+    transform: translateX(-50%) scale(1.7);
+    color: #fff;
+    text-shadow: 
+      0 0 30px #ffd700,
+      0 0 60px #ffaa00,
+      0 0 90px #ff8800,
+      0 0 120px #ffff00,
+      2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 35px rgba(255,255,255,0.8));
+  }
+  60% { 
+    transform: translateX(-50%) scale(1.5);
+    color: #ffd700;
+    text-shadow: 
+      0 0 25px #ffd700,
+      0 0 50px #ffaa00,
+      0 0 75px #ff8800,
+      2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 30px rgba(255,215,0,0.7));
+  }
+  80% { 
+    transform: translateX(-50%) scale(1.2);
+    color: #ffef94;
+    text-shadow: 
+      0 0 15px #ffd700,
+      0 0 30px #ffaa00,
+      2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 20px rgba(255,215,0,0.5));
+  }
+  100% { 
+    transform: translateX(-50%) scale(1);
+    color: #ffd700;
+    text-shadow: 
+      0 0 10px #ffd700,
+      0 0 20px #ffaa00,
+      2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 15px rgba(255,215,0,0.4));
+  }
+}
+
+.dice-item.final-flourish {
+  animation: bg3FinalFlourish 1.2s ease-out;
+  position: relative;
+}
+
+/* Regular sparkle effect overlay for normal rolls */
+.dice-item.final-flourish::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle at center,
+    rgba(255,215,0,0.3) 0%,
+    rgba(255,170,0,0.2) 30%,
+    transparent 60%
+  );
+  border-radius: 50%;
+  animation: sparkleGlow 1.2s ease-out;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@keyframes sparkleGlow {
+  0%, 100% { 
+    opacity: 0; 
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  50% { 
+    opacity: 1; 
+    transform: translate(-50%, -50%) scale(2);
+  }
+}
+
+/* Critical Hit Final Flourish - Extra dramatic green effect */
+@keyframes bg3CriticalFlourish {
+  0% { 
+    transform: translateX(-50%) scale(1);
+    color: inherit;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
+  }
+  10% { 
+    transform: translateX(-50%) scale(1.8);
+    color: #00ff00;
+    text-shadow: 
+      0 0 30px #00ff00,
+      0 0 60px #44ff44,
+      0 0 90px #88ff88,
+      2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 35px rgba(0,255,0,1));
+  }
+  25% { 
+    transform: translateX(-50%) scale(1.5);
+    color: #44ff44;
+    text-shadow: 
+      0 0 40px #00ff00,
+      0 0 80px #44ff44,
+      0 0 120px #88ff88,
+      2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 40px rgba(0,255,0,0.9));
+  }
+  40% { 
+    transform: translateX(-50%) scale(2.0);
+    color: #ffffff;
+    text-shadow: 
+      0 0 50px #00ff00,
+      0 0 100px #44ff44,
+      0 0 150px #88ff88,
+      0 0 200px #aaffaa,
+      2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 50px rgba(255,255,255,1));
+  }
+  60% { 
+    transform: translateX(-50%) scale(1.7);
+    color: #88ff88;
+    text-shadow: 
+      0 0 35px #00ff00,
+      0 0 70px #44ff44,
+      0 0 105px #88ff88,
+      2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 40px rgba(0,255,0,0.7));
+  }
+  80% { 
+    transform: translateX(-50%) scale(1.3);
+    color: #44ff44;
+    text-shadow: 
+      0 0 25px #00ff00,
+      0 0 50px #44ff44,
+      2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 30px rgba(0,255,0,0.5));
+  }
+  100% { 
+    transform: translateX(-50%) scale(1);
+    color: #00ff00;
+    text-shadow: 
+      0 0 15px #00ff00,
+      0 0 30px #44ff44,
+      2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 20px rgba(0,255,0,0.4));
+  }
+}
+
+.dice-item.critical-final-flourish {
+  animation: bg3CriticalFlourish 1.8s ease-out;
+  position: relative;
+}
+
+.dice-item.critical-final-flourish::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 120%;
+  height: 120%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle at center,
+    rgba(0,255,0,0.4) 0%,
+    rgba(68,255,68,0.3) 20%,
+    rgba(136,255,136,0.2) 40%,
+    transparent 70%
+  );
+  border-radius: 50%;
+  animation: criticalSparkle 1.8s ease-out;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@keyframes criticalSparkle {
+  0%, 100% { 
+    opacity: 0; 
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  50% { 
+    opacity: 1; 
+    transform: translate(-50%, -50%) scale(3);
+  }
+}
+
+/* Fumble Final Flourish - Dramatic red shrinking effect */
+@keyframes bg3FumbleFlourish {
+  0% { 
+    transform: translateX(-50%) scale(1);
+    color: inherit;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
+  }
+  20% { 
+    transform: translateX(-50%) scale(0.6);
+    color: #ff0000;
+    text-shadow: 
+      0 0 20px #ff0000,
+      0 0 40px #ff4444,
+      2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 25px rgba(255,0,0,0.8));
+  }
+  40% { 
+    transform: translateX(-50%) scale(0.8);
+    color: #ff4444;
+    text-shadow: 
+      0 0 15px #ff0000,
+      0 0 30px #ff4444,
+      2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 20px rgba(255,0,0,0.6));
+  }
+  60% { 
+    transform: translateX(-50%) scale(0.5);
+    color: #ff6666;
+    text-shadow: 
+      0 0 25px #ff0000,
+      0 0 50px #ff4444,
+      2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 30px rgba(255,0,0,0.7));
+  }
+  80% { 
+    transform: translateX(-50%) scale(0.9);
+    color: #ff4444;
+    text-shadow: 
+      0 0 10px #ff0000,
+      0 0 20px #ff4444,
+      2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 15px rgba(255,0,0,0.4));
+  }
+  100% { 
+    transform: translateX(-50%) scale(1);
+    color: #ff0000;
+    text-shadow: 
+      0 0 8px #ff0000,
+      2px 2px 4px rgba(0,0,0,0.8);
+    filter: drop-shadow(0 0 10px rgba(255,0,0,0.3));
+  }
+}
+
+.dice-item.fumble-final-flourish {
+  animation: bg3FumbleFlourish 1.5s ease-out;
+  position: relative;
+}
+
+.dice-item.fumble-final-flourish::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle at center,
+    rgba(255,0,0,0.3) 0%,
+    rgba(255,68,68,0.2) 30%,
+    transparent 60%
+  );
+  border-radius: 50%;
+  animation: fumbleGlow 1.5s ease-out;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@keyframes fumbleGlow {
+  0%, 100% { 
+    opacity: 0; 
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% { 
+    opacity: 0.8; 
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+}
+
+/* ===================================================================
+   SIMPLE ANIMATION STYLES (Alternative to Baldur's Gate)
+   ================================================================== */
+
+/* Simple scale animation for non-Baldur's Gate styles */
+@keyframes diceSimpleScale {
+  0% { 
+    transform: translateX(-50%) scale(1);
+  }
+  50% { 
+    transform: translateX(-50%) scale(1.3);
+  }
+  100% { 
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+.dice-item.simple-scale {
+  animation: diceSimpleScale 0.4s ease-out;
+}
+
+/* Flip style animation */
+@keyframes diceFlipStyle {
+  0% { 
+    transform: translateX(-50%) rotateY(0deg);
+  }
+  50% { 
+    transform: translateX(-50%) rotateY(180deg);
+  }
+  100% { 
+    transform: translateX(-50%) rotateY(360deg);
+  }
+}
+
+.dice-item.flip-style {
+  animation: diceFlipStyle 0.6s ease-in-out;
+}
+
+/* Legacy dice roll landing effect */
+@keyframes diceLanding {
+  0% { 
+    transform: translateX(-50%) scale(1);
+    color: inherit;
+    filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
+  }
+  30% { 
+    transform: translateX(-50%) scale(1.4);
+    color: #ffdd44;
+    filter: drop-shadow(0 0 16px rgba(255,221,68,0.8));
+  }
+  100% { 
+    transform: translateX(-50%) scale(1);
+    color: inherit;
+    filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
+  }
+}
+
+/* ===================================================================
+   DICE TYPE SPECIFIC STYLING
+   ================================================================== */
+
+.dice-item[data-dice-type="d20"] {
+  font-size: 1.2em;
+  font-weight: 900 !important;
+  filter: drop-shadow(0 0 12px rgba(255,255,255,0.4));
+}
+
+.dice-item[data-dice-type="d4"],
+.dice-item[data-dice-type="d6"] {
+  font-size: 0.9em;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.3));
+}
+
+.dice-item[data-dice-type="d100"] {
+  font-size: 1.1em;
+  letter-spacing: 1px;
+  filter: drop-shadow(0 0 10px rgba(255,255,255,0.35));
+}
+
+/* ===================================================================
+   WAITING AND INTERACTION STATES
+   ================================================================== */
+
+/* Pulse effect for dice waiting for animation */
+@keyframes dicePulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.dice-item.waiting {
+  animation: dicePulse 1s ease-in-out infinite;
+}
+
+/* ===================================================================
+   LEGACY DICE ANIMATIONS (For Backward Compatibility)
+   ================================================================== */
+
+/* Original dice flip animation */
+@keyframes diceFlip {
+  0% { transform: translateX(-50%) scale(1); }
+  25% { transform: translateX(-50%) scale(1.2) rotateY(90deg); }
+  50% { transform: translateX(-50%) scale(1.1) rotateY(180deg); }
+  75% { transform: translateX(-50%) scale(1.2) rotateY(270deg); }
+  100% { transform: translateX(-50%) scale(1) rotateY(360deg); }
+}
+
+/* Critical hit/fumble effects (legacy) */
+@keyframes criticalHit {
+  0%, 100% { 
+    transform: translateX(-50%) scale(1);
+    color: inherit;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+  }
+  25% { 
+    transform: translateX(-50%) scale(1.5);
+    color: #ff6b6b;
+    text-shadow: 0 0 20px rgba(255,107,107,0.8);
+  }
+  50% { 
+    transform: translateX(-50%) scale(1.3);
+    color: #ffd93d;
+    text-shadow: 0 0 20px rgba(255,217,61,0.8);
+  }
+  75% { 
+    transform: translateX(-50%) scale(1.4);
+    color: #6bcf7f;
+    text-shadow: 0 0 20px rgba(107,207,127,0.8);
+  }
+}
+
+@keyframes criticalFumble {
+  0%, 100% { 
+    transform: translateX(-50%) scale(1);
+    color: inherit;
+  }
+  50% { 
+    transform: translateX(-50%) scale(0.8);
+    color: #ff4757;
+    opacity: 0.7;
+  }
+}

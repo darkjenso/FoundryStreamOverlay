@@ -1,50 +1,172 @@
-<form>
-  <h2>Manage Layouts</h2>
-  <table style="width: 100%; text-align: left;">
-    <thead>
-      <tr>
-        <th>Layout Name</th>
-        <th>Used By</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{#each layouts}}
-      <tr>
-        <td>{{@key}}</td>
-        <td>
-          {{#if (lookup ../layoutUsage @key)}}
-            {{join (lookup ../layoutUsage @key) ", "}}
-          {{else}}
-            <em style="color:#666;">Not in use</em>
-          {{/if}}
-        </td>
-        <td>
-          <button type="button" class="rename-layout" data-layout="{{@key}}">Rename</button>
-          <button type="button" class="duplicate-layout" data-layout="{{@key}}">Duplicate</button>
-          {{#ifNotDefault @key}}
-            <button type="button" class="delete-layout" data-layout="{{@key}}">Delete</button>
-          {{/ifNotDefault}}
-          <button type="button" class="export-layout" data-layout="{{@key}}">Export</button>
-        </td>
-      </tr>
-      {{/each}}
-    </tbody>
-  </table>
-  <div style="margin-top:1em; text-align:center;">
-    <button type="button" class="create-new-layout">Create New Layout</button>
-    <button type="button" class="import-layout">Import Layout</button>
+<form class="fso-scene-manager">
+  <div class="fso-scene-manager-header">
+    <h2>Manage Scenes</h2>
+    <p class="fso-scene-manager-description">
+      Create and organize different overlay setups for various streaming scenarios
+    </p>
+  </div>
+
+  <div class="fso-scenes-list-container">
+    {{#if layouts}}
+    <table class="fso-scenes-table">
+      <thead>
+        <tr>
+          <th class="fso-scene-name-col">Scene Name</th>
+          <th class="fso-items-count-col">Items</th>
+          <th class="fso-usage-col">Used By</th>
+          <th class="fso-actions-col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each layouts}}
+        <tr class="fso-scene-row {{#ifEquals @key ../activeLayout}}active-scene{{/ifEquals}}">
+          <td class="fso-scene-name">
+            <div class="fso-scene-name-content">
+              <span class="fso-scene-title">{{@key}}</span>
+              {{#ifEquals @key ../activeLayout}}
+                <span class="fso-active-badge">Active</span>
+              {{/ifEquals}}
+              {{#ifEquals @key "Default"}}
+                <span class="fso-default-badge">Default</span>
+              {{/ifEquals}}
+            </div>
+          </td>
+          <td class="fso-items-count">
+            <span class="fso-count-badge">{{this.length}} items</span>
+          </td>
+          <td class="fso-usage-info">
+            {{#if (lookup ../layoutUsage @key)}}
+              <div class="fso-usage-tags">
+                {{#each (lookup ../layoutUsage @key)}}
+                  <span class="fso-usage-tag">{{this}}</span>
+                {{/each}}
+              </div>
+            {{else}}
+              <span class="fso-no-usage">Not in use</span>
+            {{/if}}
+          </td>
+          <td class="fso-scene-actions">
+            <div class="fso-action-buttons-grid">
+              <button type="button" class="fso-action-btn fso-edit-btn" data-layout="{{@key}}" title="Edit Scene">
+                ✏️ Edit
+              </button>
+              
+              <button type="button" class="fso-action-btn fso-rename-btn rename-layout" data-layout="{{@key}}" title="Rename Scene">
+                🏷️ Rename
+              </button>
+              
+              {{#if ../isPremium}}
+              <button type="button" class="fso-action-btn fso-duplicate-btn duplicate-layout" data-layout="{{@key}}" title="Duplicate Scene">
+                📋 Copy
+              </button>
+              {{/if}}
+              
+              <button type="button" class="fso-action-btn fso-export-btn export-layout" data-layout="{{@key}}" title="Export Scene">
+                📥 Export
+              </button>
+              
+              {{#ifNotDefault @key}}
+              <button type="button" class="fso-action-btn fso-delete-btn delete-layout" data-layout="{{@key}}" title="Delete Scene">
+                🗑️ Delete
+              </button>
+              {{/ifNotDefault}}
+            </div>
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+    {{else}}
+    <div class="fso-empty-scenes-message">
+      <div class="fso-empty-icon">🎬</div>
+      <h3>No scenes found</h3>
+      <p>Create your first scene to get started</p>
+    </div>
+    {{/if}}
+  </div>
+
+  <div class="fso-scene-actions-section">
+    <div class="fso-primary-actions">
+      {{#if isPremium}}
+      <button type="button" class="fso-primary-btn create-new-layout">
+        <i class="fas fa-plus"></i> Create New Scene
+      </button>
+      {{else}}
+      <button type="button" class="fso-primary-btn" disabled title="Premium feature">
+        <i class="fas fa-lock"></i> Create New Scene
+      </button>
+      {{/if}}
+      
+      <button type="button" class="fso-secondary-btn import-layout">
+        <i class="fas fa-upload"></i> Import Scene
+      </button>
+    </div>
+
+    {{#unless isPremium}}
+    <div class="fso-premium-limitation-notice">
+      <div class="fso-premium-notice">
+        <div class="fso-premium-content">
+          <i class="fso-premium-icon fas fa-gem"></i>
+          <div class="fso-premium-text">
+            <strong>Multiple Scenes</strong> allows you to create unlimited overlay setups for different streaming scenarios
+          </div>
+          <a href="https://www.patreon.com/c/jenzelta" target="_blank" class="fso-premium-link">
+            Support on Patreon
+          </a>
+        </div>
+      </div>
+    </div>
+    {{/unless}}
   </div>
   
-  {{#unless isPremium}}
-  <div style="margin-top:1.5em; padding-top:1em; border-top:1px solid #ddd; text-align:center; font-size:0.9em; color:#666;">
-    <div style="margin-bottom:0.5em;"><i class="fas fa-info-circle"></i> Multiple layouts are a premium feature</div>
-    <a href="https://www.patreon.com/c/jenzelta" target="_blank" style="display:inline-block; background-color:#FF424D; color:white; padding:0.3em 0.8em; border-radius:4px; text-decoration:none;">
-      <i class="fab fa-patreon"></i> Support on Patreon
-    </a>
-    <div style="margin-top:0.5em; font-size:0.8em;">
-      Get unlimited layouts, animations, and more with premium features!
-    </div>
-  </div>
-  {{/unless}}
+  <style>
+    /* Fixed action buttons layout */
+    .fso-action-buttons-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      gap: 4px;
+      max-width: 100%;
+    }
+    
+    .fso-action-btn {
+      min-height: 32px;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      transition: all 0.2s ease;
+      padding: 4px 6px;
+      line-height: 1.2;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    
+    .fso-action-btn:hover {
+      background: #f0f0f0;
+      border-color: #007bff;
+      transform: translateY(-1px);
+    }
+    
+    .fso-actions-col {
+      width: 200px;
+      min-width: 200px;
+    }
+    
+    /* Make action buttons more compact on smaller screens */
+    @media (max-width: 768px) {
+      .fso-action-buttons-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .fso-action-btn {
+        font-size: 10px;
+        padding: 2px 4px;
+      }
+    }
+  </style>
 </form>
