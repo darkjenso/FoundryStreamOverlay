@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 All notable changes to **Foundry Stream Overlay** will be documented here.  
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.0] – 25 July 2025
+
+-Added new premium verification method as patreons were having issues, as such older codes will not work, go into our discord if you no longer support on patreon
+
 ## [4.0.0] – 24 July 2025
 
 ###  Breaking
