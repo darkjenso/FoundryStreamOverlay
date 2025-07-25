@@ -2,7 +2,7 @@
   "id": "foundrystreamoverlay",
   "title": "Foundry Stream Overlay",
   "description": "Create stunning and dynamic green screen overlays for streaming with live character data, animations, and professional effects.",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "compatibility": {
     "minimum": "12",
     "verified": "13"
