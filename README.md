@@ -2,8 +2,6 @@
 
 Create stunning, dynamic green‑screen overlays from your Foundry VTT game and drop them straight into OBS (or any broadcast software). Show live stats, dice rolls, animations and more—no browser-source fiddling each session.
 
-![Overlay demo](https://i.imgur.com/aonls1x.jpeg)
-
 ## Main New Features in 4.0
 
 - **Modular codebase**: Massive refactor into `js/core`, `js/ui`, and `js/overlay`, delivering faster load and reaction times.  
@@ -30,8 +28,6 @@ Create stunning, dynamic green‑screen overlays from your Foundry VTT game and
 2. **Create/Load a Layout**: add HP bars, portraits, status effects, dice results, etc. Duplicate items with the new button to speed builds.  
 3. **Add Animations (Premium)**: use the Animation Manager to define entrance/loop animations.  
 4. **Save/Export** your setup to a JSON file for backup.
-
-   ![config tool](https://i.imgur.com/7Z4W8oL.png)
 
 ## Features
 

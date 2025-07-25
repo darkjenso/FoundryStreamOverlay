@@ -1,9 +1,9 @@
-// Updated module initialization with template helpers and optimizations
+// Updated module initialization with V2 premium monitoring
 import { StandaloneBridge } from '../utils/standalone-bridge.js';
 import { MODULE_ID } from './constants.js';
 import { registerSettings, registerMenus } from './settings.js';
 import { registerHooks } from './hooks.js';
-import { syncPremiumStatus } from '../premium/validation.js';
+import { syncPremiumStatus, initializePremiumMonitoring } from '../premium/validation.js';
 import { liveSync } from '../utils/live-sync.js';
 import { registerTemplateHelpers } from '../utils/template-helpers.js';
 
@@ -73,7 +73,6 @@ Hooks.once("init", () => {
     }
   });
 
-
   Handlebars.registerHelper("terminology", function(layoutTerm, sceneTerm) {
     return sceneTerm;
   });
@@ -87,8 +86,7 @@ Hooks.once("init", () => {
   
 });
 
-
-// Initialize when Foundry is ready - FIXED VERSION
+// Initialize when Foundry is ready - ENHANCED WITH V2 PREMIUM MONITORING
 Hooks.once("ready", async () => {
   
   // Initialize data storage FIRST and wait for completion
@@ -100,6 +98,9 @@ Hooks.once("ready", async () => {
   
   // Sync premium status AFTER OverlayData is fully initialized
   await syncPremiumStatus();
+  
+  // NEW: Initialize premium monitoring for V2 API
+  initializePremiumMonitoring();
   
   // Setup global window references for backward compatibility
   await setupGlobalReferences();
@@ -118,11 +119,17 @@ Hooks.once("ready", async () => {
 
   // OPTIMIZED: Show migration notice for world-scoped settings
   if (game.user.isGM && !sessionStorage.getItem(`${MODULE_ID}-scope-notified`)) {
-
-      ui.notifications.info("Foundry Stream Overlay: Scenes are now shared across all users in this world!");
     ui.notifications.info("Foundry Stream Overlay: Scenes are now shared across all users in this world!");
-
     sessionStorage.setItem(`${MODULE_ID}-scope-notified`, "true");
+  }
+  
+  // NEW: Show V2 upgrade notice for premium users
+  const currentKey = game.settings.get(MODULE_ID, "activationKey") || "";
+  if (currentKey && !sessionStorage.getItem(`${MODULE_ID}-v2-notified`)) {
+    setTimeout(() => {
+      ui.notifications.info("🚀 V2 authentication system is now available! Your existing premium key will work with improved validation.");
+    }, 2000);
+    sessionStorage.setItem(`${MODULE_ID}-v2-notified`, "true");
   }
   
 });
@@ -196,6 +203,7 @@ async function ensureMinimalConfiguration(OverlayData) {
     if (needsMinimalSetup) {
       await OverlayData.save();
     } else {
+      console.log(`${MODULE_ID} | Configuration already complete`);
     }
     
   } catch (error) {
@@ -241,6 +249,22 @@ async function setupGlobalReferences() {
         const { getFontData } = await import('../utils/template-helpers.js');
         return getFontData();
       }
+    },
+    
+    // NEW: V2 Premium API
+    premium: {
+      validateKey: async (key) => {
+        const { validateActivationKey } = await import('../premium/validation.js');
+        return await validateActivationKey(key, true);
+      },
+      getStatus: async () => {
+        const { getPremiumStatusDetails } = await import('../premium/validation.js');
+        return await getPremiumStatusDetails();
+      },
+      checkExpiration: async (key) => {
+        const { checkKeyExpiration } = await import('../premium/validation.js');
+        return await checkKeyExpiration(key);
+      }
     }
   };
 
@@ -254,5 +278,4 @@ async function setupGlobalReferences() {
   window.PremiumStatusDialog = PremiumStatusDialog;
   window.openOverlayWindow = openOverlayWindow;
   window.updateOverlayWindow = updateOverlayWindow;
-
 }

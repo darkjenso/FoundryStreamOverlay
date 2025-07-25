@@ -1,46 +1,269 @@
-<div class="premium-status">
-    <h2>Premium Status</h2>
+<div class="premium-status" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    
+    <!-- V2 System Notice -->
+    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%); border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 8px; color: #92400e; font-weight: 600; font-size: 16px; margin-bottom: 8px;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>Important: Authentication System Updated</span>
+        </div>
+        <p style="margin: 0 0 12px 0; font-size: 14px; color: #92400e; line-height: 1.5;">
+            We've upgraded to a new secure V2 authentication system. <strong>Old activation keys from the previous system are no longer valid.</strong>
+        </p>
+        <div style="background: rgba(146, 64, 14, 0.1); border-radius: 6px; padding: 12px; margin-top: 12px;">
+            <h4 style="margin: 0 0 8px 0; color: #92400e; font-size: 14px; font-weight: 600;">
+                <i class="fas fa-history"></i> Had a working key before?
+            </h4>
+            <p style="margin: 0 0 12px 0; color: #92400e; font-size: 13px; line-height: 1.5;">
+                If you previously had premium features but are no longer actively supporting on Patreon, we understand! 
+                Please join our Discord community and let us know your situation - we're happy to help.
+            </p>
+            <a href="https://discord.gg/ny3gVajzwn" target="_blank" 
+               style="display: inline-block; background: #5865F2; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 13px;">
+                <i class="fab fa-discord"></i> Join Discord Community
+            </a>
+        </div>
+    </div>
+
+    <h2 style="margin: 0 0 20px 0; color: #1e293b; font-size: 24px; font-weight: 700;">Premium Status</h2>
     
     {{#if isPremium}}
-      <div class="premium-active">
-        <i class="fas fa-check-circle" style="color: #4CAF50;"></i>
-        <span>Premium features activated!</span>
+      <div class="premium-active" style="background: linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%); border: 1px solid #10b981; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+            <i class="fas fa-check-circle" style="color: #10b981; font-size: 20px;"></i>
+            <span style="color: #065f46; font-weight: 600; font-size: 16px;">V2 Premium Features Activated!</span>
+        </div>
+        
+        {{#if premiumDetails.statusMessage}}
+        <p style="margin: 0; color: #065f46; font-size: 14px;">
+            {{premiumDetails.statusMessage}}
+        </p>
+        {{/if}}
+        
+        {{#if premiumDetails.expirationStatus.isExpiringSoon}}
+        <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px; margin-top: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px; color: #92400e;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span style="font-weight: 600;">Expiring Soon</span>
+            </div>
+            <p style="margin: 4px 0 0 0; color: #92400e; font-size: 13px;">
+                Your subscription expires in {{premiumDetails.expirationStatus.daysUntilExpiry}} day(s). 
+                <a href="https://www.patreon.com/c/jenzelta" target="_blank" style="color: #dc2626; text-decoration: underline;">
+                    Renew on Patreon
+                </a>
+            </p>
+        </div>
+        {{/if}}
       </div>
-      <p>Thank you for supporting Foundry Stream Overlay on Patreon.</p>
+      
+      <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+        <h4 style="margin: 0 0 12px 0; color: #334155; font-size: 14px; font-weight: 600;">Your Premium Features:</h4>
+        <ul style="margin: 0; padding-left: 20px; color: #475569; font-size: 13px; line-height: 1.6;">
+            <li>✨ All animations and entrance effects</li>
+            <li>🎬 Multiple scenes/layouts management</li>
+            <li>🎠 Slideshow functionality with transitions</li>
+            <li>🖥️ Multiple overlay windows</li>
+            <li>🎯 No promotional footer in overlays</li>
+            <li>⚡ Priority support and updates</li>
+        </ul>
+      </div>
+      
     {{else}}
-      <div class="premium-inactive">
-        <i class="fas fa-times-circle" style="color: #FF424D;"></i>
-        <span>Free version - Premium features locked</span>
+      <div class="premium-inactive" style="background: linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%); border: 1px solid #ef4444; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+            <i class="fas fa-times-circle" style="color: #ef4444; font-size: 20px;"></i>
+            <span style="color: #991b1b; font-weight: 600; font-size: 16px;">Free Version - Premium Features Locked</span>
+        </div>
+        <p style="margin: 0; color: #991b1b; font-size: 14px;">
+            Get a V2 activation key to unlock premium features!
+        </p>
       </div>
-      <p>Activate premium features to unlock more features! You only need to subscribe once for a key! Get:</p>
-      <ul>
-        <li>All animations and entrance effects</li>
-        <li>Multiple layouts management</li>
-        <li>Slideshow functionality</li>
-        <li>No promotional footer in overlay</li>
-      </ul>
-      <div class="premium-action">
-        <a href="https://www.patreon.com/c/jenzelta" target="_blank" class="patreon-button">
-          Support on Patreon
-        </a>
-        <p>Supporting at the £5/month tier or higher grants access to premium features.</p>
+      
+      <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+        <h4 style="margin: 0 0 12px 0; color: #334155; font-size: 14px; font-weight: 600;">Unlock Premium Features:</h4>
+        <ul style="margin: 0 0 16px 0; padding-left: 20px; color: #475569; font-size: 13px; line-height: 1.6;">
+            <li>🎨 Advanced animations and entrance effects</li>
+            <li>📋 Multiple scenes/layouts for different situations</li>
+            <li>🎠 Automatic slideshow with smooth transitions</li>
+            <li>🖥️ Multiple overlay windows for complex setups</li>
+            <li>🎯 Clean overlays without promotional footer</li>
+            <li>⚡ Priority support and early access to new features</li>
+        </ul>
+        
+        <div style="text-align: center;">
+            <a href="https://www.patreon.com/c/jenzelta" target="_blank" 
+               style="display: inline-block; background: linear-gradient(135deg, #FF424D 0%, #C53030 100%); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; box-shadow: 0 4px 12px rgba(255,66,77,0.3);">
+                <i class="fab fa-patreon"></i> Support on Patreon
+            </a>
+        </div>
+        <p style="margin: 12px 0 0 0; text-align: center; font-size: 12px; color: #64748b;">
+            Supporting at the "All Current Content" tier (£5+) grants access to premium features
+        </p>
       </div>
     {{/if}}
     
-    <div class="activation-key">
-      <label for="activation-key-input">Activation Key:</label>
-      <input type="text" id="activation-key-input" value="{{activationKey}}" placeholder="Enter your activation key">
-      <button type="button" id="activate-key-button">Activate</button>
+    <!-- IMPROVED: V2 Activation Key Section with Full-Width Protected Input -->
+    <div class="activation-key" style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <label for="activation-key-input" style="font-weight: 600; color: #334155; font-size: 14px;">
+                V2 Activation Key:
+            </label>
+            <span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">
+                Secure Database
+            </span>
+        </div>
+        
+        <!-- IMPROVED: Full-width input with password protection and toggle button -->
+        <div style="position: relative; margin-bottom: 12px;">
+            <input type="password" 
+                   id="activation-key-input" 
+                   value="{{activationKey}}" 
+                   placeholder="Enter your 16-character V2 activation key"
+                   style="width: 100%; padding: 12px 50px 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-family: 'SF Mono', 'Monaco', 'Courier New', monospace; letter-spacing: 1px; box-sizing: border-box;">
+            
+            <!-- Toggle visibility button -->
+            <button type="button" 
+                    id="toggle-key-visibility"
+                    style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #64748b; cursor: pointer; padding: 8px; border-radius: 4px; transition: all 0.2s ease;"
+                    title="Show/Hide activation key">
+                <i class="fas fa-eye" id="visibility-icon"></i>
+            </button>
+        </div>
+        
+        <!-- Validate button (full width) -->
+        <button type="button" 
+                id="activate-key-button"
+                style="width: 100%; padding: 12px 16px; background: #0066cc; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; font-size: 14px;">
+            <i class="fas fa-key"></i> Validate Key
+        </button>
+        
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px;">
+            {{#if isPremium}}
+            <button type="button" 
+                    id="check-expiration-button"
+                    style="padding: 6px 12px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                Check Expiration
+            </button>
+            {{/if}}
+            
+
+            
+            {{#if activationKey}}
+            <button type="button" 
+                    id="clear-key-button"
+                    style="padding: 6px 12px; background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                Clear Key
+            </button>
+            {{/if}}
+        </div>
     </div>
   
-    <div class="patreon-member-link">
-      <h3>Already a Patreon Member?</h3>
-      <p>If you've already supported the project, 
-        <a href="https://cool-puffpuff-4ee93b.netlify.app" 
-           target="_blank" 
-           style="color: #FF424D; text-decoration: underline;">
-          click here to get your activation key!
-        </a>
-      </p>
+    <!-- Get V2 Key Section -->
+    <div class="patreon-member-link" style="background: linear-gradient(135deg, #f0f9ff 0%, #faf5ff 100%); border-radius: 8px; padding: 16px; margin-top: 16px;">
+        <h3 style="margin: 0 0 8px 0; color: #1e293b; font-size: 16px; font-weight: 600;">
+            <i class="fas fa-key"></i> Get Your V2 Activation Key
+        </h3>
+        <p style="margin: 0 0 12px 0; color: #475569; font-size: 14px; line-height: 1.5;">
+            All premium keys are now issued through our secure V2 authentication system. Connect your Patreon account to get your activation key:
+        </p>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" 
+                    id="open-v2-auth"
+                    style="display: inline-block; background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%); color: white; padding: 10px 16px; border: none; border-radius: 6px; text-decoration: none; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                <i class="fas fa-external-link-alt"></i> Get V2 Activation Key
+            </button>
+            <a href="https://www.patreon.com/c/jenzelta" target="_blank"
+               style="display: inline-block; background: #FF424D; color: white; padding: 10px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; transition: all 0.2s ease;">
+                <i class="fab fa-patreon"></i> Support on Patreon
+            </a>
+        </div>
+        <p style="margin: 12px 0 0 0; font-size: 12px; color: #64748b;">
+            You'll need to be an active "All Current Content" tier supporter to receive a V2 key
+        </p>
     </div>
-  </div>
+
+    <!-- Migration & Discord Help Section -->
+    <div style="background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%); border: 1px solid #0369a1; border-radius: 8px; padding: 16px; margin-top: 16px;">
+        <h4 style="margin: 0 0 8px 0; color: #0c4a6e; font-size: 14px; font-weight: 600;">
+            <i class="fab fa-discord"></i> Need Help with the Transition?
+        </h4>
+        <p style="margin: 0 0 12px 0; color: #0c4a6e; font-size: 13px; line-height: 1.5;">
+            If you're having trouble with the new system, had premium before but can't get it now, or have any questions about the V2 upgrade, our community is here to help!
+        </p>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <a href="https://discord.gg/ny3gVajzwn" target="_blank" 
+               style="display: inline-block; background: #5865F2; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 13px;">
+                <i class="fab fa-discord"></i> Join Discord & Get Help
+            </a>
+            <span style="color: #0369a1; font-size: 12px;">We're friendly and responsive!</span>
+        </div>
+    </div>
+
+    <!-- V2 Technical Details -->
+    <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: 20px;">
+        <h4 style="margin: 0 0 8px 0; color: #334155; font-size: 14px; font-weight: 600;">
+            🔒 V2 Security & Features:
+        </h4>
+        <ul style="margin: 0; padding-left: 20px; color: #64748b; font-size: 12px; line-height: 1.5;">
+            <li><strong>Secure database validation</strong> - Keys are tied to your Patreon account</li>
+            <li><strong>Real-time verification</strong> - Automatic subscription status checking</li>
+            <li><strong>Anti-fraud protection</strong> - Prevents key sharing and unauthorized use</li>
+            <li><strong>Expiration handling</strong> - Subscription keys automatically expire when support ends</li>
+            <li><strong>Better reliability</strong> - No more "lost" premium status issues</li>
+            <li><strong>Enhanced support</strong> - We can better help with premium-related issues</li>
+        </ul>
+    </div>
+
+    <!-- Legacy Note -->
+    <div style="border-top: 1px solid #e2e8f0; padding-top: 12px; margin-top: 16px;">
+        <p style="margin: 0; font-size: 11px; color: #9ca3af; font-style: italic; text-align: center;">
+            ⚠️ Legacy V1 activation keys are permanently retired as of this update. All users must migrate to V2 authentication for continued premium access.
+        </p>
+    </div>
+</div>
+
+<style>
+.premium-status button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.premium-status input:focus {
+    outline: none;
+    border-color: #0066cc;
+    box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
+}
+
+.premium-status a:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* Toggle button hover effect */
+#toggle-key-visibility:hover {
+    background-color: #f1f5f9;
+    color: #334155;
+}
+
+/* Focus states for accessibility */
+#toggle-key-visibility:focus {
+    outline: 2px solid #0066cc;
+    outline-offset: 2px;
+}
+
+/* Full-width responsive input */
+#activation-key-input {
+    min-width: 0;
+}
+
+/* Ensure proper spacing on smaller screens */
+@media (max-width: 480px) {
+    .activation-key {
+        padding: 12px !important;
+    }
+    
+    #activation-key-input {
+        font-size: 13px !important;
+        padding: 10px 45px 10px 12px !important;
+    }
+}
+</style>

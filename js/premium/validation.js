@@ -1,15 +1,16 @@
-// Premium validation and feature management - DEBLOATED VERSION
+// Premium validation and feature management - V2 API ONLY (No V1 Fallback)
 import { MODULE_ID } from '../core/constants.js';
 
 /**
- * Validates a premium activation key
+ * Validates a premium activation key ONLY against the V2 API
  * @param {string} key - The activation key to validate
  * @param {boolean} showNotification - Whether to show success/error notifications (default: true)
- * @returns {boolean} - Whether the key is valid
+ * @returns {Promise<boolean>} - Whether the key is valid
  */
-export function validateActivationKey(key, showNotification = true) {
+export async function validateActivationKey(key, showNotification = true) {
   console.log(`${MODULE_ID} | Validating activation key: ${key.substring(0, 4)}...`);
   
+  // First check basic format
   if (!key || key.length !== 16 || !/^[A-F0-9]{16}$/.test(key)) {
     if (key !== "" && showNotification) {
       ui.notifications.error("Invalid activation key format.");
@@ -22,38 +23,175 @@ export function validateActivationKey(key, showNotification = true) {
     
     return false;
   }
+
+  // ONLY use V2 API validation - NO FALLBACK
+  const apiResult = await validateKeyWithV2API(key);
   
-  let sum = 0;
-  for (let i = 0; i < 15; i++) {
-    const charCode = parseInt(key[i], 16);
-    sum = (sum + charCode) % 16;
+  if (apiResult.success) {
+    console.log(`${MODULE_ID} | V2 API validation: ${apiResult.valid ? "VALID" : "INVALID"}`);
+    
+    // Set premium status consistently in BOTH places
+    game.settings.set(MODULE_ID, "isPremium", apiResult.valid);
+    updateOverlayDataPremiumStatus(apiResult.valid);
+    
+    if (apiResult.valid && showNotification) {
+      ui.notifications.info("Premium features activated!");
+      
+      // Show additional info from V2 API
+      if (apiResult.data && apiResult.data.key_type) {
+        console.log(`${MODULE_ID} | Key type: ${apiResult.data.key_type}, Product: ${apiResult.data.product}`);
+        
+        if (apiResult.data.key_type === 'permanent') {
+          ui.notifications.info("Permanent premium license activated!");
+        } else if (apiResult.data.key_type === 'subscription') {
+          const expiresAt = apiResult.data.expires_at ? new Date(apiResult.data.expires_at).toLocaleDateString() : 'Unknown';
+          ui.notifications.info(`Subscription premium active until ${expiresAt}`);
+        }
+      }
+      
+      // Refresh relevant UI components
+      refreshPremiumUI();
+      updateAllOverlayWindows();
+    } else if (!apiResult.valid && showNotification) {
+      // Show specific error message from API
+      const errorMsg = apiResult.error || "Invalid activation key.";
+      ui.notifications.error(errorMsg);
+    }
+    
+    return apiResult.valid;
+  } else {
+    // V2 API failed - NO FALLBACK, just fail
+    console.error(`${MODULE_ID} | V2 API validation failed, no fallback available`);
+    
+    if (showNotification) {
+      ui.notifications.error("Unable to validate key. Please check your internet connection and try again.");
+    }
+    
+    // Set premium status to false
+    game.settings.set(MODULE_ID, "isPremium", false);
+    updateOverlayDataPremiumStatus(false);
+    
+    return false;
+  }
+}
+
+/**
+ * Validates a key against the V2 API
+ * @param {string} key - The activation key
+ * @returns {Promise<Object>} - API response object
+ */
+async function validateKeyWithV2API(key) {
+  try {
+    // Always use foundry_module for this module - keys are permanent, never expire
+    const product = 'foundry_module';
+    
+    const response = await fetch('https://cool-puffpuff-4ee93b.netlify.app/.netlify/functions/validate-key', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        key: key,
+        product: product
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    
+    return {
+      success: true,
+      valid: result.valid || false,
+      data: result.valid ? result : null,
+      error: result.error || null
+    };
+    
+  } catch (error) {
+    console.warn(`${MODULE_ID} | V2 API validation failed:`, error);
+    return {
+      success: false,
+      valid: false,
+      error: `API Error: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Check if a key has expired (only relevant for non-Foundry products)
+ * Note: Foundry module keys are permanent and never expire
+ * @param {string} key - The activation key to check
+ * @returns {Promise<Object>} - Expiration status
+ */
+export async function checkKeyExpiration(key) {
+  const apiResult = await validateKeyWithV2API(key);
+  
+  if (apiResult.success && apiResult.valid && apiResult.data) {
+    const keyData = apiResult.data;
+    
+    // Foundry module keys are always permanent - skip expiration checking
+    if (keyData.product === 'foundry_module') {
+      return {
+        isSubscription: false,
+        isPermanent: true,
+        isFoundryModule: true,
+        message: "Foundry module keys are permanent and never expire"
+      };
+    }
+    
+    // Only check expiration for other products (like standalone app)
+    if (keyData.key_type === 'subscription' && keyData.expires_at) {
+      const expiresAt = new Date(keyData.expires_at);
+      const now = new Date();
+      const daysUntilExpiry = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
+      
+      return {
+        isSubscription: true,
+        expiresAt: expiresAt,
+        daysUntilExpiry: daysUntilExpiry,
+        isExpired: expiresAt < now,
+        isExpiringSoon: daysUntilExpiry <= 7 && daysUntilExpiry > 0
+      };
+    } else if (keyData.key_type === 'permanent') {
+      return {
+        isSubscription: false,
+        isPermanent: true
+      };
+    }
   }
   
-  const expectedChecksum = sum.toString(16).toUpperCase();
-  const lastChar = key[15];
+  return {
+    isSubscription: false,
+    isPermanent: false,
+    checkFailed: true
+  };
+}
+
+/**
+ * Periodic check for subscription key expiration (run every hour)
+ */
+export async function scheduleExpirationCheck() {
+  const currentKey = game.settings.get(MODULE_ID, "activationKey") || "";
   
-  const isValid = lastChar === expectedChecksum;
-  
-  console.log(`${MODULE_ID} | Key validation result: ${isValid ? "VALID" : "INVALID"}`);
-  
-  // Set premium status consistently in BOTH places
-  game.settings.set(MODULE_ID, "isPremium", isValid);
-  updateOverlayDataPremiumStatus(isValid);
-  
-  if (isValid && showNotification) {
-    // Only show notification when user actively enters a key, not during sync
-    ui.notifications.info("Premium features activated!");
+  if (currentKey && isPremiumActive()) {
+    const expirationStatus = await checkKeyExpiration(currentKey);
     
-    // Refresh relevant UI components
-    refreshPremiumUI();
-    
-    // Update all overlay windows
-    updateAllOverlayWindows();
-  } else if (!isValid && showNotification) {
-    ui.notifications.error("Invalid activation key.");
+    if (expirationStatus.isExpiringSoon) {
+      ui.notifications.warn(
+        `Your premium subscription expires in ${expirationStatus.daysUntilExpiry} day(s). 
+         Renew your Patreon subscription to continue using premium features.`
+      );
+    } else if (expirationStatus.isExpired) {
+      ui.notifications.error("Your premium subscription has expired. Premium features have been disabled.");
+      
+      // Disable premium features
+      game.settings.set(MODULE_ID, "isPremium", false);
+      updateOverlayDataPremiumStatus(false);
+      refreshPremiumUI();
+    }
   }
-  
-  return isValid;
 }
 
 /**
@@ -101,6 +239,79 @@ export function isPremiumActive() {
   }
   
   return settingValue;
+}
+
+/**
+ * Get detailed premium status information
+ * @returns {Promise<Object>} - Detailed premium status
+ */
+export async function getPremiumStatusDetails() {
+  const currentKey = game.settings.get(MODULE_ID, "activationKey") || "";
+  const isPremium = isPremiumActive();
+  
+  if (!currentKey || !isPremium) {
+    return {
+      isPremium: false,
+      keyPresent: !!currentKey,
+      statusMessage: "Premium features not activated"
+    };
+  }
+  
+  const expirationStatus = await checkKeyExpiration(currentKey);
+  
+  return {
+    isPremium: true,
+    keyPresent: true,
+    keyType: expirationStatus.isPermanent ? 'permanent' : 'subscription',
+    expirationStatus: expirationStatus,
+    statusMessage: expirationStatus.isPermanent ? 
+      "Permanent premium license active" : 
+      `Subscription active (expires ${expirationStatus.expiresAt?.toLocaleDateString() || 'unknown'})`
+  };
+}
+
+/**
+ * Synchronizes premium status between game settings and OverlayData
+ * Enhanced with V2 API validation
+ */
+export async function syncPremiumStatus() {
+  try {
+    const OverlayData = (await import('../../data-storage.js')).default;
+    
+    const storedKey = OverlayData.getSetting("activationKey") || "";
+    const gameSettingsKey = game.settings.get(MODULE_ID, "activationKey") || "";
+    
+    // If there's a key in either system, validate it silently
+    if (storedKey || gameSettingsKey) {
+      const keyToUse = storedKey || gameSettingsKey;
+      
+      // Make sure both systems have the same key
+      if (storedKey !== gameSettingsKey) {
+        console.log(`${MODULE_ID} | Synchronizing activation keys...`);
+        if (storedKey) {
+          game.settings.set(MODULE_ID, "activationKey", storedKey);
+        } else {
+          await OverlayData.setSetting("activationKey", gameSettingsKey);
+        }
+      }
+      
+      // Validate the key silently with V2 API (no notification during sync)
+      await validateActivationKey(keyToUse, false);
+    }
+  } catch (error) {
+    console.error(`${MODULE_ID} | Error syncing premium status:`, error);
+  }
+}
+
+/**
+ * Initialize periodic expiration checking
+ */
+export function initializePremiumMonitoring() {
+  // Check expiration every hour
+  setInterval(scheduleExpirationCheck, 60 * 60 * 1000);
+  
+  // Also check 5 minutes after module loads
+  setTimeout(scheduleExpirationCheck, 5 * 60 * 1000);
 }
 
 /**
@@ -154,11 +365,21 @@ export function showPremiumRequiredDialog(featureName = "This feature") {
       <h3><i class="fas fa-gem" style="color:#FF424D;"></i> Premium Feature Required</h3>
       <p>${featureName} requires premium activation.</p>
       <p>With premium, you can unlock advanced animations, multiple layouts, slideshow functionality, and more!</p>
+      <div style="background: #f0f9ff; border: 1px solid #0369a1; border-radius: 6px; padding: 12px; margin: 12px 0;">
+        <p style="margin: 0; color: #0369a1; font-size: 13px;">
+          <i class="fas fa-info-circle"></i> Get your premium activation key through our V2 authentication system by connecting your Patreon account.
+        </p>
+      </div>
     `,
     buttons: {
+      getKey: {
+        icon: '<i class="fas fa-key"></i>',
+        label: "Get V2 Activation Key",
+        callback: () => window.open("https://cool-puffpuff-4ee93b.netlify.app/v2/", "_blank")
+      },
       upgrade: {
         icon: '<i class="fab fa-patreon"></i>',
-        label: "Upgrade on Patreon",
+        label: "Support on Patreon",
         callback: () => window.open("https://www.patreon.com/c/jenzelta", "_blank")
       },
       cancel: {
@@ -166,8 +387,8 @@ export function showPremiumRequiredDialog(featureName = "This feature") {
         label: "Close"
       }
     },
-    default: "cancel",
-    width: 400
+    default: "getKey",
+    width: 450
   }).render(true);
 }
 
@@ -207,39 +428,6 @@ export function canCreateWindow(windows) {
   }
   
   return true;
-}
-
-/**
- * Synchronizes premium status between game settings and OverlayData
- * DEBLOATED: No longer shows notifications during sync
- */
-export async function syncPremiumStatus() {
-  try {
-    const OverlayData = (await import('../../data-storage.js')).default;
-    
-    const storedKey = OverlayData.getSetting("activationKey") || "";
-    const gameSettingsKey = game.settings.get(MODULE_ID, "activationKey") || "";
-    
-    // If there's a key in either system, validate it silently
-    if (storedKey || gameSettingsKey) {
-      const keyToUse = storedKey || gameSettingsKey;
-      
-      // Make sure both systems have the same key
-      if (storedKey !== gameSettingsKey) {
-        console.log(`${MODULE_ID} | Synchronizing activation keys...`);
-        if (storedKey) {
-          game.settings.set(MODULE_ID, "activationKey", storedKey);
-        } else {
-          await OverlayData.setSetting("activationKey", gameSettingsKey);
-        }
-      }
-      
-      // Validate the key silently (no notification during sync)
-      validateActivationKey(keyToUse, false);
-    }
-  } catch (error) {
-    console.error(`${MODULE_ID} | Error syncing premium status:`, error);
-  }
 }
 
 /**
