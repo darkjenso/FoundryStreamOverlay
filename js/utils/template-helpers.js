@@ -81,12 +81,21 @@ export function initializeTemplateHelperEvents(html) {
   html.on('change', '.fso-data-path-select', function() {
     const select = $(this);
     const customSection = select.closest('.fso-data-selector').find('.fso-custom-path-section');
-    
+
     if (select.val() === 'custom') {
       customSection.slideDown(200);
       customSection.find('.fso-custom-path-input').focus();
     } else {
       customSection.slideUp(200);
+    }
+  });
+
+  // If a user types in a custom path, automatically switch the dropdown to "custom"
+  html.on('input', '.fso-custom-path-input', function() {
+    const input = $(this);
+    const selector = input.closest('.fso-data-selector').find('.fso-data-path-select');
+    if (selector.val() !== 'custom') {
+      selector.val('custom').trigger('change');
     }
   });
 
