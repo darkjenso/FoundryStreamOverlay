@@ -1,4 +1,4 @@
-// Window Configuration UI Component - Enhanced Version
+// Window Configuration UI Component - FIXED LAYOUT SWITCHING VERSION
 import { MODULE_ID } from '../core/constants.js';
 import { isPremiumActive } from '../premium/validation.js';
 import OverlayData from '../../data-storage.js';
@@ -27,6 +27,8 @@ export class OverlayWindowConfig extends FormApplication {
       this.close();
       return;
     }
+
+    console.log(`${MODULE_ID} | Window config opened for: ${this.windowId}`);
 
     // Initialize state
     this._previewMode = false;
@@ -66,18 +68,18 @@ export class OverlayWindowConfig extends FormApplication {
       }));
 
       // Check if window is currently open
-      const isWindowOpen = window.overlayWindows && 
-                          window.overlayWindows[this.windowId] && 
-                          !window.overlayWindows[this.windowId].closed;
+      const isWindowOpen = this._isWindowCurrentlyOpen();
 
       // Get current window dimensions if open
       let currentDimensions = null;
       if (isWindowOpen) {
-        const overlayWindow = window.overlayWindows[this.windowId];
-        currentDimensions = {
-          width: overlayWindow.outerWidth || overlayWindow.innerWidth,
-          height: overlayWindow.outerHeight || overlayWindow.innerHeight
-        };
+        const overlayWindow = this._getOverlayWindow();
+        if (overlayWindow) {
+          currentDimensions = {
+            width: overlayWindow.outerWidth || overlayWindow.innerWidth,
+            height: overlayWindow.outerHeight || overlayWindow.innerHeight
+          };
+        }
       }
 
       // Check if this window is being used in slideshow
@@ -88,7 +90,8 @@ export class OverlayWindowConfig extends FormApplication {
         windowConfig,
         layoutsCount: layoutsList.length,
         isWindowOpen,
-        currentDimensions
+        currentDimensions,
+        activeLayout: windowConfig.activeLayout
       });
 
       return {
@@ -107,6 +110,24 @@ export class OverlayWindowConfig extends FormApplication {
       console.error(`${MODULE_ID} | Error getting window config data:`, error);
       ui.notifications.error("Failed to load window configuration");
       return this._getErrorFallbackData();
+    }
+  }
+
+  _isWindowCurrentlyOpen() {
+    if (this.windowId === "main") {
+      return window.overlayWindow && !window.overlayWindow.closed;
+    } else {
+      return window.overlayWindows && 
+             window.overlayWindows[this.windowId] && 
+             !window.overlayWindows[this.windowId].closed;
+    }
+  }
+
+  _getOverlayWindow() {
+    if (this.windowId === "main") {
+      return window.overlayWindow;
+    } else {
+      return window.overlayWindows && window.overlayWindows[this.windowId];
     }
   }
 
@@ -172,6 +193,9 @@ export class OverlayWindowConfig extends FormApplication {
     html.find("#duplicate-window").click(this._onDuplicateWindow.bind(this));
     html.find("#reset-window").click(this._onResetWindow.bind(this));
 
+    // FIXED: Layout switching for this specific window
+    html.find('select[name="activeLayout"]').change(this._onLayoutChange.bind(this));
+
     // Auto-update and change tracking
     html.find('input, select').on('change input', this._onFormChange.bind(this));
     html.find('input[type="number"]').on('input', this._onNumberInputChange.bind(this));
@@ -190,16 +214,52 @@ export class OverlayWindowConfig extends FormApplication {
     html.find('#live-preview-toggle').change(this._onLivePreviewToggle.bind(this));
   }
 
+  // FIXED: Handle layout changes for this specific window
+  async _onLayoutChange(event) {
+    event.preventDefault();
+    const newLayout = $(event.currentTarget).val();
+    
+    console.log(`${MODULE_ID} | Changing window ${this.windowId} layout to: ${newLayout}`);
+    
+    try {
+      // Get current window config
+      const windows = OverlayData.getOverlayWindows();
+      const windowConfig = windows[this.windowId];
+      
+      if (windowConfig) {
+        // Update the window's active layout
+        windowConfig.activeLayout = newLayout;
+        await OverlayData.setOverlayWindow(this.windowId, windowConfig);
+        
+        // Update the overlay window if it's open
+        if (this._isWindowCurrentlyOpen()) {
+          const { updateOverlayWindow } = await import('../overlay/window-management.js');
+          updateOverlayWindow(this.windowId);
+        }
+        
+        ui.notifications.info(`Window "${windowConfig.name}" switched to layout: ${newLayout}`);
+        this._hasUnsavedChanges = true;
+        this._updateSaveButton();
+        
+        // Refresh the form to show the change
+        this.render();
+      }
+    } catch (error) {
+      console.error(`${MODULE_ID} | Error changing window layout:`, error);
+      ui.notifications.error("Failed to change layout");
+    }
+  }
+
   async _onSaveCurrentSize(event) {
     event.preventDefault();
     
     try {
-      if (!window.overlayWindows || !window.overlayWindows[this.windowId]) {
+      if (!this._isWindowCurrentlyOpen()) {
         ui.notifications.warn("Window is not currently open. Please open the window first.");
         return;
       }
 
-      const overlayWindow = window.overlayWindows[this.windowId];
+      const overlayWindow = this._getOverlayWindow();
       
       if (overlayWindow.closed) {
         ui.notifications.warn("Window appears to be closed. Please open the window first.");
@@ -210,6 +270,7 @@ export class OverlayWindowConfig extends FormApplication {
                      overlayWindow.document.documentElement.clientWidth;
       const height = overlayWindow.outerHeight || overlayWindow.innerHeight ||
                       overlayWindow.document.documentElement.clientHeight;
+
       // Update the form inputs
       const html = this.element;
       html.find('input[name="width"]').val(width);
@@ -248,8 +309,9 @@ export class OverlayWindowConfig extends FormApplication {
     event.preventDefault();
     
     try {
-      if (window.overlayWindows && window.overlayWindows[this.windowId]) {
-        window.overlayWindows[this.windowId].close();
+      const overlayWindow = this._getOverlayWindow();
+      if (overlayWindow && !overlayWindow.closed) {
+        overlayWindow.close();
         setTimeout(() => {
           this.render();
         }, 500);
@@ -311,7 +373,6 @@ export class OverlayWindowConfig extends FormApplication {
       return;
     }
 
-    // Implementation for duplicating window configuration
     const newWindowId = `window_${Date.now()}`;
     const currentConfig = this._getCurrentFormData();
     currentConfig.id = newWindowId;
@@ -332,7 +393,6 @@ export class OverlayWindowConfig extends FormApplication {
     });
     
     if (confirmed) {
-      // Reset to defaults
       const html = this.element;
       html.find('input[name="name"]').val(`Window ${this.windowId}`);
       html.find('select[name="activeLayout"]').val("Default");
@@ -361,7 +421,6 @@ export class OverlayWindowConfig extends FormApplication {
   }
 
   _onNumberInputChange(event) {
-    // Validate number inputs in real-time
     const input = $(event.currentTarget);
     const value = Number(input.val());
     const min = Number(input.attr('min')) || 0;
@@ -378,7 +437,7 @@ export class OverlayWindowConfig extends FormApplication {
     event.preventDefault();
     const layoutName = $(event.currentTarget).data('layout');
     
-    if (window.overlayWindows && window.overlayWindows[this.windowId] && !window.overlayWindows[this.windowId].closed) {
+    if (this._isWindowCurrentlyOpen()) {
       // Temporarily switch to this layout for preview
       const windows = OverlayData.getOverlayWindows();
       const currentConfig = windows[this.windowId];
@@ -449,7 +508,6 @@ export class OverlayWindowConfig extends FormApplication {
   }
 
   async _applyTemporarySettings(formData) {
-    // Apply settings temporarily for testing without saving
     try {
       const windows = OverlayData.getOverlayWindows();
       const currentConfig = windows[this.windowId] || {};
@@ -463,7 +521,7 @@ export class OverlayWindowConfig extends FormApplication {
         backgroundColor: formData.backgroundColor || currentConfig.backgroundColor
       };
 
-      if (window.overlayWindows && window.overlayWindows[this.windowId] && !window.overlayWindows[this.windowId].closed) {
+      if (this._isWindowCurrentlyOpen()) {
         const { updateOverlayWindow } = await import('../overlay/window-management.js');
         await OverlayData.setOverlayWindow(this.windowId, tempConfig);
         updateOverlayWindow(this.windowId);
@@ -526,22 +584,21 @@ export class OverlayWindowConfig extends FormApplication {
         windowConfig.activeLayout = "Default";
       }
 
+      console.log(`${MODULE_ID} | Saving window config:`, windowConfig);
+
       // Save the configuration
       await OverlayData.setOverlayWindow(this.windowId, windowConfig);
       
       ui.notifications.info(`Window configuration saved: ${windowConfig.name}`);
 
       // Update the window if it's currently open
-      if (window.overlayWindows && 
-          window.overlayWindows[this.windowId] && 
-          !window.overlayWindows[this.windowId].closed) {
-        
+      if (this._isWindowCurrentlyOpen()) {
         const { updateOverlayWindow } = await import('../overlay/window-management.js');
         updateOverlayWindow(this.windowId);
         
         // Resize the window if size changed
         try {
-          const overlayWindow = window.overlayWindows[this.windowId];
+          const overlayWindow = this._getOverlayWindow();
           overlayWindow.resizeTo(windowConfig.width, windowConfig.height);
           
           // Update background color
@@ -572,11 +629,7 @@ export class OverlayWindowConfig extends FormApplication {
     }
   }
 
-  /**
-   * Handle closing the window config
-   */
   async close(options = {}) {
-    // Clean up any timers
     if (this._previewTimeout) {
       clearTimeout(this._previewTimeout);
     }
@@ -584,9 +637,6 @@ export class OverlayWindowConfig extends FormApplication {
     return super.close(options);
   }
 
-  /**
-   * Static method to open window config for a specific window
-   */
   static async openForWindow(windowId) {
     try {
       // Close any existing window config dialogs
@@ -596,7 +646,6 @@ export class OverlayWindowConfig extends FormApplication {
         }
       }
       
-      // Open new config
       const config = new OverlayWindowConfig(windowId);
       return config.render(true);
     } catch (error) {

@@ -1,41 +1,296 @@
 <form class="fso-overlay-config">
   <div class="fso-scene-manager-header">
-    <h2>Configure Overlay Window</h2>
+    <h2>Configure Window: {{windowConfig.name}}</h2>
+    <p class="fso-scene-manager-description">
+      Configure this overlay window's settings, layout, and appearance
+    </p>
   </div>
 
   <div class="fso-overlay-config-container">
-    <div class="fso-config-row">
-      <label for="window-name">Window Name:</label>
-      <input type="text" id="window-name" name="name" value="{{windowConfig.name}}">
+    
+    <!-- Basic Configuration -->
+    <div class="fso-config-section">
+      <h3>Basic Settings</h3>
+      
+      <div class="fso-config-row">
+        <label for="window-name">Window Name:</label>
+        <input type="text" id="window-name" name="name" value="{{windowConfig.name}}" placeholder="My Overlay Window">
+      </div>
+
+      <div class="fso-config-row">
+        <label for="active-layout">Active Scene:</label>
+        <select id="active-layout" name="activeLayout">
+          {{#each layouts}}
+            <option value="{{this.key}}" {{#if this.isActive}}selected{{/if}}>
+              {{this.name}} ({{this.itemCount}} items)
+            </option>
+          {{/each}}
+        </select>
+        <small class="fso-help-text">The scene that will be displayed in this window</small>
+      </div>
+      
+      {{#if isInSlideshow}}
+      <div class="fso-slideshow-notice">
+        <i class="fas fa-info-circle"></i>
+        This window is currently used in a slideshow. The slideshow will override the active scene setting.
+      </div>
+      {{/if}}
     </div>
 
-    <div class="fso-config-row">
-      <label for="active-layout">Active Layout:</label>
-      <select id="active-layout" name="activeLayout">
-        {{#each layouts}}
-          <option value="{{this.key}}" {{#if this.isActive}}selected{{/if}}>{{this.key}}</option>
-        {{/each}}
-      </select>
-    </div>
-
-    <div class="fso-config-row">
-      <label for="window-size">Window Size:</label>
-      <div class="size-inputs">
-        <input type="number" name="width" value="{{windowConfig.width}}" placeholder="Width" min="100">
-        ×
-        <input type="number" name="height" value="{{windowConfig.height}}" placeholder="Height" min="100">
+    <!-- Window Size Configuration -->
+    <div class="fso-config-section">
+      <h3>Window Size</h3>
+      
+      <div class="fso-config-row">
+        <label for="window-size">Dimensions:</label>
+        <div class="fso-size-inputs">
+          <input type="number" name="width" value="{{windowConfig.width}}" placeholder="Width" min="100" max="7680">
+          <span>×</span>
+          <input type="number" name="height" value="{{windowConfig.height}}" placeholder="Height" min="100" max="4320">
+          <span class="fso-input-suffix">pixels</span>
+        </div>
+      </div>
+      
+      <div class="fso-config-row">
         <button type="button" id="save-current-size" class="fso-secondary-btn" {{#unless isWindowOpen}}disabled{{/unless}}>
-          Use Current Size
+          <i class="fas fa-expand-arrows-alt"></i> Use Current Window Size
+        </button>
+        {{#unless isWindowOpen}}
+        <small class="fso-help-text">Window must be open to capture current size</small>
+        {{else}}
+        {{#if currentDimensions}}
+        <small class="fso-help-text">Current size: {{currentDimensions.width}}×{{currentDimensions.height}}px</small>
+        {{/if}}
+        {{/unless}}
+      </div>
+
+      <!-- Preset buttons -->
+      <div class="fso-config-row">
+        <label>Quick Presets:</label>
+        <div class="fso-preset-buttons">
+          {{#each presets}}
+          <button type="button" class="fso-compact-btn apply-preset" data-preset="{{this.name}}">
+            {{this.name}}
+          </button>
+          {{/each}}
+        </div>
+      </div>
+    </div>
+
+    <!-- Appearance Configuration -->
+    <div class="fso-config-section">
+      <h3>Background</h3>
+      
+      <div class="fso-config-row">
+        <label for="background-color">Background Color:</label>
+        <div class="fso-color-input-group">
+          <input type="color" name="backgroundColor" value="{{windowConfig.backgroundColor}}" id="background-color">
+          <input type="text" value="{{windowConfig.backgroundColor}}" readonly class="fso-color-text">
+        </div>
+        <small class="fso-help-text">Use green (#00ff00) for chroma key in OBS</small>
+      </div>
+
+      <div class="fso-config-row">
+        <label>Background Presets:</label>
+        <div class="fso-background-presets">
+          {{#each availableBackgrounds}}
+          <button type="button" class="fso-compact-btn apply-background" data-background="{{this.value}}" title="{{this.description}}">
+            {{this.name}}
+          </button>
+          {{/each}}
+        </div>
+      </div>
+    </div>
+
+    <!-- Window Actions -->
+    <div class="fso-config-section">
+      <h3>Window Actions</h3>
+      
+      <div class="fso-window-actions">
+        {{#if isWindowOpen}}
+        <button type="button" class="fso-primary-btn close-window">
+          <i class="fas fa-times"></i> Close Window
+        </button>
+        <button type="button" class="fso-secondary-btn test-window">
+          <i class="fas fa-flask"></i> Test Current Settings
+        </button>
+        {{else}}
+        <button type="button" class="fso-primary-btn open-window">
+          <i class="fas fa-external-link-alt"></i> Open Window
+        </button>
+        {{/if}}
+        
+        <button type="button" class="fso-secondary-btn" id="refresh-layouts">
+          <i class="fas fa-sync"></i> Refresh Scenes
         </button>
       </div>
-      {{#unless isWindowOpen}}
-      <small class="fso-help-text">Window must be open to capture current size</small>
-      {{/unless}}
     </div>
 
+    <!-- Advanced Options -->
+    {{#if isPremium}}
+    <details class="fso-config-section">
+      <summary>Advanced Options</summary>
+      
+      <div class="fso-config-row">
+        <label class="fso-checkbox-label">
+          <input type="checkbox" name="autoResize" {{#if windowConfig.autoResize}}checked{{/if}}>
+          Auto-resize content
+        </label>
+        <small class="fso-help-text">Automatically adjust content size when window is resized</small>
+      </div>
+
+      <div class="fso-config-row">
+        <label class="fso-checkbox-label">
+          <input type="checkbox" name="alwaysOnTop" {{#if windowConfig.alwaysOnTop}}checked{{/if}}>
+          Always on top
+        </label>
+        <small class="fso-help-text">Keep window above other applications (browser dependent)</small>
+      </div>
+
+      <div class="fso-config-row">
+        <button type="button" class="fso-secondary-btn" id="duplicate-window">
+          <i class="fas fa-copy"></i> Duplicate Window
+        </button>
+        <small class="fso-help-text">Create a copy of this window configuration</small>
+      </div>
+    </details>
+    {{/if}}
+
+    <!-- Danger Zone -->
+    <details class="fso-config-section fso-danger-zone">
+      <summary><i class="fas fa-exclamation-triangle"></i> Reset Options</summary>
+      
+      <div class="fso-config-row">
+        <button type="button" class="fso-danger-btn" id="reset-window">
+          <i class="fas fa-undo"></i> Reset to Defaults
+        </button>
+        <small class="fso-help-text">Reset all settings to default values</small>
+      </div>
+    </details>
+
+    <!-- Form Actions -->
     <div class="fso-form-actions">
-      <button type="submit" class="fso-primary-btn">Save Changes</button>
-      <button type="button" class="fso-secondary-btn open-window">Open Window</button>
+      <button type="button" class="fso-primary-btn save-config {{#if hasUnsavedChanges}}modified{{/if}}">
+        <i class="fas fa-save"></i> 
+        {{#if hasUnsavedChanges}}Save Changes*{{else}}Save Changes{{/if}}
+      </button>
+      <button type="button" class="fso-secondary-btn cancel-config">
+        <i class="fas fa-times"></i> Cancel
+      </button>
     </div>
   </div>
+
+  <style>
+    .fso-size-inputs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .fso-size-inputs input {
+      width: 80px;
+    }
+    
+    .fso-preset-buttons,
+    .fso-background-presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    
+    .fso-color-input-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .fso-color-text {
+      width: 80px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    
+    .fso-window-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+    
+    .fso-form-actions {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+    
+    .fso-slideshow-notice {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 8px;
+      color: #92400e;
+      font-size: 13px;
+    }
+    
+    .fso-danger-zone summary {
+      color: #dc2626;
+    }
+    
+    .fso-danger-btn {
+      background: #dc2626;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    
+    .fso-danger-btn:hover {
+      background: #b91c1c;
+    }
+    
+    .fso-primary-btn.modified {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+    
+    .fso-config-section {
+      margin-bottom: 24px;
+      padding: 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: white;
+    }
+    
+    .fso-config-section h3 {
+      margin: 0 0 16px 0;
+      color: #1e293b;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    .fso-config-section summary {
+      cursor: pointer;
+      font-weight: 600;
+      padding: 8px 0;
+      color: #475569;
+    }
+    
+    .fso-config-section[open] summary {
+      margin-bottom: 16px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 12px;
+    }
+  </style>
 </form>

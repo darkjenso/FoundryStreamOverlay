@@ -169,12 +169,6 @@ async function ensureMinimalConfiguration(OverlayData) {
       needsMinimalSetup = true;
     }
     
-    // Only set active layout if none exists
-    const activeLayout = OverlayData.getActiveLayout();
-    if (!activeLayout) {
-      await OverlayData.setActiveLayout("Default");
-      needsMinimalSetup = true;
-    }
     
     // Only set slideshow if none exists
     const slideshow = OverlayData.getSlideshow();

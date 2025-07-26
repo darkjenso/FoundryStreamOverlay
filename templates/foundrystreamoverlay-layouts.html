@@ -2,7 +2,7 @@
   <div class="fso-scene-manager-header">
     <h2>Manage Scenes</h2>
     <p class="fso-scene-manager-description">
-      Create and organize different overlay setups for various streaming scenarios
+      Create and organize different overlay setups. Assign scenes to specific windows for display.
     </p>
   </div>
 
@@ -13,62 +13,69 @@
         <tr>
           <th class="fso-scene-name-col">Scene Name</th>
           <th class="fso-items-count-col">Items</th>
-          <th class="fso-usage-col">Used By</th>
+          <th class="fso-usage-col">Used By Windows</th>
           <th class="fso-actions-col">Actions</th>
         </tr>
       </thead>
       <tbody>
         {{#each layouts}}
-        <tr class="fso-scene-row {{#ifEquals @key ../activeLayout}}active-scene{{/ifEquals}}">
+        <tr class="fso-scene-row">
           <td class="fso-scene-name">
             <div class="fso-scene-name-content">
-              <span class="fso-scene-title">{{@key}}</span>
-              {{#ifEquals @key ../activeLayout}}
-                <span class="fso-active-badge">Active</span>
-              {{/ifEquals}}
-              {{#ifEquals @key "Default"}}
+              <span class="fso-scene-title">{{this.name}}</span>
+              {{#ifEquals this.name "Default"}}
                 <span class="fso-default-badge">Default</span>
               {{/ifEquals}}
             </div>
           </td>
           <td class="fso-items-count">
-            <span class="fso-count-badge">{{this.length}} items</span>
+            <span class="fso-count-badge">{{this.itemCount}} items</span>
           </td>
           <td class="fso-usage-info">
-            {{#if (lookup ../layoutUsage @key)}}
+            {{#if this.inUse.length}}
               <div class="fso-usage-tags">
-                {{#each (lookup ../layoutUsage @key)}}
+                {{#each this.inUse}}
                   <span class="fso-usage-tag">{{this}}</span>
                 {{/each}}
               </div>
             {{else}}
-              <span class="fso-no-usage">Not in use</span>
+              <span class="fso-no-usage">Not assigned</span>
             {{/if}}
           </td>
           <td class="fso-scene-actions">
             <div class="fso-action-buttons-grid">
-              <button type="button" class="fso-action-btn fso-edit-btn" data-layout="{{@key}}" title="Edit Scene">
+              <button type="button" class="fso-action-btn fso-edit-btn" data-layout="{{this.name}}" title="Edit Scene Contents">
                 ✏️ Edit
               </button>
               
-              <button type="button" class="fso-action-btn fso-rename-btn rename-layout" data-layout="{{@key}}" title="Rename Scene">
+              <button type="button" class="fso-action-btn fso-assign-btn assign-to-window" data-layout="{{this.name}}" title="Assign to Window">
+                📺 Assign
+              </button>
+              
+              <button type="button" class="fso-action-btn fso-rename-btn rename-layout" data-layout="{{this.name}}" title="Rename Scene">
                 🏷️ Rename
               </button>
               
               {{#if ../isPremium}}
-              <button type="button" class="fso-action-btn fso-duplicate-btn duplicate-layout" data-layout="{{@key}}" title="Duplicate Scene">
+              <button type="button" class="fso-action-btn fso-duplicate-btn duplicate-layout" data-layout="{{this.name}}" title="Duplicate Scene">
                 📋 Copy
               </button>
               {{/if}}
               
-              <button type="button" class="fso-action-btn fso-export-btn export-layout" data-layout="{{@key}}" title="Export Scene">
+              <button type="button" class="fso-action-btn fso-export-btn export-layout" data-layout="{{this.name}}" title="Export Scene">
                 📥 Export
               </button>
               
-              {{#ifNotDefault @key}}
-              <button type="button" class="fso-action-btn fso-delete-btn delete-layout" data-layout="{{@key}}" title="Delete Scene">
+              {{#ifNotDefault this.name}}
+              {{#if this.canDelete}}
+              <button type="button" class="fso-action-btn fso-delete-btn delete-layout" data-layout="{{this.name}}" title="Delete Scene">
                 🗑️ Delete
               </button>
+              {{else}}
+              <button type="button" class="fso-action-btn fso-delete-btn" disabled title="Scene is in use - cannot delete">
+                🗑️ In Use
+              </button>
+              {{/if}}
               {{/ifNotDefault}}
             </div>
           </td>
@@ -84,6 +91,24 @@
     </div>
     {{/if}}
   </div>
+
+  <!-- Window Assignment Overview -->
+  {{#if windows.length}}
+  <div class="fso-window-assignments-section">
+    <h3>Current Window Assignments</h3>
+    <div class="fso-window-assignments-grid">
+      {{#each windows}}
+      <div class="fso-window-assignment-card">
+        <div class="fso-window-name">{{this.name}}</div>
+        <div class="fso-window-scene">Displaying: <strong>{{this.activeLayout}}</strong></div>
+        <button type="button" class="fso-compact-btn assign-to-window" data-layout="{{this.activeLayout}}">
+          Change Scene
+        </button>
+      </div>
+      {{/each}}
+    </div>
+  </div>
+  {{/if}}
 
   <div class="fso-scene-actions-section">
     <div class="fso-primary-actions">
@@ -120,19 +145,62 @@
   </div>
   
   <style>
-    /* Fixed action buttons layout */
+    /* Window Assignment Cards */
+    .fso-window-assignments-section {
+      margin: 24px 0;
+      padding: 20px;
+      background: #f8fafc;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .fso-window-assignments-section h3 {
+      margin: 0 0 16px 0;
+      color: #1e293b;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .fso-window-assignments-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+    }
+
+    .fso-window-assignment-card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .fso-window-name {
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .fso-window-scene {
+      color: #64748b;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    /* Enhanced action buttons */
     .fso-action-buttons-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
       gap: 4px;
       max-width: 100%;
     }
     
     .fso-action-btn {
       min-height: 32px;
-      border: 1px solid #ddd;
+      border: 1px solid #e2e8f0;
       background: white;
-      border-radius: 4px;
+      border-radius: 6px;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -146,18 +214,57 @@
       overflow: hidden;
     }
     
-    .fso-action-btn:hover {
+    .fso-action-btn:hover:not(:disabled) {
       background: #f0f0f0;
       border-color: #007bff;
       transform: translateY(-1px);
     }
-    
-    .fso-actions-col {
-      width: 200px;
-      min-width: 200px;
+
+    .fso-action-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: #f8f9fa;
+    }
+
+    .fso-assign-btn {
+      background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+      color: #0369a1;
+      border-color: #0ea5e9;
+    }
+
+    .fso-assign-btn:hover {
+      background: linear-gradient(135deg, #bae6fd 0%, #e0f2fe 100%);
+      color: #0c4a6e;
     }
     
-    /* Make action buttons more compact on smaller screens */
+    .fso-actions-col {
+      width: 280px;
+      min-width: 280px;
+    }
+
+    /* Usage tags */
+    .fso-usage-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .fso-usage-tag {
+      background: #dbeafe;
+      color: #1e40af;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .fso-no-usage {
+      color: #64748b;
+      font-style: italic;
+      font-size: 12px;
+    }
+
+    /* Responsive design */
     @media (max-width: 768px) {
       .fso-action-buttons-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -167,6 +274,36 @@
         font-size: 10px;
         padding: 2px 4px;
       }
+
+      .fso-actions-col {
+        width: 200px;
+        min-width: 200px;
+      }
+
+      .fso-window-assignments-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Scene status indicators */
+    .fso-default-badge {
+      background: #fef3c7;
+      color: #92400e;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-left: 8px;
+    }
+
+    .fso-count-badge {
+      background: #f1f5f9;
+      color: #475569;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
     }
   </style>
 </form>

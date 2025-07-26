@@ -1,4 +1,4 @@
-// Settings registration for Foundry Stream Overlay - FIXED STANDALONE APP MENU
+// Settings registration for Foundry Stream Overlay - FIXED NO GLOBAL ACTIVE LAYOUT
 import { MODULE_ID } from './constants.js';
 import { validateActivationKey } from '../premium/validation.js';
 
@@ -18,7 +18,7 @@ function safeRegisterSetting(moduleId, key, options) {
   }
 }
 
-// FIXED: Define StandaloneAppConfig class separately to avoid scoping issues
+// Define StandaloneAppConfig class separately to avoid scoping issues
 class StandaloneAppConfig extends FormApplication {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
@@ -30,7 +30,6 @@ class StandaloneAppConfig extends FormApplication {
   }
   
   async render(force = false, options = {}) {
-    // FIXED: Import with better error handling
     try {
       const { isPremiumActive, showPremiumRequiredDialog } = await import('../premium/validation.js');
       
@@ -105,7 +104,6 @@ class StandaloneAppConfig extends FormApplication {
     ui.notifications.info("Settings saved");
   }
 
-  // FIXED: Move helper methods into the class
   async testStandaloneConnection() {
     const serverUrl = game.settings.get(MODULE_ID, "standaloneServerUrl") || "http://localhost:8080";
     
@@ -187,6 +185,13 @@ export function registerSettings() {
     onChange: (value) => {
       if (window.overlayWindow && !window.overlayWindow.closed) {
         window.overlayWindow.document.body.style.backgroundColor = value;
+      }
+      if (window.overlayWindows) {
+        for (const [windowId, overlayWindow] of Object.entries(window.overlayWindows)) {
+          if (overlayWindow && !overlayWindow.closed && overlayWindow.document && overlayWindow.document.body) {
+            overlayWindow.document.body.style.backgroundColor = value;
+          }
+        }
       }
     }
   });
@@ -275,9 +280,9 @@ export function registerSettings() {
     }
   });
 
-  // Layouts storage - WORLD SCOPED (but will show as "Scenes" in UI)
+  // Layouts storage - WORLD SCOPED (scenes)
   safeRegisterSetting(MODULE_ID, "layouts", {
-    name: "Scenes", // Changed terminology
+    name: "Scenes",
     hint: "Stores all overlay scenes. Each key is a scene name and its value is an array of overlay items.",
     scope: "world",
     type: Object,
@@ -285,27 +290,26 @@ export function registerSettings() {
     config: false,
     onChange: async () => {
       const { updateOverlayWindow } = await import('../overlay/window-management.js');
-      updateOverlayWindow();
+      
+      // Update all open windows
+      if (window.overlayWindow && !window.overlayWindow.closed) {
+        updateOverlayWindow("main");
+      }
+      if (window.overlayWindows) {
+        for (const windowId of Object.keys(window.overlayWindows)) {
+          if (window.overlayWindows[windowId] && !window.overlayWindows[windowId].closed) {
+            updateOverlayWindow(windowId);
+          }
+        }
+      }
     }
   });
 
-  // Active layout - WORLD SCOPED (but will show as "Active Scene" in UI)
-  safeRegisterSetting(MODULE_ID, "activeLayout", {
-    name: "Active Scene", // Changed terminology
-    hint: "The scene that is currently in use.",
-    scope: "world",
-    type: String,
-    default: "Default",
-    config: false,
-    onChange: async () => {
-      const { updateOverlayWindow } = await import('../overlay/window-management.js');
-      updateOverlayWindow();
-    }
-  });
+  // REMOVED: Global activeLayout setting - each window now manages its own layout
 
   // Overlay windows configuration - WORLD SCOPED
   safeRegisterSetting(MODULE_ID, "overlayWindows", {
-    name: "Overlay Displays", // Changed terminology
+    name: "Overlay Displays",
     hint: "Configurations for multiple overlay displays",
     scope: "world",
     config: false,
@@ -315,7 +319,24 @@ export function registerSettings() {
         id: "main", 
         name: "Main Overlay",
         activeLayout: "Default",
-        slideshowActive: false
+        slideshowActive: false,
+        width: 800,
+        height: 600
+      }
+    },
+    onChange: async () => {
+      const { updateOverlayWindow } = await import('../overlay/window-management.js');
+      
+      // Update all open windows
+      if (window.overlayWindow && !window.overlayWindow.closed) {
+        updateOverlayWindow("main");
+      }
+      if (window.overlayWindows) {
+        for (const windowId of Object.keys(window.overlayWindows)) {
+          if (window.overlayWindows[windowId] && !window.overlayWindows[windowId].closed) {
+            updateOverlayWindow(windowId);
+          }
+        }
       }
     }
   });
@@ -330,14 +351,15 @@ export function registerSettings() {
       list: [], 
       random: false,
       transition: "none",
-      transitionDuration: 0.5
+      transitionDuration: 0.5,
+      targetWindow: "main"
     },
     config: false
   });
 }
 
 /**
- * FIXED: Registers consolidated menu structure with proper class definitions
+ * Registers consolidated menu structure with proper class definitions
  */
 export function registerMenus() {
 
@@ -396,7 +418,8 @@ export function registerMenus() {
       
       async render(force = false, options = {}) {
         const { OverlayConfig } = await import('../ui/overlay-config.js');
-        const configInstance = new OverlayConfig();
+        // FIXED: Open for main window by default
+        const configInstance = new OverlayConfig({ windowId: "main" });
         return configInstance.render(true);
       }
       
@@ -407,7 +430,7 @@ export function registerMenus() {
     restricted: false
   });
 
-  // Scene management (Premium check handled inside)
+  // Scene management
   game.settings.registerMenu(MODULE_ID, "manageScenes", {
     name: "🎬 Manage Scenes",
     label: "Manage Scenes",
@@ -505,105 +528,96 @@ export function registerMenus() {
     restricted: false
   });
 
-// PRODUCTION VERSION - Replace your standaloneApp menu registration with this:
-
-// Replace the existing standaloneApp menu registration with this version
-
-game.settings.registerMenu(MODULE_ID, "standaloneApp", {
-  name: "🔗 Standalone App",
-  label: "Standalone App",
-  hint: "Connect to standalone overlay application (Coming Soon)",
-  icon: "fas fa-server",
-  type: class StandaloneAppDialog extends FormApplication {
-    static get defaultOptions() {
-      return foundry.utils.mergeObject(super.defaultOptions, {
-        title: "Standalone App Connection",
-        id: "standalone-app-dialog",
-        width: 500,
-        height: "auto",
-        closeOnSubmit: false,
-        resizable: true,
-        classes: ["foundry-stream-overlay"]
-      });
-    }
-    
-    // Use inline template instead of external file
-    get template() {
-      return null; // Forces _renderInner to be used
-    }
-    
-    async _renderInner(data) {
-      // TEMPORARY: Always show "coming soon" message regardless of premium status
-      return $(`
-        <form style="padding: 0;">
-          <div class="coming-soon-container" style="text-align: center; padding: 40px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
-            <div style="font-size: 64px; margin-bottom: 20px; opacity: 0.3;">
-              🚧
-            </div>
-            <h2 style="color: #1e293b; margin-bottom: 15px; font-size: 24px;">Standalone App - Coming Soon!</h2>
-            <p style="color: #64748b; margin-bottom: 25px; font-size: 16px; line-height: 1.5;">
-              We're working hard on an exciting standalone overlay application that will provide enhanced features and better performance.
-            </p>
-            
-            <div style="background: white; border-radius: 12px; padding: 24px; margin: 24px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: left;">
-              <h3 style="color: #1e293b; margin-bottom: 15px; text-align: center;">🚀 Planned Features</h3>
-              <ul style="color: #475569; margin: 0; padding-left: 20px; line-height: 1.8;">
-                <li><strong>Enhanced Performance:</strong> Dedicated app for smoother overlay rendering</li>
-                <li><strong>Live Sync:</strong> Real-time updates between Foundry and your streaming software</li>
-                <li><strong>Advanced Customization:</strong> More themes, effects, and layout options</li>
-                <li><strong>Multi-Stream Support:</strong> Manage multiple overlay windows simultaneously</li>
-                <li><strong>Browser Source Integration:</strong> Easy setup with OBS and other streaming tools</li>
-                <li><strong>Offline Mode:</strong> Continue using overlays even when Foundry is closed</li>
-              </ul>
-            </div>
-            
-            <div style="background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%); border-radius: 8px; padding: 16px; margin: 20px 0;">
-              <h4 style="color: #0369a1; margin-bottom: 8px;">💡 In the meantime...</h4>
-              <p style="color: #0369a1; margin: 0; font-size: 14px;">
-                Continue using the current overlay system which already supports animations, multiple layouts, and slideshow functionality!
-              </p>
-            </div>
-            
-            <div style="margin-top: 30px;">
-              <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">
-                Want to be notified when it's ready?
-              </p>
-              <a href="https://www.patreon.com/c/jenzelta" target="_blank" 
-                 style="display: inline-block; background: linear-gradient(135deg, #FF424D 0%, #C53030 100%); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; box-shadow: 0 4px 12px rgba(255,66,77,0.3); transition: transform 0.2s;">
-                <i class="fab fa-patreon"></i> Follow Development on Patreon
-              </a>
-            </div>
-            
-            <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-              <p style="color: #94a3b8; font-size: 12px; font-style: italic;">
-                Expected release: Q2 2025 • Premium feature for supporters
-              </p>
-            </div>
-          </div>
-        </form>
-      `);
-    }
-    
-    async getData() {
-      return {};
-    }
-    
-    activateListeners(html) {
-      super.activateListeners(html);
+  // Standalone app (coming soon)
+  game.settings.registerMenu(MODULE_ID, "standaloneApp", {
+    name: "🔗 Standalone App",
+    label: "Standalone App",
+    hint: "Connect to standalone overlay application (Coming Soon)",
+    icon: "fas fa-server",
+    type: class StandaloneAppDialog extends FormApplication {
+      static get defaultOptions() {
+        return foundry.utils.mergeObject(super.defaultOptions, {
+          title: "Standalone App Connection",
+          id: "standalone-app-dialog",
+          width: 500,
+          height: "auto",
+          closeOnSubmit: false,
+          resizable: true,
+          classes: ["foundry-stream-overlay"]
+        });
+      }
       
-      // Handle premium upgrade link clicks
-      html.find('a[href*="patreon"]').click((event) => {
-        event.preventDefault();
-        window.open("https://www.patreon.com/c/jenzelta", "_blank");
-      });
-    }
-    
-    async _updateObject(event, formData) {
-      // No form submission needed for coming soon page
-    }
-  },
-  restricted: false
-});
+      get template() {
+        return null;
+      }
+      
+      async _renderInner(data) {
+        return $(`
+          <form style="padding: 0;">
+            <div class="coming-soon-container" style="text-align: center; padding: 40px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
+              <div style="font-size: 64px; margin-bottom: 20px; opacity: 0.3;">
+                🚧
+              </div>
+              <h2 style="color: #1e293b; margin-bottom: 15px; font-size: 24px;">Standalone App - Coming Soon!</h2>
+              <p style="color: #64748b; margin-bottom: 25px; font-size: 16px; line-height: 1.5;">
+                We're working hard on an exciting standalone overlay application that will provide enhanced features and better performance.
+              </p>
+              
+              <div style="background: white; border-radius: 12px; padding: 24px; margin: 24px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: left;">
+                <h3 style="color: #1e293b; margin-bottom: 15px; text-align: center;">🚀 Planned Features</h3>
+                <ul style="color: #475569; margin: 0; padding-left: 20px; line-height: 1.8;">
+                  <li><strong>Enhanced Performance:</strong> Dedicated app for smoother overlay rendering</li>
+                  <li><strong>Live Sync:</strong> Real-time updates between Foundry and your streaming software</li>
+                  <li><strong>Advanced Customization:</strong> More themes, effects, and layout options</li>
+                  <li><strong>Multi-Stream Support:</strong> Manage multiple overlay windows simultaneously</li>
+                  <li><strong>Browser Source Integration:</strong> Easy setup with OBS and other streaming tools</li>
+                  <li><strong>Offline Mode:</strong> Continue using overlays even when Foundry is closed</li>
+                </ul>
+              </div>
+              
+              <div style="background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%); border-radius: 8px; padding: 16px; margin: 20px 0;">
+                <h4 style="color: #0369a1; margin-bottom: 8px;">💡 In the meantime...</h4>
+                <p style="color: #0369a1; margin: 0; font-size: 14px;">
+                  Continue using the current overlay system which already supports animations, multiple layouts, and slideshow functionality!
+                </p>
+              </div>
+              
+              <div style="margin-top: 30px;">
+                <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">
+                  Want to be notified when it's ready?
+                </p>
+                <a href="https://www.patreon.com/c/jenzelta" target="_blank" 
+                   style="display: inline-block; background: linear-gradient(135deg, #FF424D 0%, #C53030 100%); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; box-shadow: 0 4px 12px rgba(255,66,77,0.3); transition: transform 0.2s;">
+                  <i class="fab fa-patreon"></i> Follow Development on Patreon
+                </a>
+              </div>
+              
+              <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                <p style="color: #94a3b8; font-size: 12px; font-style: italic;">
+                  Expected release: Q2 2025 • Premium feature for supporters
+                </p>
+              </div>
+            </div>
+          </form>
+        `);
+      }
+      
+      async getData() {
+        return {};
+      }
+      
+      activateListeners(html) {
+        super.activateListeners(html);
+        html.find('a[href*="patreon"]').click((event) => {
+          event.preventDefault();
+          window.open("https://www.patreon.com/c/jenzelta", "_blank");
+        });
+      }
+      
+      async _updateObject(event, formData) {}
+    },
+    restricted: false
+  });
 
   // =================================
   // 💎 PREMIUM SECTION

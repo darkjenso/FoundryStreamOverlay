@@ -1,4 +1,4 @@
-// Optimized Overlay Configuration UI Component with Dice Support - FIXED VERSION
+// Fixed Overlay Configuration UI Component - PROPER SCENE/WINDOW SEPARATION
 import { MODULE_ID, DATA_PATHS, FONT_FAMILIES, PREMIUM_FONTS, ITEM_TEMPLATES } from '../core/constants.js';
 import { isPremiumActive } from '../premium/validation.js';
 import { 
@@ -28,13 +28,26 @@ export class OverlayConfig extends FormApplication {
   constructor(options = {}) {
     super();
     this.options = foundry.utils.mergeObject(this.options, options);
-    this._selectedLayout = null;
+    
+    // FIXED: Clear separation between window context and editing context
+    this.windowId = options.windowId || "main";
+    this.editingLayout = options.editingLayout || null; // What scene we're editing
     this._showExtendedFonts = false;
+    this._lastSavedFormData = null; // Track last saved form state
+    this._autoSaveTimeout = null; // Track auto-save timeout
+    this._isSwitchingScenes = false; // Flag to prevent auto-save during scene switch
+    
+    console.log(`${MODULE_ID} | OverlayConfig initialized for window: ${this.windowId}, editing layout: ${this.editingLayout}`);
   }
 
   async _render(force, options) {
     await super._render(force, options);
     this._injectOptimizedStyles();
+    
+    // Store initial form state after render
+    setTimeout(() => {
+      this._captureFormState();
+    }, 100);
   }
 
   _injectOptimizedStyles() {
@@ -44,7 +57,6 @@ export class OverlayConfig extends FormApplication {
     const styleElem = document.createElement('style');
     styleElem.id = styleId;
     styleElem.textContent = `
-      /* Optimized config styles - minimal additions to template styles */
       .overlay-config-simplified .item-card.dragging {
         opacity: 0.7;
         transform: rotate(2deg);
@@ -86,37 +98,67 @@ export class OverlayConfig extends FormApplication {
         max-width: 250px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.3);
       }
+
+      .fso-editing-notice {
+        background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+        border: 1px solid #0ea5e9;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .fso-editing-notice-icon {
+        color: #0369a1;
+        font-size: 16px;
+      }
+
+      .fso-editing-notice-text {
+        color: #0369a1;
+        font-weight: 500;
+        font-size: 14px;
+      }
+
+      .fso-assign-scene-section {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 20px;
+      }
+
+      .fso-assign-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
     `;
     document.head.appendChild(styleElem);
   }
 
   getData() {
-    // Get the window ID this config is for
-    const windowId = this.options?.windowId || "main";
-    
-    // Get all overlay windows
+    // FIXED: Get window configuration but don't confuse it with editing context
     const windows = OverlayData.getOverlayWindows();
+    let windowConfig = windows[this.windowId];
     
-    // Ensure we have a valid window config with fallback
-    let windowConfig = windows[windowId];
+    // Ensure we have a valid window config
     if (!windowConfig) {
-      console.warn(`${MODULE_ID} | Window ${windowId} not found, creating default config`);
+      console.warn(`${MODULE_ID} | Window ${this.windowId} not found, creating default config`);
       windowConfig = { 
-        id: windowId, 
-        name: "Main Overlay",
+        id: this.windowId, 
+        name: this.windowId === "main" ? "Main Overlay" : `Window ${this.windowId}`,
         activeLayout: "Default",
         slideshowActive: false,
         width: 800,
         height: 600
       };
-      OverlayData.setOverlayWindow(windowId, windowConfig);
+      OverlayData.setOverlayWindow(this.windowId, windowConfig);
     }
     
-    // Get the layout we need to display
-    const layoutName = this._selectedLayout || windowConfig.activeLayout || "Default";
-    this._selectedLayout = layoutName;
-    
-    // Get all layouts
+    // FIXED: Determine what scene we're editing (separate from what's displayed)
     const layouts = OverlayData.getLayouts() || {};
     
     // Ensure Default layout exists
@@ -126,18 +168,26 @@ export class OverlayConfig extends FormApplication {
       OverlayData.setLayout("Default", []);
     }
     
-    // Ensure we're working with arrays
-    let layoutItems = [];
+    // FIXED: Use editingLayout if specified, otherwise fall back to window's active layout
+    let currentEditingLayout = this.editingLayout || windowConfig.activeLayout || "Default";
     
-    if (layouts[layoutName]) {
-      layoutItems = Array.isArray(layouts[layoutName]) ? layouts[layoutName] : [];
-    } else {
-      console.warn(`${MODULE_ID} | Layout "${layoutName}" not found, initializing as empty.`);
-      layouts[layoutName] = [];
-      OverlayData.setLayout(layoutName, []);
+    // Ensure the layout we're trying to edit actually exists
+    if (!layouts[currentEditingLayout]) {
+      console.warn(`${MODULE_ID} | Layout "${currentEditingLayout}" not found, falling back to Default`);
+      currentEditingLayout = "Default";
     }
     
-    // OPTIMIZED: Process layout items with enhanced validation
+    this.editingLayout = currentEditingLayout;
+    
+    console.log(`${MODULE_ID} | Config data for window "${this.windowId}", editing scene "${currentEditingLayout}", window displays "${windowConfig.activeLayout}"`);
+    
+    // Get the items for the scene we're editing
+    let layoutItems = [];
+    if (layouts[currentEditingLayout]) {
+      layoutItems = Array.isArray(layouts[currentEditingLayout]) ? layouts[currentEditingLayout] : [];
+    }
+    
+    // Process layout items with enhanced validation
     const rows = layoutItems.map((item, idx) => {
       const hasAnimations = !!(item.animations && item.animations.length > 0);
       
@@ -164,9 +214,8 @@ export class OverlayConfig extends FormApplication {
           issueMessage = "No image selected";
         }
       } else if (item.type === "dice") {
-        // Dice items don't really have validation issues as they have defaults
         if (!item.diceType) {
-          item.diceType = "d20"; // Default dice type
+          item.diceType = "d20";
         }
       }
       
@@ -185,7 +234,7 @@ export class OverlayConfig extends FormApplication {
         rollAnimation: item.rollAnimation || false,
         rollDuration: item.rollDuration || 1000,
         rollSpeed: item.rollSpeed || 10,
-                // HP bar specific
+        // HP bar specific
         barWidth: item.barWidth || 200,
         barHeight: item.barHeight || 20,
         orientation: item.orientation || "ltr",
@@ -239,26 +288,24 @@ export class OverlayConfig extends FormApplication {
     const allWindows = Object.values(windows).map(w => ({
       id: w.id,
       name: w.name,
-      isActive: w.id === windowId
+      isActive: w.id === this.windowId
     }));
     
     // Get premium status and font data
     const isPremium = isPremiumActive();
     const fontData = getFontData(this._showExtendedFonts);
     
-    
-    
     return { 
       rows, 
       allActors,
       allUsers,
-      // Window-centric data
-      windowId,
+      // FIXED: Clear separation of contexts
+      windowId: this.windowId,
       windowName: windowConfig.name,
+      windowActiveLayout: windowConfig.activeLayout, // What the window is currently displaying
+      editingLayout: currentEditingLayout, // What scene we're currently editing
+      isEditingDifferentScene: currentEditingLayout !== windowConfig.activeLayout, // Are we editing a different scene than what's displayed?
       allWindows,
-      currentLayout: layoutName,
-      // Keep legacy properties for backward compatibility
-      activeLayout: layoutName,   
       layouts,
       // Enhanced font data
       ...fontData,
@@ -279,48 +326,101 @@ export class OverlayConfig extends FormApplication {
     // Initialize template helper events
     initializeTemplateHelperEvents(html);
 
-    // OPTIMIZED: Scene selector with improved UX
-    html.find("#scene-selector").change(async e => {
+    // FIXED: Scene selector for EDITING with proper state management
+    html.find("#editing-scene-selector").change(async e => {
       e.preventDefault();
-      const newLayout = html.find("#scene-selector").val();
+      const newEditingLayout = html.find("#editing-scene-selector").val();
       
-      // Save any changes to the current layout first
-      const formData = new FormDataExtended(html.closest('form')[0]).object;
-      await this._updateObject(e, formData);
+      if (newEditingLayout === this.editingLayout) {
+        return; // No change needed
+      }
+      
+      console.log(`${MODULE_ID} | Switching from editing "${this.editingLayout}" to "${newEditingLayout}"`);
+      
+      // FIXED: Prevent auto-save during scene switching
+      this._isSwitchingScenes = true;
       
       try {
-        this._selectedLayout = newLayout;
+        // Only save if there are actual changes to the current scene
+        if (this._hasFormChanges()) {
+          console.log(`${MODULE_ID} | Saving changes to "${this.editingLayout}" before switching`);
+          const formData = new FormDataExtended(html.closest('form')[0]).object;
+          await this._updateObject(e, formData);
+        }
+        
+        // FIXED: Just change what we're editing, don't change display
+        this.editingLayout = newEditingLayout;
         
         // Ensure the layout exists
         const layouts = OverlayData.getLayouts();
-        if (!layouts[newLayout]) {
-          await OverlayData.setLayout(newLayout, []);
+        if (!layouts[newEditingLayout]) {
+          console.log(`${MODULE_ID} | Creating new empty layout: ${newEditingLayout}`);
+          await OverlayData.setLayout(newEditingLayout, []);
         }
-        
 
-        ui.notifications.info(`Now editing scene: ${newLayout}`);
+        console.log(`${MODULE_ID} | Now editing scene: ${newEditingLayout} (window ${this.windowId} still displays: ${this.getData().windowActiveLayout})`);
+        ui.notifications.info(`Now editing scene: ${newEditingLayout}`);
 
         this.render(true);
       } catch (error) {
-        console.error("Error switching scene:", error);
+        console.error("Error switching editing scene:", error);
         ui.notifications.error("Failed to switch scene. Check console for details.");
+      } finally {
+        this._isSwitchingScenes = false;
       }
     });
+
+    // FIXED: Separate button to assign current scene to window
+    html.find("#assign-scene-to-window").click(async e => {
+      e.preventDefault();
+      
+      try {
+        const windows = OverlayData.getOverlayWindows();
+        const windowConfig = windows[this.windowId];
+        if (windowConfig) {
+          windowConfig.activeLayout = this.editingLayout;
+          await OverlayData.setOverlayWindow(this.windowId, windowConfig);
+          
+          ui.notifications.info(`Window "${windowConfig.name}" now displays scene: ${this.editingLayout}`);
+          this.render(true);
+          this._updateSpecificWindow(this.windowId);
+        }
+      } catch (error) {
+        console.error("Error assigning scene to window:", error);
+        ui.notifications.error("Failed to assign scene to window");
+      }
+    });
+
+    // FIXED: Button to switch to editing the currently displayed scene
+    html.find("#edit-displayed-scene").click(async e => {
+      e.preventDefault();
+      
+      // Save current changes first if there are any
+      if (this._hasFormChanges()) {
+        console.log(`${MODULE_ID} | Saving changes to "${this.editingLayout}" before switching to displayed scene`);
+        const formData = new FormDataExtended(html.closest('form')[0]).object;
+        await this._updateObject(e, formData);
+      }
+      
+      const windows = OverlayData.getOverlayWindows();
+      const windowConfig = windows[this.windowId];
+      
+      this.editingLayout = windowConfig.activeLayout;
+      ui.notifications.info(`Now editing the displayed scene: ${this.editingLayout}`);
+      this.render(true);
+    });
     
-    // OPTIMIZED: Manage scenes button
+    // Manage scenes button
     html.find("#manage-scenes-btn, .manage-scenes-btn").click(async () => {
       const { ManageLayouts } = await import('./layout-manager.js');
       new ManageLayouts().render(true);
     });
     
-    // Handle input changes for auto-save with debouncing
-    let autoSaveTimeout;
+    // FIXED: Handle input changes with improved auto-save logic
     html.find('input, select, textarea').on('change', (event) => {
-      clearTimeout(autoSaveTimeout);
-      autoSaveTimeout = setTimeout(() => {
-        this._onFieldChange(event);
-      }, 300); // 300ms debounce
+      this._onFieldChange(event);
     });
+
     // Toggle header color when hide checkbox is changed
     html.find('input[name^="hide-"]').on('change', function(event) {
       const card = $(event.currentTarget).closest('.fso-item-card');
@@ -330,7 +430,8 @@ export class OverlayConfig extends FormApplication {
         card.removeClass('fso-hidden-item');
       }
     });
-    // File picker for images - FIXED: Use correct class name
+
+    // File picker for images
     html.find(".fso-file-picker").off("click").click(e => {
       const idx = $(e.currentTarget).data("index");
       new FilePicker({
@@ -343,10 +444,10 @@ export class OverlayConfig extends FormApplication {
       }).render(true);
     });
     
-    // FIXED: Add buttons with correct class names
+    // Add buttons
     html.find(".fso-add-item-btn").click(this._onAddItem.bind(this));
     
-    // FIXED: Handle remove and move buttons with correct class names
+    // Handle remove and move buttons
     html.on("click", ".fso-remove-item", this._onRemoveRow.bind(this));
     html.find(".fso-duplicate-item").click(this._onDuplicateRow.bind(this));
     html.find(".fso-move-up").click(this._onMoveUp.bind(this));
@@ -354,14 +455,12 @@ export class OverlayConfig extends FormApplication {
     
     // Collapsible item cards functionality
     html.find('.fso-item-header-compact').off('click').on('click', function(event) {
-      // Don't collapse if clicking on action buttons
       if ($(event.target).closest('.fso-item-actions-horizontal, .fso-action-btn-small').length) {
         return;
       }
-      event.stopPropagation(); // Prevent bubbling to parent cards
+      event.stopPropagation();
       const itemCard = $(this).closest('.fso-item-card');
       itemCard.toggleClass('collapsed');
-      // Store collapse state in localStorage
       const itemIndex = itemCard.data('index');
       const collapseState = itemCard.hasClass('collapsed');
       const storageKey = `${MODULE_ID}-item-collapse-${itemIndex}`;
@@ -384,7 +483,7 @@ export class OverlayConfig extends FormApplication {
       }
     });
 
-    // Add keyboard support for collapsing (Space or Enter key)
+    // Add keyboard support for collapsing
     html.find('.fso-item-header-compact').attr('tabindex', '0').off('keydown').on('keydown', function(event) {
       if (event.key === ' ' || event.key === 'Enter') {
         event.preventDefault();
@@ -392,22 +491,22 @@ export class OverlayConfig extends FormApplication {
       }
     });
 
-    // FIXED: Animation manager with correct class name
+    // FIXED: Animation manager with proper context
     html.find(".fso-manage-animations").click(this._onManageAnimations.bind(this));
     
-    // OPTIMIZED: Quick action buttons
+    // Quick action buttons
     html.find("#open-overlay-btn").click(async () => {
       try {
         const { openOverlayWindow } = await import('../overlay/window-management.js');
-        openOverlayWindow();
-        ui.notifications.info("Overlay window opened!");
+        openOverlayWindow(this.windowId);
+        ui.notifications.info(`Overlay window opened: ${this.windowId}`);
       } catch (error) {
         console.error("Error opening overlay window:", error);
         ui.notifications.error("Failed to open overlay window. Check console for details.");
       }
     });
 
-    // Toggle roll animation settings visibility immediately
+    // Toggle roll animation settings visibility
     html.find('input[name^="rollAnimation-"]').on('change', function () {
       const index = this.name.split('-')[1];
       const durationRow = html.find(`input[name="rollDuration-${index}"]`).closest('.fso-config-row');
@@ -422,50 +521,115 @@ export class OverlayConfig extends FormApplication {
     });
   }
 
+  // FIXED: Improved form change detection
+  _captureFormState() {
+    if (!this.element) return;
+    try {
+      const form = this.element.find('form')[0];
+      if (form) {
+        this._lastSavedFormData = new FormDataExtended(form).object;
+      }
+    } catch (error) {
+      console.warn(`${MODULE_ID} | Could not capture form state:`, error);
+    }
+  }
+
+  _hasFormChanges() {
+    if (!this.element || !this._lastSavedFormData) return false;
+    
+    try {
+      const form = this.element.find('form')[0];
+      if (!form) return false;
+      
+      const currentFormData = new FormDataExtended(form).object;
+      return JSON.stringify(currentFormData) !== JSON.stringify(this._lastSavedFormData);
+    } catch (error) {
+      console.warn(`${MODULE_ID} | Could not detect form changes:`, error);
+      return true; // Assume changes if we can't detect
+    }
+  }
+
   _onManageAnimations(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
     const layouts = OverlayData.getLayouts();
-    const activeLayout = this._selectedLayout || "Default";
-    const item = layouts[activeLayout][index];
+    
+    // FIXED: Use the scene we're currently editing
+    const item = layouts[this.editingLayout][index];
     
     if (!item.animations) {
       item.animations = [];
     }
     
-    // Use the static method which handles premium checks
-    AnimationManager.openForItem(item, index, this);
+    console.log(`${MODULE_ID} | Opening animation manager for item ${index} in scene ${this.editingLayout}`);
     
+    // FIXED: Pass the current editing layout context to animation manager
+    AnimationManager.openForItem(item, index, this, this.editingLayout);
   }
 
-  async _onFieldChange(event) {
-    const form = $(event.currentTarget).closest('form');
-    const formData = new FormDataExtended(form[0]).object;
-    
-    await this._updateObject(event, formData);
-    this._updateAllWindows();
-    showAutoSaveFeedback();
-    
-    // NEW: Trigger live sync
-    if (game.settings.get(MODULE_ID, "autoSyncStandalone")) {
-      const { liveSync } = await import('../utils/live-sync.js');
-      liveSync.queueSync("overlay-config-change");
+  // FIXED: Improved field change handling with debouncing and scene awareness
+  _onFieldChange(event) {
+    // Don't auto-save if we're switching scenes
+    if (this._isSwitchingScenes) {
+      return;
     }
+    
+    // Clear any existing timeout
+    if (this._autoSaveTimeout) {
+      clearTimeout(this._autoSaveTimeout);
+    }
+    
+    // Set up debounced auto-save
+    this._autoSaveTimeout = setTimeout(async () => {
+      if (this._isSwitchingScenes) {
+        return; // Double-check in case scene switch started during timeout
+      }
+      
+      try {
+        const form = $(event.currentTarget).closest('form');
+        const formData = new FormDataExtended(form[0]).object;
+        
+        await this._updateObject(event, formData);
+        this._captureFormState(); // Update our saved state
+        
+        // FIXED: Only update windows that are displaying the scene we just modified
+        this._updateWindowsDisplayingScene(this.editingLayout);
+        
+        showAutoSaveFeedback();
+        
+        // Trigger live sync
+        if (game.settings.get(MODULE_ID, "autoSyncStandalone")) {
+          const { liveSync } = await import('../utils/live-sync.js');
+          liveSync.queueSync("overlay-config-change");
+        }
+      } catch (error) {
+        console.error(`${MODULE_ID} | Error in auto-save:`, error);
+      }
+    }, 300); // 300ms debounce
   }
   
-  _updateAllWindows() {
-    // Dynamic import to avoid circular dependencies
+  // FIXED: Only update windows that are actually displaying the modified scene
+  _updateWindowsDisplayingScene(sceneName) {
     import('../overlay/window-management.js').then(({ updateOverlayWindow }) => {
       const windows = OverlayData.getOverlayWindows() || {};
       
+      // Check main window
       if (window.overlayWindow && !window.overlayWindow.closed) {
-        updateOverlayWindow("main");
+        const mainConfig = windows.main || {};
+        if ((mainConfig.activeLayout || "Default") === sceneName) {
+          console.log(`${MODULE_ID} | Updating main window (displays "${sceneName}")`);
+          updateOverlayWindow("main");
+        }
       }
       
+      // Check other windows
       if (window.overlayWindows) {
         for (const [windowId, windowConfig] of Object.entries(windows)) {
           if (window.overlayWindows[windowId] && !window.overlayWindows[windowId].closed) {
-            updateOverlayWindow(windowId);
+            if ((windowConfig.activeLayout || "Default") === sceneName) {
+              console.log(`${MODULE_ID} | Updating window ${windowId} (displays "${sceneName}")`);
+              updateOverlayWindow(windowId);
+            }
           }
         }
       }
@@ -474,16 +638,33 @@ export class OverlayConfig extends FormApplication {
     });
   }
 
-  // OPTIMIZED: Single add function for all item types including dice
+  // FIXED: Update a specific window
+  _updateSpecificWindow(windowId) {
+    import('../overlay/window-management.js').then(({ updateOverlayWindow }) => {
+      if (windowId === "main") {
+        if (window.overlayWindow && !window.overlayWindow.closed) {
+          updateOverlayWindow("main");
+        }
+      } else {
+        if (window.overlayWindows && window.overlayWindows[windowId] && !window.overlayWindows[windowId].closed) {
+          updateOverlayWindow(windowId);
+        }
+      }
+    }).catch(error => {
+      console.error("Error updating specific overlay window:", error);
+    });
+  }
+
+  // FIXED: Add item to the scene we're editing
   async _onAddItem(event) {
     event.preventDefault();
     
     const button = $(event.currentTarget);
-    // FIXED: Simplified item type detection - just use the data-type attribute
     const itemType = button.data('type') || 'data';
     
-    
-    const layoutName = this._selectedLayout || "Default";
+    // FIXED: Add to the scene we're editing
+    const layoutName = this.editingLayout;
+    console.log(`${MODULE_ID} | Adding ${itemType} item to scene: ${layoutName}`);
     
     const layouts = OverlayData.getLayouts();
     const current = Array.isArray(layouts[layoutName]) ? layouts[layoutName] : [];
@@ -498,12 +679,12 @@ export class OverlayConfig extends FormApplication {
     current.unshift(newItem);
     await OverlayData.setLayout(layoutName, current);
     
-    this._updateAllWindows();
+    // Only update windows displaying this scene
+    this._updateWindowsDisplayingScene(layoutName);
     this.render();
     
-    // Show helpful tip for new users
     if (current.length === 1) {
-      ui.notifications.info(`Great! You've added your first item to this scene. Configure it below, then click "Open Overlay" to see it in action.`);
+      ui.notifications.info(`Great! You've added your first item to scene "${layoutName}". Configure it below, then assign the scene to a window to see it in action.`);
     }
   }
   
@@ -511,7 +692,8 @@ export class OverlayConfig extends FormApplication {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
     
-    const layoutName = this._selectedLayout || "Default";
+    // FIXED: Remove from the scene we're editing
+    const layoutName = this.editingLayout;
     
     const layouts = OverlayData.getLayouts();
     const current = Array.isArray(layouts[layoutName]) ? layouts[layoutName] : [];
@@ -533,7 +715,7 @@ export class OverlayConfig extends FormApplication {
         current.splice(index, 1);
         await OverlayData.setLayout(layoutName, current);
         
-        this._updateAllWindows();
+        this._updateWindowsDisplayingScene(layoutName);
         this.render();
         ui.notifications.info("Item removed successfully.");
       }
@@ -544,7 +726,8 @@ export class OverlayConfig extends FormApplication {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
     
-    const layoutName = this._selectedLayout || "Default";
+    // FIXED: Duplicate in the scene we're editing
+    const layoutName = this.editingLayout;
     console.log(`Duplicating item from scene: ${layoutName} at index ${index}`);
     
     const layouts = OverlayData.getLayouts();
@@ -554,7 +737,6 @@ export class OverlayConfig extends FormApplication {
       const originalItem = current[index];
       const duplicatedItem = deepCopy(originalItem);
       
-      // Modify the duplicated item to distinguish it from the original
       duplicatedItem.top = (duplicatedItem.top || 0) + 20;
       duplicatedItem.left = (duplicatedItem.left || 0) + 20;
       
@@ -562,7 +744,6 @@ export class OverlayConfig extends FormApplication {
         duplicatedItem.content = duplicatedItem.content + " (Copy)";
       }
       
-      // Reset the order to place it at the beginning
       for (let i = 0; i < current.length; i++) {
         current[i].order = (current[i].order || 0) + 1;
       }
@@ -571,7 +752,7 @@ export class OverlayConfig extends FormApplication {
       current.splice(index + 1, 0, duplicatedItem);
       await OverlayData.setLayout(layoutName, current);
       
-      this._updateAllWindows();
+      this._updateWindowsDisplayingScene(layoutName);
       ui.notifications.info("Item duplicated successfully!");
       this.render();
     }
@@ -581,7 +762,8 @@ export class OverlayConfig extends FormApplication {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
     
-    const layoutName = this._selectedLayout || "Default";
+    // FIXED: Move in the scene we're editing
+    const layoutName = this.editingLayout;
     
     const layouts = OverlayData.getLayouts();
     const current = Array.isArray(layouts[layoutName]) ? layouts[layoutName] : [];
@@ -590,7 +772,7 @@ export class OverlayConfig extends FormApplication {
       [current[index - 1], current[index]] = [current[index], current[index - 1]];
       await OverlayData.setLayout(layoutName, current);
       
-      this._updateAllWindows();
+      this._updateWindowsDisplayingScene(layoutName);
       this.render();
     }
   }
@@ -599,7 +781,8 @@ export class OverlayConfig extends FormApplication {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
     
-    const layoutName = this._selectedLayout || "Default";
+    // FIXED: Move in the scene we're editing
+    const layoutName = this.editingLayout;
     
     const layouts = OverlayData.getLayouts();
     const current = Array.isArray(layouts[layoutName]) ? layouts[layoutName] : [];
@@ -608,7 +791,7 @@ export class OverlayConfig extends FormApplication {
       [current[index], current[index + 1]] = [current[index + 1], current[index]];
       await OverlayData.setLayout(layoutName, current);
       
-      this._updateAllWindows();
+      this._updateWindowsDisplayingScene(layoutName);
       this.render();
     }
   }
@@ -637,6 +820,7 @@ export class OverlayConfig extends FormApplication {
         newItems[rowIndex] = deepCopy(ITEM_TEMPLATES.data);
       }
       
+      // Process all form fields (same as before)
       switch (field) {
         case "type": newItems[rowIndex].type = val; break;
         case "actorId": newItems[rowIndex].actorId = val; break;
@@ -647,7 +831,6 @@ export class OverlayConfig extends FormApplication {
           newItems[rowIndex].customPath = val; 
           break;
         case "content": newItems[rowIndex].content = val; break;
-        // Dice-specific fields
         case "diceType": newItems[rowIndex].diceType = val; break;
         case "alwaysVisible": newItems[rowIndex].alwaysVisible = Boolean(val); break;
         case "style": newItems[rowIndex].style = val; break;
@@ -660,8 +843,6 @@ export class OverlayConfig extends FormApplication {
             newItems[rowIndex].targetUsers = [];
           }
           break;
-
-                  // HP bar specific fields
         case "barWidth": newItems[rowIndex].barWidth = Number(val) || 200; break;
         case "barHeight": newItems[rowIndex].barHeight = Number(val) || 20; break;
         case "orientation": newItems[rowIndex].orientation = val; break;
@@ -676,7 +857,6 @@ export class OverlayConfig extends FormApplication {
         case "singleColor": newItems[rowIndex].singleColor = val; break;
         case "showBackground": newItems[rowIndex].showBackground = Boolean(val); break;
         case "backgroundColor": newItems[rowIndex].backgroundColor = val; break;
-        // Common fields
         case "top": newItems[rowIndex].top = Number(val) || 0; break;
         case "left": newItems[rowIndex].left = Number(val) || 0; break;
         case "hide": newItems[rowIndex].hide = Boolean(val); break;
@@ -717,11 +897,11 @@ export class OverlayConfig extends FormApplication {
       }
     });
     
-    // Use the _selectedLayout property to determine which layout to save to
-    const currentLayout = this._selectedLayout || "Default";
+    // FIXED: Save to the scene we're currently editing
+    const currentEditingLayout = this.editingLayout;
     
     const layouts = OverlayData.getLayouts();
-    const currentItems = layouts[currentLayout] || [];
+    const currentItems = layouts[currentEditingLayout] || [];
     
     // Preserve animations from existing items
     newItems.forEach((item, index) => {
@@ -730,13 +910,46 @@ export class OverlayConfig extends FormApplication {
       }
     });
     
-    // Add debugging attributes to help users
+    // Add debugging attributes
     newItems.forEach(item => {
       if (item.type === 'data' && item.dataPath === 'custom') {
         item._lastUpdated = Date.now();
       }
     });
     
-    await OverlayData.setLayout(currentLayout, newItems);
+    console.log(`${MODULE_ID} | Saving ${newItems.length} items to scene: ${currentEditingLayout}`);
+    await OverlayData.setLayout(currentEditingLayout, newItems);
+  }
+
+  /**
+   * Clean up when closing
+   */
+  async close(options = {}) {
+    if (this._autoSaveTimeout) {
+      clearTimeout(this._autoSaveTimeout);
+    }
+    return super.close(options);
+  }
+
+  /**
+   * Static method to open overlay config for editing a specific scene
+   */
+  static openForWindow(windowId = "main", editingLayout = null) {
+    // Close any existing config dialogs
+    for (const app of Object.values(ui.windows)) {
+      if (app.constructor.name === 'OverlayConfig') {
+        app.close();
+      }
+    }
+    
+    const config = new OverlayConfig({ windowId, editingLayout });
+    return config.render(true);
+  }
+
+  /**
+   * Static method to open config for editing a specific scene
+   */
+  static openForScene(sceneName, windowId = "main") {
+    return OverlayConfig.openForWindow(windowId, sceneName);
   }
 }

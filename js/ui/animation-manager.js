@@ -1,4 +1,4 @@
-// Animation Manager UI Component - FIXED VERSION
+// Animation Manager UI Component - FIXED LAYOUT CONTEXT VERSION
 import { MODULE_ID, ANIMATION_TYPES } from '../core/constants.js';
 import { isPremiumActive, showPremiumRequiredDialog } from '../premium/validation.js';
 import OverlayData from '../../data-storage.js';
@@ -15,12 +15,17 @@ export class AnimationManager extends FormApplication {
     });
   }
 
-  constructor(item, itemIndex, parentConfig) {
+  constructor(item, itemIndex, parentConfig, layoutName) {
     super();
     
-    this.item = foundry.utils.deepClone(item); // FIXED: Deep clone to avoid reference issues
+    this.item = foundry.utils.deepClone(item);
     this.itemIndex = itemIndex;
     this.parentConfig = parentConfig;
+    
+    // FIXED: Store the specific layout context
+    this.layoutName = layoutName || "Default";
+    
+    console.log(`${MODULE_ID} | Animation Manager created for item ${itemIndex} in layout: ${this.layoutName}`);
     
     // Ensure animations array exists
     if (!this.item.animations) {
@@ -28,7 +33,6 @@ export class AnimationManager extends FormApplication {
     }
   }
 
-  // FIXED: Check premium status in render instead of constructor
   async render(force = false, options = {}) {
     if (!isPremiumActive()) {
       showPremiumRequiredDialog("The Animation Manager");
@@ -46,14 +50,16 @@ export class AnimationManager extends FormApplication {
       allActors: allActors, 
       continuousAnimations: ANIMATION_TYPES.CONTINUOUS,
       activeAnimations: (this.item.animations || []).filter(a => a.type === 'continuous'),
-      isPremium: isPremiumActive()
+      isPremium: isPremiumActive(),
+      layoutName: this.layoutName, // Include layout context for debugging
+      itemIndex: this.itemIndex
     };
   }
 
   activateListeners(html) {
     super.activateListeners(html);
 
-    console.log("Animation Manager activating listeners");
+    console.log(`${MODULE_ID} | Animation Manager activating listeners for layout: ${this.layoutName}`);
     
     html.find(".add-animation").click(this._onAddAnimation.bind(this));
     html.find(".remove-animation").click(this._onRemoveAnimation.bind(this));
@@ -76,7 +82,7 @@ export class AnimationManager extends FormApplication {
       return;
     }
     
-    console.log(`Adding ${type} animation: ${animation}`);
+    console.log(`${MODULE_ID} | Adding ${type} animation: ${animation} to layout: ${this.layoutName}`);
     
     if (type !== "continuous") return;
     
@@ -87,7 +93,6 @@ export class AnimationManager extends FormApplication {
       duration: Number(html.find(`#${type}-duration`).val()) || 1.5
     };
     
-    // FIXED: Ensure animations array exists and add to it properly
     if (!this.item.animations) {
       this.item.animations = [];
     }
@@ -97,11 +102,10 @@ export class AnimationManager extends FormApplication {
     console.log("Added animation:", newAnimation);
     console.log("Current animations:", this.item.animations);
     
-    // FIXED: Save immediately and wait for completion
     const saveSuccess = await this._saveItemAnimations();
     if (saveSuccess) {
       ui.notifications.info(`${type} animation added successfully`);
-      this.render(); // Re-render to show the new animation
+      this.render();
     } else {
       ui.notifications.error("Failed to save animation");
     }
@@ -114,7 +118,7 @@ export class AnimationManager extends FormApplication {
 
     if (type !== 'continuous') return;
     
-    console.log(`Removing ${type} animation at index ${index}`);
+    console.log(`${MODULE_ID} | Removing ${type} animation at index ${index} from layout: ${this.layoutName}`);
     
     const animations = this.item.animations || [];
     let removeIndex = -1;
@@ -145,59 +149,56 @@ export class AnimationManager extends FormApplication {
     }
   }
   
-  // FIXED: Improved save method with better error handling and immediate overlay updates
+  // FIXED: Save to the specific layout context, not global active layout
   async _saveItemAnimations() {
     try {
-      console.log("Saving animations for item at index", this.itemIndex);
+      console.log(`${MODULE_ID} | Saving animations for item ${this.itemIndex} in layout: ${this.layoutName}`);
       console.log("Animations to save:", this.item.animations);
       
       const layouts = OverlayData.getLayouts();
-      const activeLayout = OverlayData.getActiveLayout() || "Default";
       
-      if (!layouts[activeLayout]) {
-        console.error("Active layout not found:", activeLayout);
+      // FIXED: Use the specific layout we're working with
+      if (!layouts[this.layoutName]) {
+        console.error(`Layout not found: ${this.layoutName}`);
         return false;
       }
       
-      if (!layouts[activeLayout][this.itemIndex]) {
-        console.error("Item not found at index:", this.itemIndex);
+      if (!layouts[this.layoutName][this.itemIndex]) {
+        console.error(`Item not found at index: ${this.itemIndex} in layout: ${this.layoutName}`);
         return false;
       }
       
-      // FIXED: Update the layout data properly
-      const layoutItems = [...layouts[activeLayout]]; // Create a copy
-      layoutItems[this.itemIndex] = { ...layoutItems[this.itemIndex] }; // Copy the item
+      // Create a copy of the layout data
+      const layoutItems = [...layouts[this.layoutName]];
+      layoutItems[this.itemIndex] = { ...layoutItems[this.itemIndex] };
       
       // Update animations
       layoutItems[this.itemIndex].animations = [...(this.item.animations || [])];
       
-      
-      console.log("Saving layout with updated item:", layoutItems[this.itemIndex]);
+      console.log(`${MODULE_ID} | Saving layout ${this.layoutName} with updated item:`, layoutItems[this.itemIndex]);
       
       // Save the updated layout
-      await OverlayData.setLayout(activeLayout, layoutItems);
+      await OverlayData.setLayout(this.layoutName, layoutItems);
       
-      // FIXED: Update parent config if it exists
+      // Update parent config if it exists
       if (this.parentConfig && this.parentConfig.render) {
         this.parentConfig.render();
       }
       
-      // FIXED: Force immediate overlay window update
+      // Force immediate overlay window update
       await this._updateOverlayWindows();
       
-      console.log("Animation save completed successfully");
+      console.log(`${MODULE_ID} | Animation save completed successfully for layout: ${this.layoutName}`);
       return true;
       
     } catch (error) {
-      console.error("Error saving animations:", error);
+      console.error(`${MODULE_ID} | Error saving animations:`, error);
       return false;
     }
   }
   
-  // FIXED: New method to properly update overlay windows
   async _updateOverlayWindows() {
     try {
-      // Import the function dynamically to avoid circular dependencies
       const { updateOverlayWindow } = await import('../overlay/window-management.js');
       
       // Update main window if open
@@ -214,16 +215,15 @@ export class AnimationManager extends FormApplication {
         }
       }
       
-      console.log("Overlay windows updated after animation save");
+      console.log(`${MODULE_ID} | Overlay windows updated after animation save`);
       
     } catch (error) {
-      console.error("Error updating overlay windows:", error);
+      console.error(`${MODULE_ID} | Error updating overlay windows:`, error);
     }
   }
   
   async _updateObject(event, formData) {
-    // FIXED: Handle form data for duration changes
-    console.log("Updating object with form data:", formData);
+    console.log(`${MODULE_ID} | Updating animation object with form data for layout: ${this.layoutName}`, formData);
     
     for (const [key, value] of Object.entries(formData)) {
       const parts = key.split('.');
@@ -248,7 +248,7 @@ export class AnimationManager extends FormApplication {
         
         if (targetIndex >= 0) {
           this.item.animations[targetIndex][property] = Number(value);
-          console.log(`Updated animation ${targetIndex} ${property} to ${value}`);
+          console.log(`Updated animation ${targetIndex} ${property} to ${value} in layout: ${this.layoutName}`);
         }
       }
     }
@@ -256,16 +256,25 @@ export class AnimationManager extends FormApplication {
     await this._saveItemAnimations();
   }
 
-  // FIXED: Static method to open animation manager with premium check
-  static async openForItem(item, itemIndex, parentConfig) {
+  // FIXED: Static method with layout context
+  static async openForItem(item, itemIndex, parentConfig, layoutName = null) {
     if (!isPremiumActive()) {
       showPremiumRequiredDialog("The Animation Manager");
       return null;
     }
     
-    console.log("Opening Animation Manager for item:", item);
+    // FIXED: Determine the layout context
+    let contextLayout = layoutName;
+    if (!contextLayout && parentConfig && parentConfig._selectedLayout) {
+      contextLayout = parentConfig._selectedLayout;
+    }
+    if (!contextLayout) {
+      contextLayout = "Default";
+    }
     
-    const manager = new AnimationManager(item, itemIndex, parentConfig);
+    console.log(`${MODULE_ID} | Opening Animation Manager for item ${itemIndex} in layout: ${contextLayout}`);
+    
+    const manager = new AnimationManager(item, itemIndex, parentConfig, contextLayout);
     return manager.render(true);
   }
 }

@@ -378,7 +378,7 @@ export function triggerHPAnimation(actorId, animationType, oldValue, newValue) {
   if (!container) return;
   
   const layouts = OverlayData.getLayouts();
-  const activeLayout = OverlayData.getActiveLayout() || "Default";
+  const activeLayout = OverlayData.getWindowLayout("main");
   const items = layouts[activeLayout] || [];
   
   const hpItems = items.filter(item => 

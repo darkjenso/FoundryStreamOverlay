@@ -1,678 +1,454 @@
-const MODULE_ID = "foundrystreamoverlay";
+// FIXED Data Storage for Foundry Stream Overlay - CLEAN VERSION
+import { MODULE_ID } from './js/core/constants.js';
 
-/**
- * A class to handle all data storage operations for the module
- */
 class OverlayDataStorage {
   constructor() {
     this.data = {
-      settings: {
-        isPremium: false,
-        activationKey: "",
-        backgroundColour: "#00ff00",
-        enableTriggeredAnimations: true
-      },
-      layouts: {
-        "Default": []
-      },
-      activeLayout: "Default",
+      layouts: { "Default": [] },
       overlayWindows: {
         "main": { 
           id: "main", 
           name: "Main Overlay",
           activeLayout: "Default",
-          "slideshowActive": false,
-          "width": 800,      
-          "height": 600
+          slideshowActive: false,
+          width: 800,
+          height: 600
         }
       },
       slideshow: { 
         list: [], 
         random: false,
         transition: "none",
-        transitionDuration: 0.5
+        transitionDuration: 0.5,
+        targetWindow: "main"
+      },
+      settings: {
+        isPremium: false,
+        activationKey: "",
+        backgroundColour: "#00ff00",
+        enableTriggeredAnimations: true
       }
     };
-    
     this.initialized = false;
   }
-  
-  /**
-   * Initialize the data store, loading data from file if available
-   */
+
   async initialize() {
-    if (this.initialized) {
-      console.log(`${MODULE_ID} | OverlayData already initialized, skipping`);
-      return;
-    }
+    if (this.initialized) return;
     
-    console.log(`${MODULE_ID} | Starting OverlayData initialization...`);
+    console.log(`${MODULE_ID} | Initializing data storage...`);
     
     try {
-      // FIXED: More robust data loading
-      let storedData = null;
+      // Load all data from Foundry settings
+      await this._loadFromSettings();
       
-      try {
-        storedData = await game.settings.get(MODULE_ID, "storedUserData");
-        console.log(`${MODULE_ID} | Retrieved stored data:`, storedData ? Object.keys(storedData) : "null");
-      } catch (error) {
-        console.error(`${MODULE_ID} | Error retrieving stored data:`, error);
-      }
-      
-      if (storedData && typeof storedData === 'object' && Object.keys(storedData).length > 0) {
-        console.log(`${MODULE_ID} | Found existing user data, merging with defaults`);
-        
-        // FIXED: More careful merging to preserve existing data
-        if (storedData.layouts && Object.keys(storedData.layouts).length > 0) {
-          console.log(`${MODULE_ID} | Preserving ${Object.keys(storedData.layouts).length} layouts`);
-          this.data.layouts = storedData.layouts;
-        }
-        
-        if (storedData.overlayWindows && Object.keys(storedData.overlayWindows).length > 0) {
-          console.log(`${MODULE_ID} | Preserving ${Object.keys(storedData.overlayWindows).length} windows`);
-          this.data.overlayWindows = storedData.overlayWindows;
-        }
-        
-        if (storedData.activeLayout) {
-          console.log(`${MODULE_ID} | Preserving active layout: ${storedData.activeLayout}`);
-          this.data.activeLayout = storedData.activeLayout;
-        }
-        
-        if (storedData.settings) {
-          console.log(`${MODULE_ID} | Preserving settings`);
-          this.data.settings = foundry.utils.mergeObject(this.data.settings, storedData.settings);
-        }
-        
-        if (storedData.slideshow) {
-          console.log(`${MODULE_ID} | Preserving slideshow config`);
-          this.data.slideshow = storedData.slideshow;
-        }
-        
-      } else {
-        console.log(`${MODULE_ID} | No stored data found, checking for legacy settings...`);
-        await this._migrateLegacySettings();
-      }
-      
-      // FIXED: Only ensure minimal data if absolutely nothing exists
-      await this._ensureMinimalDataOnly();
-      
-      // CRITICAL: Set initialized flag BEFORE any save operations
       this.initialized = true;
-      console.log(`${MODULE_ID} | Data storage initialization complete`);
-      this.debugDataState();
+      console.log(`${MODULE_ID} | Data storage initialized`);
       
-      // Save if we made any changes during initialization
-      const hasData = this.data.layouts && Object.keys(this.data.layouts).length > 0;
-      if (!hasData) {
-        console.log(`${MODULE_ID} | Saving initial data structure`);
-        await this.save();
-      } else {
-        console.log(`${MODULE_ID} | Data structure complete, no save needed`);
-      }
+      console.log(`${MODULE_ID} | Data loaded:`, {
+        layoutCount: Object.keys(this.data.layouts).length,
+        windowCount: Object.keys(this.data.overlayWindows).length,
+        slideshowItems: this.data.slideshow.list.length
+      });
       
     } catch (error) {
-      console.error(`${MODULE_ID} | Error initializing data storage:`, error);
-      this.initialized = true; // Set anyway to prevent loops
-      await this._ensureMinimalDataOnly();
+      console.error(`${MODULE_ID} | Failed to initialize data storage:`, error);
+      this.initialized = false;
+      throw error;
     }
   }
-  
-  /**
-   * Migrate from legacy settings system (backward compatibility)
-   * @private
-   */
-  async _migrateLegacySettings() {
-    console.log(`${MODULE_ID} | Checking for legacy settings to migrate...`);
-    
-    let migrated = false;
-    
+
+  async _loadFromSettings() {
     try {
-      // Try to get legacy layouts
-      const existingLayouts = game.settings.get(MODULE_ID, "layouts");
-      if (existingLayouts && Object.keys(existingLayouts).length > 0) {
-        console.log(`${MODULE_ID} | Migrating layouts from legacy settings`);
-        this.data.layouts = existingLayouts;
-        migrated = true;
+      // Load layouts
+      const layouts = game.settings.get(MODULE_ID, "layouts") || { "Default": [] };
+      this.data.layouts = layouts;
+      
+      // Ensure Default layout exists
+      if (!this.data.layouts["Default"]) {
+        this.data.layouts["Default"] = [];
       }
-    } catch(e) {
-      // No legacy layouts
-    }
-    
-    try {
-      // Try to get legacy active layout
-      const existingActiveLayout = game.settings.get(MODULE_ID, "activeLayout");
-      if (existingActiveLayout) {
-        console.log(`${MODULE_ID} | Migrating active layout from legacy settings`);
-        this.data.activeLayout = existingActiveLayout;
-        migrated = true;
+
+      // Load overlay windows
+      const overlayWindows = game.settings.get(MODULE_ID, "overlayWindows") || {};
+      this.data.overlayWindows = overlayWindows;
+      
+      // Ensure main window exists with proper structure
+      if (!this.data.overlayWindows["main"]) {
+        this.data.overlayWindows["main"] = { 
+          id: "main", 
+          name: "Main Overlay",
+          activeLayout: "Default",
+          slideshowActive: false,
+          width: 800,
+          height: 600
+        };
       }
-    } catch(e) {
-      // No legacy active layout
-    }
-    
-    try {
-      // Try to get legacy overlay windows
-      const existingWindows = game.settings.get(MODULE_ID, "overlayWindows");
-      if (existingWindows && Object.keys(existingWindows).length > 0) {
-        console.log(`${MODULE_ID} | Migrating overlay windows from legacy settings`);
-        this.data.overlayWindows = foundry.utils.mergeObject(this.data.overlayWindows, existingWindows);
-        migrated = true;
-      }
-    } catch(e) {
-      // No legacy windows
-    }
-    
-    if (migrated) {
-      console.log(`${MODULE_ID} | Legacy migration complete, saving data`);
-      await this.save();
+
+      // Load slideshow config
+      const slideshow = game.settings.get(MODULE_ID, "slideshow") || { 
+        list: [], 
+        random: false,
+        transition: "none",
+        transitionDuration: 0.5,
+        targetWindow: "main"
+      };
+      this.data.slideshow = slideshow;
+
+      // Load user-specific settings
+      this.data.settings.isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
+      this.data.settings.activationKey = game.settings.get(MODULE_ID, "activationKey") || "";
+      this.data.settings.backgroundColour = game.settings.get(MODULE_ID, "backgroundColour") || "#00ff00";
+      this.data.settings.enableTriggeredAnimations = game.settings.get(MODULE_ID, "enableTriggeredAnimations") || true;
+      
+      console.log(`${MODULE_ID} | Settings loaded successfully`);
+      
+    } catch (error) {
+      console.error(`${MODULE_ID} | Error loading settings:`, error);
+      throw error;
     }
   }
-  
-  /**
-   * FIXED: Only creates data if absolutely nothing exists
-   * @private
-   */
-  async _ensureMinimalDataOnly() {
-    let needsBasicSetup = false;
-    
-    // Only create layouts if NONE exist
-    if (!this.data.layouts || Object.keys(this.data.layouts).length === 0) {
-      console.log(`${MODULE_ID} | No layouts found at all, creating Default`);
-      this.data.layouts = { "Default": [] };
-      needsBasicSetup = true;
+
+  async save() {
+    if (!this.initialized) {
+      console.warn(`${MODULE_ID} | Cannot save - data storage not initialized`);
+      return;
+    }
+
+    try {
+      // Save layouts
+      await game.settings.set(MODULE_ID, "layouts", this.data.layouts);
+      
+      // Save overlay windows
+      await game.settings.set(MODULE_ID, "overlayWindows", this.data.overlayWindows);
+      
+      // Save slideshow
+      await game.settings.set(MODULE_ID, "slideshow", this.data.slideshow);
+      
+      console.log(`${MODULE_ID} | Data saved successfully`);
+      
+    } catch (error) {
+      console.error(`${MODULE_ID} | Error saving data:`, error);
+      throw error;
+    }
+  }
+
+  // ===================================
+  // LAYOUT MANAGEMENT (SCENES)
+  // ===================================
+
+  getLayouts() {
+    return this.data.layouts || { "Default": [] };
+  }
+
+  getLayout(layoutName) {
+    return this.data.layouts[layoutName] || null;
+  }
+
+  async setLayout(layoutName, items) {
+    this.data.layouts[layoutName] = Array.isArray(items) ? items : [];
+    await game.settings.set(MODULE_ID, "layouts", this.data.layouts);
+    console.log(`${MODULE_ID} | Layout "${layoutName}" saved with ${items.length} items`);
+  }
+
+  async deleteLayout(layoutName) {
+    if (layoutName === "Default") {
+      console.warn(`${MODULE_ID} | Cannot delete Default layout`);
+      return false;
     }
     
-    // Only create windows if NONE exist  
-    if (!this.data.overlayWindows || Object.keys(this.data.overlayWindows).length === 0) {
-      console.log(`${MODULE_ID} | No windows found at all, creating main`);
-      this.data.overlayWindows = {
-        "main": {
-          id: "main",
-          name: "Main Overlay", 
+    delete this.data.layouts[layoutName];
+    await game.settings.set(MODULE_ID, "layouts", this.data.layouts);
+    console.log(`${MODULE_ID} | Layout "${layoutName}" deleted`);
+    return true;
+  }
+
+  // ===================================
+  // WINDOW MANAGEMENT
+  // ===================================
+
+  getOverlayWindows() {
+    return this.data.overlayWindows || {};
+  }
+
+  getOverlayWindow(windowId) {
+    return this.data.overlayWindows[windowId] || null;
+  }
+
+  async setOverlayWindow(windowId, config) {
+    this.data.overlayWindows[windowId] = {
+      id: windowId,
+      name: config.name || `Window ${windowId}`,
+      activeLayout: config.activeLayout || "Default",
+      slideshowActive: config.slideshowActive || false,
+      width: config.width || 800,
+      height: config.height || 600,
+      backgroundColor: config.backgroundColor || "#00ff00",
+      ...config
+    };
+    
+    await game.settings.set(MODULE_ID, "overlayWindows", this.data.overlayWindows);
+    console.log(`${MODULE_ID} | Window "${windowId}" configuration saved:`, this.data.overlayWindows[windowId]);
+  }
+
+  async deleteOverlayWindow(windowId) {
+    if (windowId === "main") {
+      console.warn(`${MODULE_ID} | Cannot delete main window`);
+      return false;
+    }
+    
+    delete this.data.overlayWindows[windowId];
+    await game.settings.set(MODULE_ID, "overlayWindows", this.data.overlayWindows);
+    console.log(`${MODULE_ID} | Window "${windowId}" deleted`);
+    return true;
+  }
+
+  // ===================================
+  // SLIDESHOW MANAGEMENT
+  // ===================================
+
+  getSlideshow() {
+    return this.data.slideshow || { 
+      list: [], 
+      random: false,
+      transition: "none",
+      transitionDuration: 0.5,
+      targetWindow: "main"
+    };
+  }
+
+  async setSlideshow(slideshowData) {
+    this.data.slideshow = {
+      list: slideshowData.list || [],
+      random: slideshowData.random || false,
+      transition: slideshowData.transition || "none",
+      transitionDuration: slideshowData.transitionDuration || 0.5,
+      targetWindow: slideshowData.targetWindow || "main"
+    };
+    
+    await game.settings.set(MODULE_ID, "slideshow", this.data.slideshow);
+    console.log(`${MODULE_ID} | Slideshow configuration saved`);
+  }
+
+  // ===================================
+  // SETTINGS MANAGEMENT
+  // ===================================
+
+  getSetting(key) {
+    return this.data.settings[key];
+  }
+
+  async setSetting(key, value) {
+    this.data.settings[key] = value;
+    
+    // Also save to Foundry settings if it's a registered setting
+    try {
+      await game.settings.set(MODULE_ID, key, value);
+    } catch (error) {
+      console.warn(`${MODULE_ID} | Setting "${key}" not registered in Foundry, storing locally only`);
+    }
+    
+    console.log(`${MODULE_ID} | Setting "${key}" updated to:`, value);
+  }
+
+  // ===================================
+  // IMPORT/EXPORT FUNCTIONALITY
+  // ===================================
+
+  exportToFile() {
+    const exportData = {
+      version: "2.0",
+      timestamp: new Date().toISOString(),
+      layouts: this.data.layouts,
+      overlayWindows: this.data.overlayWindows,
+      slideshow: this.data.slideshow,
+      settings: {
+        backgroundColour: this.data.settings.backgroundColour,
+        enableTriggeredAnimations: this.data.settings.enableTriggeredAnimations
+        // Note: Don't export premium settings for security
+      }
+    };
+
+    const jsonStr = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `foundry-stream-overlay-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    ui.notifications.info("Overlay data exported successfully!");
+  }
+
+  async importFromFile(file) {
+    try {
+      const text = await file.text();
+      const importData = JSON.parse(text);
+      
+      // Validate the import data structure
+      if (!importData.layouts) {
+        throw new Error("Invalid backup file - missing layouts data");
+      }
+
+      // Confirm the import
+      const confirmed = await Dialog.confirm({
+        title: "Import Overlay Data",
+        content: `
+          <p><strong>This will replace all your current overlay data!</strong></p>
+          <p>Backup contains:</p>
+          <ul>
+            <li>${Object.keys(importData.layouts || {}).length} scenes</li>
+            <li>${Object.keys(importData.overlayWindows || {}).length} windows</li>
+            <li>${(importData.slideshow?.list || []).length} slideshow items</li>
+          </ul>
+          <p>Are you sure you want to continue?</p>
+        `,
+        yes: () => true,
+        no: () => false
+      });
+
+      if (!confirmed) return false;
+
+      // Import the data
+      this.data.layouts = importData.layouts || { "Default": [] };
+      this.data.overlayWindows = importData.overlayWindows || {
+        "main": { 
+          id: "main", 
+          name: "Main Overlay",
           activeLayout: "Default",
           slideshowActive: false,
           width: 800,
           height: 600
         }
       };
-      needsBasicSetup = true;
-    }
-    
-    // Only set active layout if none exists
-    if (!this.data.activeLayout) {
-      console.log(`${MODULE_ID} | No active layout, setting to Default`);
-      this.data.activeLayout = "Default";
-      needsBasicSetup = true;
-    }
-    
-    // Only set slideshow if none exists
-    if (!this.data.slideshow) {
-      console.log(`${MODULE_ID} | No slideshow config, creating default`);
-      this.data.slideshow = {
-        list: [],
+      this.data.slideshow = importData.slideshow || { 
+        list: [], 
         random: false,
-        transition: "none", 
-        transitionDuration: 0.5
+        transition: "none",
+        transitionDuration: 0.5,
+        targetWindow: "main"
       };
-      needsBasicSetup = true;
-    }
-    
-    // Only set settings if none exist
-    if (!this.data.settings) {
-      console.log(`${MODULE_ID} | No settings found, creating defaults`);
-      this.data.settings = {
-        isPremium: false,
-        activationKey: "",
-        backgroundColour: "#00ff00",
-        enableTriggeredAnimations: true
-      };
-      needsBasicSetup = true;
-    }
-    
-    if (needsBasicSetup) {
-      console.log(`${MODULE_ID} | Created minimal required data structure`);
-    } else {
-      console.log(`${MODULE_ID} | All required data already exists`);
-    }
-  }
-  
-  /**
-   * Debug function to check what data actually exists
-   */
-  debugDataState() {
-    console.log(`${MODULE_ID} | === DATA STATE DEBUG ===`);
-    console.log(`${MODULE_ID} | Initialized: ${this.initialized}`);
-    console.log(`${MODULE_ID} | Layouts:`, this.data.layouts);
-    console.log(`${MODULE_ID} | Active Layout: ${this.data.activeLayout}`);
-    console.log(`${MODULE_ID} | Windows:`, this.data.overlayWindows);
-    console.log(`${MODULE_ID} | Settings:`, this.data.settings);
-    console.log(`${MODULE_ID} | =========================`);
-    
-    // Also check game settings
-    try {
-      const gameStoredData = game.settings.get(MODULE_ID, "storedUserData");
-      console.log(`${MODULE_ID} | Game Settings Data:`, gameStoredData);
+
+      // Import settings (excluding premium settings)
+      if (importData.settings) {
+        if (importData.settings.backgroundColour) {
+          this.data.settings.backgroundColour = importData.settings.backgroundColour;
+        }
+        if (importData.settings.enableTriggeredAnimations !== undefined) {
+          this.data.settings.enableTriggeredAnimations = importData.settings.enableTriggeredAnimations;
+        }
+      }
+
+      // Save everything
+      await this.save();
+      
+      ui.notifications.info("Overlay data imported successfully!");
+      console.log(`${MODULE_ID} | Data imported from file:`, file.name);
+      
+      return true;
+      
     } catch (error) {
-      console.log(`${MODULE_ID} | Could not get game settings data:`, error);
+      console.error(`${MODULE_ID} | Import error:`, error);
+      ui.notifications.error(`Import failed: ${error.message}`);
+      return false;
     }
-  }
-  
-  /**
-   * Save all data to storage
-   */
-// Update the save method in data-storage.js to only allow GMs to save
-async save() {
-  // Only GMs can save world-scoped data
-  if (!game.user.isGM) {
-    console.log(`${MODULE_ID} | Non-GM user cannot save world-scoped data`);
-    ui.notifications.warn("Only GMs can modify overlay settings");
-    return false;
   }
 
-  try {
-    await game.settings.set(MODULE_ID, "storedUserData", this.data);
-    console.log(`${MODULE_ID} | Saved user data to storage`);
-    
-    // Optional: trigger any update callbacks
-    this._triggerCallbacks();
-    
-    return true;
-  } catch (error) {
-    console.error(`${MODULE_ID} | Error saving data:`, error);
-    ui.notifications.error("Failed to save overlay data. Check console for details.");
-    return false;
+  // ===================================
+  // UTILITY METHODS
+  // ===================================
+
+  // Get the layout for a specific window
+  getWindowLayout(windowId) {
+    const window = this.getOverlayWindow(windowId);
+    if (!window) return "Default";
+    return window.activeLayout || "Default";
   }
-}
-  
-  /**
-   * Export all user data to a downloadable JSON file
-   */
-  exportToFile() {
-    try {
-      // Create a formatted JSON string
-      const dataStr = JSON.stringify(this.data, null, 2);
-      
-      // Create a download link
-      const dataBlob = new Blob([dataStr], {type: 'application/json'});
-      const url = URL.createObjectURL(dataBlob);
-      
-      // Create download link
-      const downloadLink = document.createElement('a');
-      downloadLink.href = url;
-      downloadLink.download = `foundry-stream-overlay-data.json`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      
-      ui.notifications.info("Overlay data exported successfully!");
-    } catch (error) {
-      console.error(`${MODULE_ID} | Export error:`, error);
-      ui.notifications.error("Failed to export overlay data.");
+
+  // Set the layout for a specific window
+  async setWindowLayout(windowId, layoutName) {
+    const window = this.getOverlayWindow(windowId);
+    if (!window) {
+      console.warn(`${MODULE_ID} | Window "${windowId}" not found`);
+      return false;
     }
-  }
-  
-  /**
-   * Import data from a JSON file
-   * @param {File} file - The JSON file to import
-   * @returns {Promise<boolean>} - Whether the import was successful
-   */
-  async importFromFile(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      
-      reader.onload = async (event) => {
-        try {
-          const importedData = JSON.parse(event.target.result);
-          
-          // Validate the data structure
-          if (!this._validateImportedData(importedData)) {
-            ui.notifications.error("Invalid data format in imported file.");
-            resolve(false);
-            return;
-          }
-          
-          // Merge imported data with default structure to ensure all required fields exist
-          this.data = foundry.utils.mergeObject(this.data, importedData);
-          
-          // Save the imported data
-          const saved = await this.save();
-          
-          if (saved) {
-            ui.notifications.info("Overlay data imported successfully!");
-            resolve(true);
-          } else {
-            resolve(false);
-          }
-        } catch (error) {
-          console.error(`${MODULE_ID} | Import error:`, error);
-          ui.notifications.error("Failed to import overlay data.");
-          resolve(false);
-        }
-      };
-      
-      reader.onerror = () => {
-        ui.notifications.error("Error reading the file.");
-        resolve(false);
-      };
-      
-      reader.readAsText(file);
+
+    const layouts = this.getLayouts();
+    if (!layouts[layoutName]) {
+      console.warn(`${MODULE_ID} | Layout "${layoutName}" not found`);
+      return false;
+    }
+
+    await this.setOverlayWindow(windowId, {
+      ...window,
+      activeLayout: layoutName
     });
-  }
-  
-  /**
-   * Validate imported data structure
-   * @param {Object} data - The imported data
-   * @returns {boolean} - Whether the data is valid
-   */
-  _validateImportedData(data) {
-    // Basic validation to ensure required sections exist
-    const requiredSections = ['settings', 'layouts'];
-    
-    for (const section of requiredSections) {
-      if (!data[section] || typeof data[section] !== 'object') {
-        return false;
-      }
-    }
-    
-    // Layouts should have at least a Default layout
-    if (!data.layouts.Default) {
-      data.layouts.Default = [];
-    }
-    
+
+    console.log(`${MODULE_ID} | Window "${windowId}" layout changed to "${layoutName}"`);
     return true;
   }
-  
-  /**
-   * Get a setting value
-   * @param {string} key - The setting key
-   * @param {*} defaultValue - The default value if setting not found
-   * @returns {*} The setting value
-   */
-  getSetting(key, defaultValue = undefined) {
-    return this.data.settings[key] !== undefined ? this.data.settings[key] : defaultValue;
-  }
-  
-  /**
-   * Set a setting value
-   * @param {string} key - The setting key
-   * @param {*} value - The value to set
-   * @returns {Promise<boolean>} Whether the save was successful
-   */
-async setSetting(key, value) {
-  if (!game.user.isGM) {
-    console.log(`${MODULE_ID} | Non-GM user cannot modify settings`);
-    ui.notifications.warn("Only GMs can modify overlay settings");
-    return false;
-  }
-  
-  this.data.settings[key] = value;
-  return this.save();
-}
 
-  
-  /**
-   * Get all layouts
-   * @returns {Object} The layouts object
-   */
-  getLayouts() {
-    return this.data.layouts;
-  }
-  
-  /**
-   * Get a specific layout
-   * @param {string} name - The layout name
-   * @returns {Array|null} The layout items or null if not found
-   */
-  getLayout(name) {
-    return this.data.layouts[name] || null;
-  }
-  
-  /**
-   * Set a layout
-   * @param {string} name - The layout name
-   * @param {Array} items - The layout items
-   * @returns {Promise<boolean>} Whether the save was successful
-   */
-async setLayout(name, items) {
-  if (!game.user.isGM) {
-    console.log(`${MODULE_ID} | Non-GM user cannot modify layouts`);
-    ui.notifications.warn("Only GMs can modify layouts");
-    return false;
+  // Get all windows using a specific layout
+  getWindowsUsingLayout(layoutName) {
+    const windows = this.getOverlayWindows();
+    return Object.entries(windows)
+      .filter(([windowId, config]) => config.activeLayout === layoutName)
+      .map(([windowId, config]) => ({ windowId, config }));
   }
 
-  // First make sure layouts exists in this.data
-  if (!this.data.layouts) {
-    this.data.layouts = { "Default": [] };
-  }
-  
-  // Now set the layout items
-  this.data.layouts[name] = items;
-  
-  // Save to storage
-  return this.save();
-}
-  
-  /**
-   * Delete a layout
-   * @param {string} name - The layout name
-   * @returns {Promise<boolean>} Whether the save was successful
-   */
-async deleteLayout(name) {
-  if (!game.user.isGM) {
-    console.log(`${MODULE_ID} | Non-GM user cannot delete layouts`);
-    ui.notifications.warn("Only GMs can modify layouts");
-    return false;
+  // Validation helper
+  validateData() {
+    const issues = [];
+    
+    // Check layouts
+    if (!this.data.layouts || typeof this.data.layouts !== 'object') {
+      issues.push("Invalid layouts data structure");
+    } else if (!this.data.layouts["Default"]) {
+      issues.push("Missing Default layout");
+    }
+    
+    // Check windows
+    if (!this.data.overlayWindows || typeof this.data.overlayWindows !== 'object') {
+      issues.push("Invalid overlay windows data structure");
+    } else if (!this.data.overlayWindows["main"]) {
+      issues.push("Missing main window configuration");
+    }
+    
+    // Check slideshow
+    if (!this.data.slideshow || typeof this.data.slideshow !== 'object') {
+      issues.push("Invalid slideshow data structure");
+    }
+    
+    return {
+      isValid: issues.length === 0,
+      issues: issues
+    };
   }
 
-  if (name === "Default") {
-    ui.notifications.warn("Cannot delete the Default layout.");
-    return false;
-  }
-  
-  if (this.data.layouts[name]) {
-    delete this.data.layouts[name];
+  // Debug helper
+  getDebugInfo() {
+    const validation = this.validateData();
     
-    // If active layout was deleted, switch to Default
-    if (this.data.activeLayout === name) {
-      this.data.activeLayout = "Default";
-    }
-    
-    // Update any windows using this layout
-    for (const windowId in this.data.overlayWindows) {
-      if (this.data.overlayWindows[windowId].activeLayout === name) {
-        this.data.overlayWindows[windowId].activeLayout = "Default";
-      }
-    }
-    
-    return this.save();
-  }
-  
-  return false;
-}
-  
-  /**
-   * Get the active layout name
-   * @returns {string} The active layout name
-   */
-  getActiveLayout() {
-    return this.data.activeLayout;
-  }
-  
-  /**
-   * Set the active layout
-   * @param {string} name - The layout name
-   * @returns {Promise<boolean>} Whether the save was successful
-   */
-async setActiveLayout(name) {
-  if (!game.user.isGM) {
-    console.log(`${MODULE_ID} | Non-GM user cannot change active layout`);
-    ui.notifications.warn("Only GMs can modify overlay settings");
-    return false;
-  }
-
-  // Ensure we have layouts object
-  if (!this.data.layouts) {
-    this.data.layouts = { "Default": [] };
-  }
-  
-  // If the layout doesn't exist yet, create it
-  if (!this.data.layouts[name]) {
-    console.log(`${MODULE_ID} | Creating new layout: ${name}`);
-    this.data.layouts[name] = [];
-  }
-  
-  // Set as active
-  this.data.activeLayout = name;
-  return this.save();
-}
-  
-  /**
-   * Get overlay window configurations
-   * @returns {Object} The overlay windows object
-   */
-  getOverlayWindows() {
-    return this.data.overlayWindows;
-  }
-  
-  /**
-   * Get a specific overlay window configuration
-   * @param {string} id - The window ID
-   * @returns {Object|null} The window config or null if not found
-   */
-  getOverlayWindow(id) {
-    return this.data.overlayWindows[id] || null;
-  }
-
-  /**
-   * Migrate client data to world scope (legacy function, no longer needed)
-   */
-  async migrateClientToWorld() {
-    // Only GMs can migrate data to world scope
-    if (!game.user.isGM) return;
-    
-    try {
-      // Check if there's client data that needs migration
-      const clientData = await game.settings.get(MODULE_ID, "storedUserData");
-      if (!clientData) return;
-      
-      // Check if world data already exists
-      try {
-        const worldData = await game.settings.get(MODULE_ID, "storedUserData");
-        if (worldData && Object.keys(worldData).length > 0) {
-          console.log(`${MODULE_ID} | World data already exists, skipping migration`);
-          return;
-        }
-      } catch (error) {
-        // World setting doesn't exist yet, safe to migrate
-      }
-      
-      // Migrate the data
-      console.log(`${MODULE_ID} | Migrating client data to world scope...`);
-      await game.settings.set(MODULE_ID, "storedUserData", clientData);
-      
-      ui.notifications.info("Overlay data migrated to world scope - now shared with all users!");
-      
-    } catch (error) {
-      console.error(`${MODULE_ID} | Migration error:`, error);
-    }
-  }
-
-  /**
-   * Set an overlay window configuration
-   * @param {string} id - The window ID
-   * @param {Object} config - The window configuration
-   * @returns {Promise<boolean>} Whether the save was successful
-   */
-  async setOverlayWindow(id, config) {
-    this.data.overlayWindows[id] = config;
-    return this.save();
-  }
-  
-  /**
-   * Delete an overlay window configuration
-   * @param {string} id - The window ID
-   * @returns {Promise<boolean>} Whether the save was successful
-   */
-  async deleteOverlayWindow(id) {
-    if (id === "main") {
-      ui.notifications.warn("Cannot delete the main overlay window.");
-      return false;
-    }
-    
-    if (this.data.overlayWindows[id]) {
-      delete this.data.overlayWindows[id];
-      return this.save();
-    }
-    
-    return false;
-  }
-  
-  /**
-   * Get slideshow configuration
-   * @returns {Object} The slideshow configuration
-   */
-  getSlideshow() {
-    return this.data.slideshow;
-  }
-  
-  /**
-   * Set slideshow configuration
-   * @param {Object} config - The slideshow configuration
-   * @returns {Promise<boolean>} Whether the save was successful
-   */
-  async setSlideshow(config) {
-    this.data.slideshow = config;
-    return this.save();
-  }
-  
-  /**
-   * Create a backup of all data
-   * @returns {Object} A copy of all data
-   */
-  createBackup() {
-    return JSON.parse(JSON.stringify(this.data));
-  }
-  
-  /**
-   * Restore from a backup
-   * @param {Object} backup - The backup data
-   * @returns {Promise<boolean>} Whether the restore was successful
-   */
-  async restoreFromBackup(backup) {
-    if (!this._validateImportedData(backup)) {
-      ui.notifications.error("Invalid backup data format.");
-      return false;
-    }
-    
-    this.data = backup;
-    return this.save();
-  }
-  
-  // Private methods
-  _triggerCallbacks() {
-    // Could implement a system for callbacks when data changes
-    // For example, updating windows when settings change
-    Hooks.callAll(`${MODULE_ID}.dataUpdated`, this.data);
+    return {
+      initialized: this.initialized,
+      validation: validation,
+      layoutCount: Object.keys(this.data.layouts).length,
+      windowCount: Object.keys(this.data.overlayWindows).length,
+      slideshowItemCount: this.data.slideshow.list.length,
+      settings: { ...this.data.settings, activationKey: "***" }, // Hide sensitive data
+      layouts: Object.keys(this.data.layouts),
+      windows: Object.entries(this.data.overlayWindows).map(([id, config]) => ({
+        id,
+        name: config.name,
+        activeLayout: config.activeLayout
+      }))
+    };
   }
 }
 
-// Create a single instance of the data storage
+// Create and export singleton instance
 const OverlayData = new OverlayDataStorage();
-
-// Add the storage setting to Foundry
-Hooks.once("init", () => {
-  // Register the primary data storage setting - WORLD SCOPED
-  game.settings.register(MODULE_ID, "storedUserData", {
-    name: "Stored User Data",
-    scope: "world", // Changed from "client" to "world"
-    config: false,
-    type: Object,
-    default: null
-  });
-});
-
-// REMOVED: The duplicate initialization hook that was causing issues
-// The initialization is now handled in module-init.js
-
-// Export the data storage instance
 export default OverlayData;
