@@ -1318,5 +1318,47 @@ button[class*="fso-file-picker"] {
   width: 70px !important;
   max-width: 70px !important;
   padding: 6px 8px !important;
-  font-size: 12px !important;
+ font-size: 12px !important;
+}
+
+/* Target users selection controls */
+
+/* Target users dropdown + button row */
+.fso-target-users-select {
+  display: flex;
+  gap: 6px;
+}
+
+/* Container for dropdown, chips and help text */
+.fso-target-users-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.fso-target-users-select select {
+  width: 100%;
+}
+
+.fso-selected-users {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.fso-selected-users .fso-user-pill {
+  background: #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #1e293b;
+  display: inline-flex;
+  align-items: center;
+}
+
+.fso-selected-users .fso-remove-target-user {
+  margin-left: 4px;
+  cursor: pointer;
 }

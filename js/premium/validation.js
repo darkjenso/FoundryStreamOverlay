@@ -52,7 +52,12 @@ export async function validateActivationKey(key, showNotification = true) {
       // Refresh relevant UI components
       refreshPremiumUI();
       updateAllOverlayWindows();
-    } else if (!apiResult.valid && showNotification) {
+    }
+
+    if (apiResult.valid) {
+      // Log usage in the database (don't block on failure)
+      recordKeyUsage(key);
+    } else if (showNotification) {
       // Show specific error message from API
       const errorMsg = apiResult.error || "Invalid activation key.";
       ui.notifications.error(errorMsg);
@@ -465,5 +470,25 @@ async function updateAllOverlayWindows() {
     }
   } catch (error) {
     console.error(`${MODULE_ID} | Error updating overlay windows:`, error);
+  }
+}
+
+/**
+ * Records usage statistics for a valid activation key
+ * Updates last_used and usage_count on the server
+ * @param {string} key - Activation key that was just validated
+ */
+async function recordKeyUsage(key) {
+  try {
+    const product = 'foundry_module';
+    await fetch('https://cool-puffpuff-4ee93b.netlify.app/.netlify/functions/update-key-usage', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ key, product })
+    });
+  } catch (error) {
+    console.warn(`${MODULE_ID} | Failed to record key usage:`, error);
   }
 }

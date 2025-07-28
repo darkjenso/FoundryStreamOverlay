@@ -1,16 +1,29 @@
 // Fixed Overlay Configuration UI Component - PROPER SCENE/WINDOW SEPARATION
 import { MODULE_ID, DATA_PATHS, FONT_FAMILIES, PREMIUM_FONTS, ITEM_TEMPLATES } from '../core/constants.js';
 import { isPremiumActive } from '../premium/validation.js';
-import { 
-  getSystemExamples, 
-  formatActorData, 
-  showAutoSaveFeedback, 
+import {
+  getSystemExamples,
+  formatActorData,
+  showAutoSaveFeedback,
   sanitizeDataPath,
-  deepCopy 
+  deepCopy,
+  getActorDataValue,
+  hexToRgb,
+  rgbToHex
 } from '../utils/helpers.js';
 import { getFontData, initializeTemplateHelperEvents } from '../utils/template-helpers.js';
 import { AnimationManager } from './animation-manager.js';
 import OverlayData from '../../data-storage.js';
+
+function lerpColor(start, end, t) {
+  const s = hexToRgb(start);
+  const e = hexToRgb(end);
+  if (!s || !e) return start;
+  const r = Math.round(s.r * t + e.r * (1 - t));
+  const g = Math.round(s.g * t + e.g * (1 - t));
+  const b = Math.round(s.b * t + e.b * (1 - t));
+  return rgbToHex(r, g, b);
+}
 
 export class OverlayConfig extends FormApplication {
   static get defaultOptions() {
@@ -36,6 +49,11 @@ export class OverlayConfig extends FormApplication {
     this._lastSavedFormData = null; // Track last saved form state
     this._autoSaveTimeout = null; // Track auto-save timeout
     this._isSwitchingScenes = false; // Flag to prevent auto-save during scene switch
+    this._previewMode = false;
+    this._previewScale = 1;
+    this._draggedItem = null;
+    this._dragOffset = { x: 0, y: 0 };
+    this._selectedItems = new Set();
     
     console.log(`${MODULE_ID} | OverlayConfig initialized for window: ${this.windowId}, editing layout: ${this.editingLayout}`);
   }
@@ -187,6 +205,8 @@ export class OverlayConfig extends FormApplication {
       layoutItems = Array.isArray(layouts[currentEditingLayout]) ? layouts[currentEditingLayout] : [];
     }
     
+    const usersMap = Object.fromEntries(game.users.contents.map(u => [u.id, u.name]));
+
     // Process layout items with enhanced validation
     const rows = layoutItems.map((item, idx) => {
       const hasAnimations = !!(item.animations && item.animations.length > 0);
@@ -219,18 +239,24 @@ export class OverlayConfig extends FormApplication {
         }
       }
       
+      const targetUsers = Array.isArray(item.targetUsers) ? item.targetUsers : [];
+      const targetUserNames = targetUsers.length > 0
+        ? targetUsers.map(uid => usersMap[uid] || "Unknown").join(", ")
+        : "All Users";
+
       return {
         idx,
-        type: item.type || "data", 
+        type: item.type || "data",
         actorId: item.actorId || "",
         dataPath: item.dataPath || "name",
-        customPath: item.customPath || "", 
+        customPath: item.customPath || "",
         content: item.content || "",
         // Dice-specific properties
         diceType: item.diceType || "d20",
         alwaysVisible: item.alwaysVisible || false,
         style: item.style || "diceOnly",
-        targetUsers: item.targetUsers || [],
+        targetUsers,
+        targetUserNames,
         rollAnimation: item.rollAnimation || false,
         rollDuration: item.rollDuration || 1000,
         rollSpeed: item.rollSpeed || 10,
@@ -264,6 +290,8 @@ export class OverlayConfig extends FormApplication {
         addLabel: item.addLabel || false,
         imagePath: item.imagePath || "",
         imageSize: item.imageSize || 100,
+        dynamicImage: item.dynamicImage || false,
+        dynamicRules: item.dynamicRules || [],
         order: item.order || idx,
         animation: item.animation || "none",
         animationDelay: (item.animationDelay !== undefined) ? item.animationDelay : 0,
@@ -296,9 +324,10 @@ export class OverlayConfig extends FormApplication {
     const fontData = getFontData(this._showExtendedFonts);
     
     return { 
-      rows, 
+      rows,
       allActors,
       allUsers,
+      dataPaths: DATA_PATHS,
       // FIXED: Clear separation of contexts
       windowId: this.windowId,
       windowName: windowConfig.name,
@@ -341,12 +370,9 @@ export class OverlayConfig extends FormApplication {
       this._isSwitchingScenes = true;
       
       try {
-        // Only save if there are actual changes to the current scene
-        if (this._hasFormChanges()) {
-          console.log(`${MODULE_ID} | Saving changes to "${this.editingLayout}" before switching`);
-          const formData = new FormDataExtended(html.closest('form')[0]).object;
-          await this._updateObject(e, formData);
-        }
+        // Always save the current form data before switching scenes
+        const formData = new FormDataExtended(html.closest('form')[0]).object;
+        await this._updateObject(e, formData);
         
         // FIXED: Just change what we're editing, don't change display
         this.editingLayout = newEditingLayout;
@@ -368,6 +394,7 @@ export class OverlayConfig extends FormApplication {
       } finally {
         this._isSwitchingScenes = false;
       }
+
     });
 
     // FIXED: Separate button to assign current scene to window
@@ -421,6 +448,16 @@ export class OverlayConfig extends FormApplication {
       this._onFieldChange(event);
     });
 
+    // When dice target users or visibility changes, update the header subtitle immediately
+    html.find('select[name^="targetUsers-"]').on('change', (event) => {
+      const idx = event.currentTarget.name.split('-')[1];
+      this._renderSelectedUsers(idx);
+    });
+    html.find('input[name^="alwaysVisible-"]').on('change', (event) => {
+      const idx = event.currentTarget.name.split('-')[1];
+      this._updateDiceItemHeader(idx);
+    });
+
     // Toggle header color when hide checkbox is changed
     html.find('input[name^="hide-"]').on('change', function(event) {
       const card = $(event.currentTarget).closest('.fso-item-card');
@@ -443,9 +480,38 @@ export class OverlayConfig extends FormApplication {
         }
       }).render(true);
     });
+
+    // Toggle dynamic image section
+    html.on('change', 'input[name^="dynamicImage-"]', e => {
+      const idx = e.currentTarget.name.split('-')[1];
+      const container = html.find(`.fso-dynamic-image[data-index="${idx}"]`);
+      container.toggle(e.currentTarget.checked);
+    });
+
+    // Rule management
+    html.on('click', '.fso-add-rule', this._onAddDynamicRule.bind(this));
+    html.on('click', '.fso-remove-rule', this._onRemoveDynamicRule.bind(this));
+
+    // Dynamic image rule file pickers
+    html.on('click', '.fso-dyn-file-picker', e => {
+      const idx = $(e.currentTarget).data('index');
+      const r = $(e.currentTarget).data('rule');
+      new FilePicker({
+        type: 'image',
+        current: '',
+        callback: path => {
+          html.find(`input[name="dynImage-${idx}-${r}"]`).val(path);
+          html.find(`input[name="dynImage-${idx}-${r}"]`).trigger('change');
+        }
+      }).render(true);
+    });
     
     // Add buttons
     html.find(".fso-add-item-btn").click(this._onAddItem.bind(this));
+
+    // Target user controls
+    html.on('click', '.fso-add-target-user', this._onAddTargetUser.bind(this));
+    html.on('click', '.fso-remove-target-user', this._onRemoveTargetUser.bind(this));
     
     // Handle remove and move buttons
     html.on("click", ".fso-remove-item", this._onRemoveRow.bind(this));
@@ -481,6 +547,12 @@ export class OverlayConfig extends FormApplication {
       } else {
         $(this).removeClass('collapsed');
       }
+    });
+
+    // Populate selected user lists
+    html.find('select[name^="targetUsers-"]').each((i, el) => {
+      const idx = el.name.split('-')[1];
+      this._renderSelectedUsers(idx);
     });
 
     // Add keyboard support for collapsing
@@ -519,6 +591,11 @@ export class OverlayConfig extends FormApplication {
         speedRow.slideUp(200);
       }
     });
+
+    html.find('#toggle-preview-mode').click(this._togglePreviewMode.bind(this));
+    html.find('.fso-preview-zoom').click(this._handleZoom.bind(this));
+    html.find('#preview-grid').change(() => this._renderPreview());
+    html.find('#grid-size').change(() => this._renderPreview());
   }
 
   // FIXED: Improved form change detection
@@ -655,9 +732,121 @@ export class OverlayConfig extends FormApplication {
     });
   }
 
+  // Update the dice item header subtitle with selected users and visibility
+  _updateDiceItemHeader(index) {
+    if (!this.element) return;
+    const card = this.element.find(`.fso-item-card[data-index="${index}"]`);
+    if (!card.length) return;
+
+    const select = card.find(`select[name="targetUsers-${index}"]`);
+    let userIds = select.val() || [];
+    if (!Array.isArray(userIds)) userIds = [userIds];
+
+    const names = userIds.length > 0
+      ? userIds.map(uid => game.users.get(uid)?.name || "Unknown").join(', ')
+      : 'All Users';
+
+    const alwaysVisible = card.find(`input[name="alwaysVisible-${index}"]`).is(':checked');
+    const text = `${names} - ${alwaysVisible ? 'Always visible' : 'Show on roll'}`;
+
+    card.find('.fso-item-subtitle').text(text);
+  }
+
+  _renderSelectedUsers(index) {
+    if (!this.element) return;
+    const card = this.element.find(`.fso-item-card[data-index="${index}"]`);
+    if (!card.length) return;
+
+    const select = card.find(`select[name="targetUsers-${index}"]`);
+    let userIds = select.val() || [];
+    if (!Array.isArray(userIds)) userIds = [userIds];
+
+    const container = card.find(`.fso-selected-users[data-index="${index}"]`);
+    container.empty();
+
+    userIds.forEach(id => {
+      const name = game.users.get(id)?.name || 'Unknown';
+      const pill = $(`<span class="fso-user-pill" data-id="${id}">${name}</span>`);
+      const remove = $(`<a class="fso-remove-target-user" data-index="${index}" data-id="${id}">&times;</a>`);
+      pill.append(' ');
+      pill.append(remove);
+      container.append(pill);
+    });
+
+    this._updateDiceItemHeader(index);
+  }
+
+  _onAddTargetUser(event) {
+    event.preventDefault();
+    const index = event.currentTarget.dataset.index;
+    const dropdown = this.element.find(`select[name="addUser-${index}"]`);
+    const userId = dropdown.val();
+    if (!userId) return;
+
+    const select = this.element.find(`select[name="targetUsers-${index}"]`);
+    let current = select.val() || [];
+    if (!Array.isArray(current)) current = [current];
+
+    if (!current.includes(userId)) {
+      select.find(`option[value="${userId}"]`).prop('selected', true);
+      select.trigger('change');
+      dropdown.val('');
+    }
+  }
+
+  _onRemoveTargetUser(event) {
+    event.preventDefault();
+    const index = event.currentTarget.dataset.index;
+    const userId = event.currentTarget.dataset.id;
+    const select = this.element.find(`select[name="targetUsers-${index}"]`);
+    select.find(`option[value="${userId}"]`).prop('selected', false);
+    select.trigger('change');
+  }
+
+  _onAddDynamicRule(event) {
+    event.preventDefault();
+    const index = Number(event.currentTarget.dataset.index);
+    const table = this.element.find(`.fso-dynamic-image[data-index="${index}"] tbody`);
+    const newIndex = table.children('tr').length;
+    const actorOptions = this.element.find('select[name="actorId-0"] option').map((i,o)=>`<option value="${$(o).val()}">${$(o).text()}</option>`).get().join('');
+    const dataOptions = DATA_PATHS.map(p=>`<option value="${p.path}">${p.label}</option>`).join('');
+    const row = $(
+      `<tr data-rule-index="${newIndex}">
+        <td><select name="dynActor-${index}-${newIndex}">${actorOptions}</select></td>
+        <td><select name="dynDataPath-${index}-${newIndex}">${dataOptions}</select></td>
+        <td><select name="dynComp-${index}-${newIndex}"><option value="lt">&lt;</option><option value="lte">≤</option><option value="eq">=</option><option value="gte">≥</option><option value="gt">&gt;</option></select></td>
+        <td><input type="number" name="dynValue-${index}-${newIndex}" value="0" style="width:60px"></td>
+        <td><select name="dynMode-${index}-${newIndex}"><option value="value">Value</option><option value="percent">%</option></select></td>
+        <td><div class="fso-file-input-group"><input type="text" name="dynImage-${index}-${newIndex}" readonly><button type="button" class="fso-dyn-file-picker fso-compact-btn" data-index="${index}" data-rule="${newIndex}">Choose</button></div></td>
+        <td><button type="button" class="fso-remove-rule" data-index="${index}" data-rule="${newIndex}">&times;</button></td>
+      </tr>`
+    );
+    table.append(row);
+  }
+
+  _onRemoveDynamicRule(event) {
+    event.preventDefault();
+    const index = Number(event.currentTarget.dataset.index);
+    const rule = Number(event.currentTarget.dataset.rule);
+    const row = this.element.find(`.fso-dynamic-image[data-index="${index}"] tr[data-rule-index="${rule}"]`);
+    row.remove();
+  }
+
   // FIXED: Add item to the scene we're editing
   async _onAddItem(event) {
     event.preventDefault();
+
+    // Save any current form changes before adding a new item
+    try {
+      const form = this.element.find('form')[0];
+      if (form) {
+        const formData = new FormDataExtended(form).object;
+        await this._updateObject(event, formData);
+        this._captureFormState();
+      }
+    } catch (error) {
+      console.warn(`${MODULE_ID} | Failed to auto-save before adding item:`, error);
+    }
     
     const button = $(event.currentTarget);
     const itemType = button.data('type') || 'data';
@@ -796,6 +985,450 @@ export class OverlayConfig extends FormApplication {
     }
   }
 
+  _togglePreviewMode(event) {
+  this._previewMode = !this._previewMode;
+  const container = this.element.find('.fso-preview-container');
+  const button = this.element.find('#toggle-preview-mode');
+  
+  if (this._previewMode) {
+    container.slideDown(200);
+    button.addClass('active').html('<i class="fas fa-mouse-pointer"></i> Disable Visual Positioning');
+    this._renderPreview();
+  } else {
+    container.slideUp(200);
+    button.removeClass('active').html('<i class="fas fa-mouse-pointer"></i> Enable Visual Positioning');
+  }
+}
+
+_handleZoom(event) {
+  const zoom = $(event.currentTarget).data('zoom');
+  this._previewScale = parseInt(zoom) / 100;
+  
+  // Update button states
+  this.element.find('.fso-preview-zoom').removeClass('active');
+  $(event.currentTarget).addClass('active');
+  
+  this._renderPreview();
+}
+
+async _renderPreview() {
+  const canvas = this.element.find('.fso-preview-canvas');
+  canvas.empty();
+  
+  // Get window dimensions
+  const windows = OverlayData.getOverlayWindows();
+  const windowConfig = windows[this.windowId] || { width: 800, height: 600 };
+  const backgroundColor = OverlayData.getSetting("backgroundColour") || "#00ff00";
+  
+  // Apply scale
+  const scaledWidth = windowConfig.width * this._previewScale;
+  const scaledHeight = windowConfig.height * this._previewScale;
+  
+  // Set canvas dimensions
+  canvas.css({
+    width: scaledWidth + 'px',
+    height: scaledHeight + 'px',
+    'background-color': backgroundColor,
+    position: 'relative',
+    transform: `scale(${this._previewScale})`,
+    transformOrigin: 'top left'
+  });
+
+  // Set grid size variable
+  const gridSize = parseInt(this.element.find('#grid-size').val()) || 10;
+  canvas.css('--grid-size', gridSize + 'px');
+  
+  // Add grid class if enabled
+  if (this.element.find('#preview-grid').is(':checked')) {
+    canvas.addClass('show-grid');
+  } else {
+    canvas.removeClass('show-grid');
+  }
+  
+  // Get current items from form
+  const formData = new FormDataExtended(this.element.find('form')[0]).object;
+  const items = this._parseFormDataToItems(formData);
+  
+  // Render each item
+  items.forEach((item, index) => {
+    if (item.hide) return;
+    
+    const previewElement = this._createPreviewElement(item, index);
+    canvas.append(previewElement);
+  });
+  
+  // Initialize drag functionality
+  this._initializeDraggable();
+  // Initialize resize functionality for images
+  this._initializeResizable();
+}
+
+_parseFormDataToItems(formData) {
+  const items = [];
+  
+  // Find highest index
+  let maxIndex = -1;
+  for (let key in formData) {
+    const match = key.match(/^[^-]+-(\d+)$/);
+    if (match) {
+      maxIndex = Math.max(maxIndex, parseInt(match[1]));
+    }
+  }
+  
+  // Parse each item
+  for (let i = 0; i <= maxIndex; i++) {
+    const item = {
+      type: formData[`type-${i}`] || 'data',
+      hide: formData[`hide-${i}`] || false,
+      top: parseInt(formData[`top-${i}`]) || 0,
+      left: parseInt(formData[`left-${i}`]) || 0,
+      fontSize: parseInt(formData[`fontSize-${i}`]) || 16,
+      fontFamily: formData[`fontFamily-${i}`] || 'Arial, sans-serif',
+      fontColor: formData[`fontColor-${i}`] || '#000000',
+      bold: formData[`bold-${i}`] || false,
+      content: formData[`content-${i}`] || '',
+      imagePath: formData[`imagePath-${i}`] || '',
+      imageSize: parseInt(formData[`imageSize-${i}`]) || 100,
+      dynamicImage: formData[`dynamicImage-${i}`] || false,
+      diceType: formData[`diceType-${i}`] || 'd20',
+      actorId: formData[`actorId-${i}`] || '',
+      dataPath: formData[`dataPath-${i}`] || 'name',
+      barWidth: parseInt(formData[`barWidth-${i}`]) || 200,
+      barHeight: parseInt(formData[`barHeight-${i}`]) || 20,
+      startColor: formData[`startColor-${i}`] || '#00ff00',
+      endColor: formData[`endColor-${i}`] || '#ff0000'
+    };
+    item.dynamicRules = [];
+    for (let key in formData) {
+      const m = key.match(new RegExp(`^dyn(\\w+)-${i}-(\\d+)$`));
+      if (m) {
+        const prop = m[1];
+        const rIdx = Number(m[2]);
+        if (!item.dynamicRules[rIdx]) item.dynamicRules[rIdx] = {};
+        const v = formData[key];
+        switch(prop) {
+          case 'Actor': item.dynamicRules[rIdx].actorId = v; break;
+          case 'DataPath': item.dynamicRules[rIdx].dataPath = v; break;
+          case 'Comp': item.dynamicRules[rIdx].comp = v; break;
+          case 'Value': item.dynamicRules[rIdx].value = Number(v); break;
+          case 'Mode': item.dynamicRules[rIdx].mode = v; break;
+          case 'Image': item.dynamicRules[rIdx].image = v; break;
+        }
+      }
+    }
+    items.push(item);
+  }
+  
+  return items;
+}
+
+_getPreviewText(item) {
+  if (!item.actorId) return '[No Character]';
+
+  const actor = game.actors.get(item.actorId);
+  if (!actor) return '[Character Not Found]';
+  
+ const value = getActorDataValue(actor, item);
+  return value;
+}
+
+_getPreviewHelperInfo(item) {
+  let title = '';
+  let subtitle = '';
+
+  switch (item.type) {
+    case 'data': {
+      if (!item.actorId) {
+        title = 'Character Data';
+        subtitle = 'No character selected';
+        break;
+      }
+      const actor = game.actors.get(item.actorId);
+      title = actor ? actor.name : 'Unknown';
+      subtitle = item.dataPath === 'custom' ? (item.customPath || '') : item.dataPath;
+      break;
+    }
+    case 'static':
+      title = item.content ? `"${item.content}"` : 'Empty text';
+      break;
+    case 'image':
+      title = item.imagePath ? 'Image' : 'No image';
+      subtitle = item.imagePath || '';
+      break;
+    case 'dice': {
+      title = `${item.diceType} Roll Display`;
+      let names = 'All Users';
+      if (Array.isArray(item.targetUsers) && item.targetUsers.length > 0) {
+        names = item.targetUsers.map(id => game.users.get(id)?.name || 'Unknown').join(', ');
+      }
+      subtitle = `${names} - ${item.alwaysVisible ? 'Always visible' : 'Show on roll'}`;
+      break;
+    }
+    case 'hpBar':
+      title = 'HP Bar';
+      subtitle = item.actorId ? (game.actors.get(item.actorId)?.name || 'Unknown') : 'No character selected';
+      break;
+    default:
+      title = item.type;
+  }
+
+  return { title, subtitle };
+}
+
+_createPreviewElement(item, index) {
+  let element;
+  
+  switch(item.type) {
+    case 'data':
+      element = $(`<div class="preview-item preview-data" data-index="${index}">
+        <span>${this._getPreviewText(item)}</span>
+      </div>`);
+      break;
+      
+    case 'static':
+      element = $(`<div class="preview-item preview-static" data-index="${index}">
+        <span>${item.content || '[Empty Text]'}</span>
+      </div>`);
+      break;
+      
+    case 'image':
+      const imgSrc = item.imagePath || 'icons/svg/mystery-man.svg';
+      element = $(`<div class="preview-item preview-image" data-index="${index}">
+        <img src="${imgSrc}" style="width: ${item.imageSize}px; height: auto;" />
+        <div class="resize-handle"></div>
+      </div>`);
+      break;
+      
+    case 'dice':
+      element = $(`<div class="preview-item preview-dice" data-index="${index}">
+        <span class="dice-preview">🎲 ${item.diceType}</span>
+      </div>`);
+      break;
+      
+    case 'hpBar': {
+      const pct = 0.75;
+      const scaledWidth = item.barWidth * this._previewScale;
+      const scaledHeight = item.barHeight * this._previewScale;
+      const color = item.gradient ? lerpColor(item.startColor, item.endColor, pct) : item.singleColor;
+
+      let fillStyle = `background: ${color}; border-radius: ${item.rounded ? item.cornerRadius : 0}px;`;
+      if (item.orientation === 'rtl') {
+        fillStyle += ` right: 0; left: auto; width: ${pct * 100}%; height: 100%;`;
+      } else if (item.orientation === 'ttb') {
+        fillStyle += ` top: 0; bottom: auto; width: 100%; height: ${pct * 100}%;`;
+      } else if (item.orientation === 'btt') {
+        fillStyle += ` bottom: 0; width: 100%; height: ${pct * 100}%;`;
+      } else {
+        fillStyle += ` width: ${pct * 100}%; height: 100%;`;
+      }
+
+      const outline = item.outline ? `border: ${item.outlineWidth}px solid ${item.outlineColor};` : '';
+      const bg = item.showBackground ? `background: ${item.backgroundColor};` : '';
+      const radius = item.rounded ? `border-radius: ${item.cornerRadius}px;` : '';
+
+      element = $(`<div class="preview-item preview-hpbar" data-index="${index}">
+        <div class="hp-bar-preview" style="width: ${scaledWidth}px; height: ${scaledHeight}px; ${outline} ${bg} ${radius}">
+          <div class="hp-fill" style="${fillStyle}"></div>
+        </div>
+      </div>`);
+      break;
+    }
+  }
+
+  const info = this._getPreviewHelperInfo(item);
+  const helper = $(
+    `<div class="preview-helper">
+       <div class="fso-item-title">${info.title}</div>
+       ${info.subtitle ? `<div class="fso-item-subtitle">${info.subtitle}</div>` : ''}
+     </div>`
+  );
+  element.append(helper);
+  
+  // Apply positioning and styling
+  element.css({
+    position: 'absolute',
+    top: (item.top * this._previewScale) + 'px',
+    left: (item.left * this._previewScale) + 'px',
+    fontSize: (item.fontSize * this._previewScale) + 'px',
+    fontFamily: item.fontFamily,
+    color: item.fontColor,
+    fontWeight: item.bold ? 'bold' : 'normal',
+    cursor: 'move',
+    userSelect: 'none'
+  });
+
+  if (item.type !== 'image') {
+    element.css('transform', 'translateX(-50%)');
+  }
+  
+  return element;
+}
+
+_initializeDraggable() {
+  const canvas = this.element.find('.fso-preview-canvas');
+  const previewItems = canvas.find('.preview-item');
+  
+  previewItems.on('mousedown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const item = $(e.currentTarget);
+    const index = parseInt(item.data('index'));
+    
+    // Store initial positions
+    const rect = item[0].getBoundingClientRect();
+    const canvasRect = canvas[0].getBoundingClientRect();
+    
+    this._dragOffset = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+    
+    this._draggedItem = {
+      element: item,
+      index: index,
+      startX: parseInt(item.css('left')),
+      startY: parseInt(item.css('top'))
+    };
+    
+    // Visual feedback
+    previewItems.removeClass('dragging');
+    item.addClass('dragging');
+    
+    // Bind document events
+    $(document).on('mousemove.preview', this._handleDrag.bind(this));
+    $(document).on('mouseup.preview', this._handleDragEnd.bind(this));
+  });
+}
+
+_handleDrag(e) {
+  if (!this._draggedItem) return;
+  
+  const canvas = this.element.find('.fso-preview-canvas');
+  const canvasRect = canvas[0].getBoundingClientRect();
+  
+  // Calculate new position
+  let newX = (e.clientX - canvasRect.left - this._dragOffset.x) / this._previewScale;
+  let newY = (e.clientY - canvasRect.top - this._dragOffset.y) / this._previewScale;
+  
+  // Grid snapping
+  if (this.element.find('#preview-grid').is(':checked')) {
+    const gridSize = parseInt(this.element.find('#grid-size').val()) || 10;
+    newX = Math.round(newX / gridSize) * gridSize;
+    newY = Math.round(newY / gridSize) * gridSize;
+  }
+  
+  // Constrain to bounds
+  const windowConfig = OverlayData.getOverlayWindows()[this.windowId] || { width: 800, height: 600 };
+  newX = Math.max(0, Math.min(newX, windowConfig.width - 50));
+  newY = Math.max(0, Math.min(newY, windowConfig.height - 20));
+  
+  // Update visual position
+  this._draggedItem.element.css({
+    left: (newX * this._previewScale) + 'px',
+    top: (newY * this._previewScale) + 'px'
+  });
+  
+  // Update position display
+  this.element.find('#position-coords').text(`X: ${Math.round(newX)}, Y: ${Math.round(newY)}`);
+  
+  // Update form fields
+  this._updateFormPosition(this._draggedItem.index, newX, newY);
+}
+
+_handleDragEnd(e) {
+  if (!this._draggedItem) return;
+  
+  // Clean up
+  $(document).off('mousemove.preview');
+  $(document).off('mouseup.preview');
+  
+  this._draggedItem.element.removeClass('dragging');
+  
+  // Trigger auto-save
+  const topInput = this.element.find(`input[name="top-${this._draggedItem.index}"]`);
+  topInput.trigger('change');
+  
+  this._draggedItem = null;
+  this.element.find('#position-coords').text('-');
+}
+
+_updateFormPosition(index, x, y) {
+  this.element.find(`input[name="left-${index}"]`).val(Math.round(x));
+  this.element.find(`input[name="top-${index}"]`).val(Math.round(y));
+}
+
+_updateFormImageSize(index, size) {
+  this.element.find(`input[name="imageSize-${index}"]`).val(Math.round(size));
+}
+
+_initializeResizable() {
+  const canvas = this.element.find('.fso-preview-canvas');
+  const handles = canvas.find('.resize-handle');
+
+  handles.on('mousedown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const handle = $(e.currentTarget);
+    const item = handle.closest('.preview-item');
+    const index = parseInt(item.data('index'));
+    const img = item.find('img');
+
+    this._resizeData = {
+      element: item,
+      img: img,
+      index: index,
+      startSize: parseInt(img.css('width')),
+      startX: e.clientX
+    };
+
+    $(document).on('mousemove.previewresize', this._handleResizeMove.bind(this));
+    $(document).on('mouseup.previewresize', this._handleResizeEnd.bind(this));
+  });
+}
+
+_handleResizeMove(e) {
+  if (!this._resizeData) return;
+
+  let newSize = this._resizeData.startSize + (e.clientX - this._resizeData.startX) / this._previewScale;
+  newSize = Math.max(10, Math.min(newSize, 500));
+
+  // Snap to grid if enabled
+  if (this.element.find('#preview-grid').is(':checked')) {
+    const gridSize = parseInt(this.element.find('#grid-size').val()) || 10;
+    newSize = Math.round(newSize / gridSize) * gridSize;
+  }
+
+  this._resizeData.img.css('width', newSize + 'px');
+  this.element.find('#position-coords').text(`Size: ${Math.round(newSize)}px`);
+  this._currentResizeSize = newSize;
+}
+
+_handleResizeEnd(e) {
+  if (!this._resizeData) return;
+
+  $(document).off('mousemove.previewresize');
+  $(document).off('mouseup.previewresize');
+
+  let finalSize = this._currentResizeSize || this._resizeData.startSize;
+
+  // Snap final size to grid if enabled
+  if (this.element.find('#preview-grid').is(':checked')) {
+    const gridSize = parseInt(this.element.find('#grid-size').val()) || 10;
+    finalSize = Math.round(finalSize / gridSize) * gridSize;
+    this._resizeData.img.css('width', finalSize + 'px');
+  }
+
+  this._updateFormImageSize(this._resizeData.index, finalSize);
+  const sizeInput = this.element.find(`input[name="imageSize-${this._resizeData.index}"]`);
+  sizeInput.trigger('change');
+
+  this._resizeData = null;
+  this._currentResizeSize = null;
+  this.element.find('#position-coords').text('-');
+}
+  
   async _updateObject(event, formData) {
     const isPremium = isPremiumActive();
 
@@ -815,9 +1448,24 @@ export class OverlayConfig extends FormApplication {
       const field = parts[0];
       const idx = parts[1];
       const rowIndex = Number(idx);
-      
+
       if (!newItems[rowIndex]) {
         newItems[rowIndex] = deepCopy(ITEM_TEMPLATES.data);
+      }
+
+      if(field.startsWith('dyn')) {
+        const ruleIndex = Number(parts[2]);
+        if(!newItems[rowIndex].dynamicRules) newItems[rowIndex].dynamicRules = [];
+        if(!newItems[rowIndex].dynamicRules[ruleIndex]) newItems[rowIndex].dynamicRules[ruleIndex] = {};
+        switch(field) {
+          case 'dynActor': newItems[rowIndex].dynamicRules[ruleIndex].actorId = val; break;
+          case 'dynDataPath': newItems[rowIndex].dynamicRules[ruleIndex].dataPath = val; break;
+          case 'dynComp': newItems[rowIndex].dynamicRules[ruleIndex].comp = val; break;
+          case 'dynValue': newItems[rowIndex].dynamicRules[ruleIndex].value = Number(val); break;
+          case 'dynMode': newItems[rowIndex].dynamicRules[ruleIndex].mode = val; break;
+          case 'dynImage': newItems[rowIndex].dynamicRules[ruleIndex].image = val; break;
+        }
+        continue;
       }
       
       // Process all form fields (same as before)
@@ -874,9 +1522,10 @@ export class OverlayConfig extends FormApplication {
         case "addLabel": newItems[rowIndex].addLabel = Boolean(val); break;
         case "imagePath": newItems[rowIndex].imagePath = val; break;
         case "imageSize": newItems[rowIndex].imageSize = Number(val) || 100; break;
+        case "dynamicImage": newItems[rowIndex].dynamicImage = Boolean(val); break;
         case "order": newItems[rowIndex].order = Number(val) || 0; break;
         case "animation":
-          newItems[rowIndex].animation = isPremium ? val : "none"; 
+          newItems[rowIndex].animation = isPremium ? val : "none";
           break;
         case "animationDelay": newItems[rowIndex].animationDelay = Number(val) || 0; break;
         case "animationDuration": newItems[rowIndex].animationDuration = Number(val) || 1.5; break;
@@ -895,6 +1544,7 @@ export class OverlayConfig extends FormApplication {
       } else {
         item.customPath = '';
       }
+      if (!item.dynamicRules) item.dynamicRules = [];
     });
     
     // FIXED: Save to the scene we're currently editing

@@ -1,0 +1,233 @@
+/* Visual Positioning Styles */
+.fso-visual-positioning-section {
+  margin: 20px 0;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.fso-toggle-preview-btn {
+  background: white;
+  border: 2px solid #0066cc;
+  color: #0066cc;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* When placed in the scene controls header, don't stretch to full width */
+.fso-scene-controls .fso-toggle-preview-btn {
+  width: auto;
+  font-size: 12px;
+}
+
+.fso-toggle-preview-btn:hover {
+  background: #0066cc;
+  color: white;
+}
+
+.fso-toggle-preview-btn.active {
+  background: #0066cc;
+  color: white;
+}
+.fso-toggle-preview-btn:hover {
+  background: #0066cc;
+  color: white;
+}
+
+.fso-toggle-preview-btn.active {
+  background: #0066cc;
+  color: white;
+}
+
+.fso-preview-container {
+  margin-top: 16px;
+}
+
+.fso-preview-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.fso-preview-label {
+  font-weight: 600;
+  color: #475569;
+}
+
+.fso-preview-zoom {
+  padding: 4px 12px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.fso-preview-zoom:hover {
+  background: #f1f5f9;
+}
+
+.fso-preview-zoom.active {
+  background: #0066cc;
+  color: white;
+  border-color: #0066cc;
+}
+
+.fso-grid-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  font-size: 13px;
+  color: #475569;
+}
+
+.fso-grid-size-input {
+  width: 50px;
+  padding: 2px 4px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.fso-position-display {
+  font-size: 13px;
+  color: #64748b;
+  font-family: monospace;
+}
+
+.fso-preview-wrapper {
+  border: 2px solid #333;
+  border-radius: 6px;
+  overflow: auto;
+  max-height: 500px;
+  background: #f1f5f9;
+  padding: 20px;
+}
+
+.fso-preview-canvas {
+  position: relative;
+  margin: 0 auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border-radius: 4px;
+}
+
+.fso-preview-canvas.show-grid {
+  --grid-size: 10px;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0 1px, transparent 1px var(--grid-size)),
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.05) 0 1px, transparent 1px var(--grid-size));
+  background-size: var(--grid-size) var(--grid-size);
+}
+
+/* Preview Items */
+.preview-item {
+  border: 2px solid transparent;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+}
+
+.preview-item:hover {
+  border-color: #0066cc;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 8px rgba(0,102,204,0.2);
+}
+
+.preview-item.dragging {
+  border-color: #0066cc;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 16px rgba(0,102,204,0.3);
+  z-index: 1000;
+  opacity: 0.9;
+}
+
+.preview-data {
+  background: rgba(224, 242, 254, 0.9);
+}
+
+.preview-static {
+  background: rgba(254, 243, 199, 0.9);
+}
+
+.preview-image {
+  padding: 0;
+  background: transparent;
+}
+
+.preview-dice {
+  background: rgba(237, 233, 254, 0.9);
+  font-weight: bold;
+}
+
+.preview-hpbar {
+  background: transparent;
+  padding: 0;
+}
+
+.hp-bar-preview {
+  position: relative;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.hp-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+}
+
+.preview-helper {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translate(-50%, -4px);
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  display: none;
+  z-index: 10;
+}
+
+.preview-item:hover .preview-helper,
+.preview-item.dragging .preview-helper {
+  display: block;
+}
+
+.preview-helper .fso-item-title,
+.preview-helper .fso-item-subtitle {
+  color: #fff;
+  line-height: 1.2;
+}
+
+.resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  bottom: 0;
+  right: 0;
+  background: #0066cc;
+  border: 1px solid #fff;
+  cursor: se-resize;
+  border-radius: 2px;
+}

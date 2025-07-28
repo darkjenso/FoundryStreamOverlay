@@ -1,90 +1,131 @@
-<form>
-  <h2>Slideshow Settings</h2>
-  <table style="width: 100%; text-align: left;">
-    <thead>
-      <tr>
-        <th>Order</th>
-        <th>Layout</th>
-        <th>Duration (seconds)</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{#each slideshowItems}}
-      <tr>
-        <td>
-          <button type="button" class="move-up" data-index="{{@index}}">↑</button>
-          <button type="button" class="move-down" data-index="{{@index}}">↓</button>
-        </td>
-        <td>
-      
-          <input type="hidden" name="layout-{{@index}}" value="{{this.layout}}">
-          {{this.layout}}
-        </td>
-        <td>
-          <input type="number" name="duration-{{@index}}" value="{{this.duration}}" style="width:60px;">
-        </td>
-        <td>
-          <button type="button" class="remove-item" data-index="{{@index}}">X</button>
-        </td>
-      </tr>
-      {{/each}}
-    </tbody>
-  </table>
+<form class="fso-scene-manager fso-slideshow-config">
+  <div class="fso-scene-manager-header">
+    <h2>Slideshow Settings</h2>
+    <p class="fso-scene-manager-description">Automatically cycle through scenes in a window.</p>
+  </div>
 
+  <div class="fso-scenes-list-container">
+    <table class="fso-scenes-table fso-slideshow-table">
+      <thead>
+        <tr>
+          <th>Order</th>
+          <th>Scene</th>
+          <th>Duration (s)</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each slideshowItems}}
+        <tr>
+          <td class="fso-order-buttons">
+            <button type="button" class="move-up fso-compact-btn" data-index="{{@index}}" title="Move Up">▲</button>
+            <button type="button" class="move-down fso-compact-btn" data-index="{{@index}}" title="Move Down">▼</button>
+          </td>
+          <td>
+            <input type="hidden" name="layout-{{@index}}" value="{{this.layout}}">
+            {{this.layout}}
+          </td>
+          <td>
+            <input type="number" name="duration-{{@index}}" value="{{this.duration}}" style="width:60px;">
+          </td>
+          <td>
+            <button type="button" class="remove-item fso-compact-btn" data-index="{{@index}}" title="Remove">🗑️</button>
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
 
-  <div style="margin: 1em 0;">
-    <label>
+  <div class="fso-config-section">
+    <label class="fso-checkbox-label">
       <input type="checkbox" name="random" {{#if random}}checked{{/if}}>
       Random Order
     </label>
+    <div class="fso-config-row" style="margin-top: 12px;">
+      <label for="slideshow-transition">Transition Effect:</label>
+      <select id="slideshow-transition" name="transition">
+        <option value="none" {{#ifEquals transition "none"}}selected{{/ifEquals}}>None</option>
+        <option value="fade" {{#ifEquals transition "fade"}}selected{{/ifEquals}}>Fade</option>
+        <option value="slide" {{#ifEquals transition "slide"}}selected{{/ifEquals}}>Slide</option>
+        <option value="flip" {{#ifEquals transition "flip"}}selected{{/ifEquals}}>Flip</option>
+      </select>
+      <label for="transitionDuration" style="margin-left: 8px;">Duration:</label>
+      <input type="number" step="0.1" name="transitionDuration" value="{{transitionDuration}}" style="width:60px;">
+      <span class="fso-input-suffix">seconds</span>
+    </div>
   </div>
-  <div style="margin: 1em 0;">
-    <label>Transition Effect:</label>
-    <select name="transition">
-      <option value="none" {{#ifEquals transition "none"}}selected{{/ifEquals}}>None</option>
-      <option value="fade" {{#ifEquals transition "fade"}}selected{{/ifEquals}}>Fade</option>
-      <option value="slide" {{#ifEquals transition "slide"}}selected{{/ifEquals}}>Slide</option>
-      <option value="flip" {{#ifEquals transition "flip"}}selected{{/ifEquals}}>Flip</option>
-    </select>
-    
-    <label style="margin-left: 1em;">Duration:</label>
-    <input type="number" step="0.1" name="transitionDuration" value="{{transitionDuration}}" style="width:60px;"> seconds
-  </div>
-  <div style="margin-top: 1em;">
-    <label for="new-layout-dropdown">Select Layout:</label>
-    <select id="new-layout-dropdown" style="width: 100%; margin-bottom: 0.5em;">
+
+  <div class="fso-config-section">
+    <label for="new-layout-dropdown">Select Scene:</label>
+    <select id="new-layout-dropdown" style="width:100%; margin-top:6px;">
       {{#each availableLayouts}}
         <option value="{{this}}">{{this}}</option>
       {{/each}}
     </select>
-    <button type="button" class="add-selected-item" style="width: 100%;">Add Selected Layout to Slideshow</button>
+    <button type="button" class="add-selected-item fso-primary-btn" style="margin-top:8px;">Add Selected Scene</button>
   </div>
-  
-  <div style="margin: 1em 0;">
+
+  <div class="fso-config-section">
     <label>Target Window:</label>
     <select name="targetWindow">
       {{#each windows}}
-        <option value="{{this.id}}" {{#ifEquals ../targetWindow this.id}}selected{{/ifEquals}}>
-          {{this.name}}
-        </option>
+        <option value="{{this.id}}" {{#ifEquals ../targetWindow this.id}}selected{{/ifEquals}}>{{this.name}}</option>
       {{/each}}
     </select>
     <p class="hint" style="font-style: italic; color: #666; margin-top: 0.2em;">Select which overlay window will display this slideshow</p>
   </div>
 
-  <div style="margin-top: 1em; display: flex; align-items: center; justify-content: center;">
-    <button type="button" class="start-slideshow" style="margin-right: 1em;">
-      <i class="fas fa-play"></i> Start
-    </button>
-    <button type="button" class="stop-slideshow">
-      <i class="fas fa-pause"></i> Stop
-    </button>
+  <div class="fso-scene-actions-section">
+    <div class="fso-primary-actions">
+      {{#if isPremium}}
+      <button type="button" class="start-slideshow fso-primary-btn" style="margin-right:8px;">
+        <i class="fas fa-play"></i> Start
+      </button>
+      {{else}}
+      <button type="button" class="fso-primary-btn" disabled title="Premium feature" style="margin-right:8px;">
+        <i class="fas fa-lock"></i> Start
+      </button>
+      {{/if}}
+      <button type="button" class="stop-slideshow fso-secondary-btn">
+        <i class="fas fa-pause"></i> Stop
+      </button>
+    </div>
+
+    {{#unless isPremium}}
+    <div class="fso-premium-limitation-notice">
+      <div class="fso-premium-notice">
+        <div class="fso-premium-content">
+          <i class="fso-premium-icon fas fa-gem"></i>
+          <div class="fso-premium-text">Slideshow is a premium feature</div>
+          <a href="https://www.patreon.com/c/jenzelta" target="_blank" class="fso-premium-link">Support on Patreon</a>
+        </div>
+      </div>
+    </div>
+    {{/unless}}
   </div>
 
-  <hr />
-
-  <div style="text-align:right; margin-top:1em;">
-    <button type="submit" class="dialog-button">Save Slideshow</button>
+  <div class="fso-form-actions">
+    <button type="submit" class="fso-primary-btn">Save Slideshow</button>
   </div>
+
+  <style>
+    .fso-slideshow-table td {
+      text-align: center;
+    }
+    .fso-order-buttons {
+      width: 80px;
+    }
+    .fso-order-buttons .fso-compact-btn {
+      margin: 0 2px;
+    }
+    .fso-slideshow-config .fso-form-actions {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+  </style>
 </form>

@@ -1,17 +1,4 @@
-/* ===================================================================
-   FOUNDRY STREAM OVERLAY - Main CSS Entry Point
-   Version: 4.0.0 - Modular Architecture
-   
-   This file imports all modular CSS components for better organization
-   and maintainability. Each module serves a specific purpose:
-   
-   - core-overlay.css: Base overlay window functionality
-   - animations.css: Standard overlay animations  
-   - dice-animations.css: Dice-specific animations and BG3 style
-   - ui-components.css: Configuration interface styling
-   - responsive.css: Mobile and responsive design
-   - utilities.css: Helper classes and performance optimizations
-   ================================================================== */
+
 
 /* Import core overlay functionality first */
 @import url("styles/core-overlay.css");
@@ -27,17 +14,8 @@
 @import url("styles/responsive.css");
 
 /* Import utilities and helper classes last */
+
 @import url("styles/utilities.css");
 
-/* ===================================================================
-   MODULE-SPECIFIC OVERRIDES (if needed)
-   ================================================================== */
+@import url("styles/visual-positioning.css");
 
-/* You can add any module-specific overrides here that need to 
-   cascade over the imported styles. Keep this section minimal. */
-
-/* Example override (remove if not needed):
-.fso-overlay-item.custom-override {
-  z-index: 9999;
-}
-*/

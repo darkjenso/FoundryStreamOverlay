@@ -8,9 +8,35 @@ import { getActorDataValue } from '../utils/helpers.js';
  * @returns {Object} Processed image item
  */
 export function processImageItem(item, isPremium) {
+  let imagePath = item.imagePath || "";
+
+  if (item.dynamicImage && Array.isArray(item.dynamicRules)) {
+    for (const rule of item.dynamicRules) {
+      const actor = game.actors.get(rule.actorId || item.actorId);
+      if (!actor) continue;
+      let current = foundry.utils.getProperty(actor, rule.dataPath || "system.attributes.hp.value");
+      if (rule.mode === "percent") {
+        const max = foundry.utils.getProperty(actor, "system.attributes.hp.max") || 1;
+        current = (current / max) * 100;
+      }
+      const target = Number(rule.value);
+      let passed = false;
+      switch (rule.comp) {
+        case "lt": passed = current < target; break;
+        case "lte": passed = current <= target; break;
+        case "eq": passed = current === target; break;
+        case "gte": passed = current >= target; break;
+        case "gt": passed = current > target; break;
+      }
+      if (passed && rule.image) {
+        imagePath = rule.image;
+      }
+    }
+  }
+
   return {
     type: "image",
-    imagePath: item.imagePath || "",
+    imagePath,
     imageSize: item.imageSize || 100,
     top: item.top ?? 0,
     left: item.left ?? 0,

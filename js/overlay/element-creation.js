@@ -76,6 +76,9 @@ export function createDiceElement(item, overlayWindow) {
   
   // Store dice configuration
   div.dataset.diceType = item.diceType;
+  if (item.itemIndex !== undefined) {
+    div.dataset.index = item.itemIndex;
+  }
   div.dataset.style = item.style;
   div.dataset.alwaysVisible = item.alwaysVisible;
   div.dataset.rollAnimation = item.rollAnimation;

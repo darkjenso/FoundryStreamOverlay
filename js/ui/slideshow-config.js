@@ -19,11 +19,13 @@ export class SlideshowConfig extends FormApplication {
     const slideshow = OverlayData.getSlideshow();
     const layouts = OverlayData.getLayouts();
     const availableLayouts = Object.keys(layouts);
-    
+
     const windows = OverlayData.getOverlayWindows() || {
       "main": { id: "main", name: "Main Overlay" }
     };
-    
+
+    const isPremium = isPremiumActive();
+
     return {
       slideshowItems: slideshow.list,
       availableLayouts,
@@ -31,7 +33,8 @@ export class SlideshowConfig extends FormApplication {
       random: slideshow.random,
       transition: slideshow.transition,
       transitionDuration: slideshow.transitionDuration,
-      targetWindow: slideshow.targetWindow || "main"
+      targetWindow: slideshow.targetWindow || "main",
+      isPremium
     };
   }
 
@@ -113,7 +116,9 @@ export class SlideshowConfig extends FormApplication {
     }
     
     const windowId = slideshow.targetWindow || "main";
-    const targetWindow = window.overlayWindows?.[windowId];
+    const targetWindow = windowId === "main"
+      ? window.overlayWindow
+      : window.overlayWindows?.[windowId];
     
     if (!targetWindow || targetWindow.closed) {
       const { openOverlayWindow } = await import('../overlay/window-management.js');
@@ -121,17 +126,18 @@ export class SlideshowConfig extends FormApplication {
     }
     
     const checkWindowValidity = () => {
-      const windowValid = window.overlayWindows 
-        && window.overlayWindows[windowId] 
-        && !window.overlayWindows[windowId].closed 
-        && window.overlayWindows[windowId].document;
-      
-      const containerValid = windowValid && window.overlayWindows[windowId].document.getElementById('overlay-container');
+      const w = windowId === "main"
+        ? window.overlayWindow
+        : window.overlayWindows && window.overlayWindows[windowId];
+
+      const windowValid = w && !w.closed && w.document;
+
+      const containerValid = windowValid && w.document.getElementById('overlay-container');
       
       if (!windowValid || !containerValid) {
         console.error("Window validity check failed:", {
-          windowExists: !!window.overlayWindows && !!window.overlayWindows[windowId],
-          windowClosed: window.overlayWindows?.[windowId]?.closed,
+          windowExists: !!w,
+          windowClosed: w?.closed,
           documentExists: windowValid,
           containerExists: containerValid
         });
@@ -157,12 +163,24 @@ export class SlideshowConfig extends FormApplication {
     
     try {
       await waitForWindow();
-      
-      this._onStopSlideshow(null);
-      
+
+      await this._onStopSlideshow(null);
+
       window.foundryStreamSlideshowRunning = true;
       window.foundryStreamSlideshowIndex = 0;
       window.foundryStreamSlideshowWindow = windowId;
+
+      // Mark the target window as running a slideshow for legacy compatibility
+      try {
+        const windows = OverlayData.getOverlayWindows();
+        const config = windows[windowId] || { id: windowId };
+        await OverlayData.setOverlayWindow(windowId, {
+          ...config,
+          slideshowActive: true
+        });
+      } catch (flagError) {
+        console.warn('Unable to set slideshowActive flag:', flagError);
+      }
       
       const runSlide = async () => {
         console.log("Slideshow run started", {
@@ -173,7 +191,7 @@ export class SlideshowConfig extends FormApplication {
         
         if (!window.foundryStreamSlideshowRunning || !checkWindowValidity()) {
           console.log("Slideshow stopped due to invalid window or stopped state");
-          this._onStopSlideshow(null);
+          await this._onStopSlideshow(null);
           return;
         }
         
@@ -181,7 +199,7 @@ export class SlideshowConfig extends FormApplication {
         
         if (currentSlideshow.list.length === 0) {
           console.log("No layouts in slideshow");
-          this._onStopSlideshow(null);
+          await this._onStopSlideshow(null);
           return;
         }
         
@@ -198,11 +216,13 @@ export class SlideshowConfig extends FormApplication {
             (window.foundryStreamSlideshowIndex + 1) % currentSlideshow.list.length;
         }
         
-        const overlayWindow = window.overlayWindows[windowId];
+        const overlayWindow = windowId === "main"
+          ? window.overlayWindow
+          : window.overlayWindows[windowId];
         const container = overlayWindow.document.getElementById("overlay-container");
         if (!container) {
           console.error("Overlay container not found!");
-          this._onStopSlideshow(null);
+          await this._onStopSlideshow(null);
           return;
         }
         
@@ -257,7 +277,7 @@ export class SlideshowConfig extends FormApplication {
           );
         } catch (error) {
           console.error("Slideshow iteration error:", error);
-          this._onStopSlideshow(null);
+          await this._onStopSlideshow(null);
         }
       };
       
@@ -268,7 +288,7 @@ export class SlideshowConfig extends FormApplication {
     } catch (initError) {
       console.error("Slideshow initialization error:", initError);
       ui.notifications.error(`Failed to start slideshow. Please open window ${windowId} first.`);
-      this._onStopSlideshow(null);
+      await this._onStopSlideshow(null);
     }
     
     if (game.settings.get(MODULE_ID, "autoSyncStandalone")) {
@@ -281,7 +301,7 @@ export class SlideshowConfig extends FormApplication {
     }
   }
 
-  _onStopSlideshow(event) {
+  async _onStopSlideshow(event) {
     if (event) event.preventDefault();
     
     if (window.foundryStreamSlideshowTimeout) {
@@ -289,9 +309,24 @@ export class SlideshowConfig extends FormApplication {
       window.foundryStreamSlideshowTimeout = null;
     }
     
+    const currentWindowId = window.foundryStreamSlideshowWindow;
     window.foundryStreamSlideshowRunning = false;
     window.foundryStreamSlideshowIndex = 0;
     window.foundryStreamSlideshowWindow = null;
+
+    // Clear slideshowActive flag for the previously used window
+    if (currentWindowId) {
+      try {
+        const windows = OverlayData.getOverlayWindows();
+        const cfg = windows[currentWindowId] || { id: currentWindowId };
+        await OverlayData.setOverlayWindow(currentWindowId, {
+          ...cfg,
+          slideshowActive: false
+        });
+      } catch (clearError) {
+        console.warn('Unable to clear slideshowActive flag:', clearError);
+      }
+    }
     
     if (event) {
       ui.notifications.info("Slideshow stopped.");

@@ -30,8 +30,9 @@ export function openOverlayWindow(windowId = "main") {
       window.overlayWindows[windowId].close();
     }
 
-    // Get background color
-    const backgroundColor = OverlayData.getSetting("backgroundColour") || "#00ff00";
+    // Get background color - prefer per-window setting then global default
+    const backgroundColor = windowConfig.backgroundColor ||
+      OverlayData.getSetting("backgroundColour") || "#00ff00";
     
     // Open new window
     const overlayWindow = window.open(
@@ -99,6 +100,13 @@ export function updateOverlayWindow(windowId = "main") {
     const activeLayout = windowConfig.activeLayout || "Default";
     const layoutItems = layouts[activeLayout] || [];
 
+    // Ensure window background color reflects configuration
+    const bgColor = windowConfig.backgroundColor ||
+      OverlayData.getSetting("backgroundColour") || "#00ff00";
+    if (overlayWindow.document?.body) {
+      overlayWindow.document.body.style.backgroundColor = bgColor;
+    }
+
 
     // Clear existing content
     const container = overlayWindow.document.getElementById("overlay-container");
@@ -117,7 +125,17 @@ export function updateOverlayWindow(windowId = "main") {
       overlayWindow.diceElements = [];
     }
 
-    container.innerHTML = "";
+    // Preserve any dice elements that are currently animating
+    const animatingDice = Array.from(container.querySelectorAll('.dice-item.animating'));
+    const preserveSet = new Set(animatingDice);
+
+    // Remove all non-animating children
+    Array.from(container.children).forEach(el => {
+      if (!preserveSet.has(el)) {
+        container.removeChild(el);
+      }
+    });
+
 
     // Get premium status
     const isPremium = isPremiumActive();
@@ -154,6 +172,8 @@ export function updateOverlayWindow(windowId = "main") {
         }
 
         if (processedItem && !processedItem.hide) {
+          // Preserve the item's original index for DOM matching
+          processedItem.itemIndex = index;
           // Higher renderOrder means item appears in front
           processedItem.renderOrder = totalItems - index - 1;
           processedItems.push(processedItem);
@@ -170,10 +190,15 @@ export function updateOverlayWindow(windowId = "main") {
     processedItems.forEach(item => {
       try {
         let element;
-        
+
         if (item.type === "image") {
           element = createImageElement(item, overlayWindow);
         } else if (item.type === "dice") {
+          // Skip creating a new element if one is already animating for this item
+          const exists = container.querySelector(`.dice-item.animating[data-index='${item.itemIndex}']`);
+          if (exists) {
+            return;
+          }
           element = createDiceElement(item, overlayWindow);
                   } else if (item.type === "hpBar") {
           element = createHpBarElement(item, overlayWindow);

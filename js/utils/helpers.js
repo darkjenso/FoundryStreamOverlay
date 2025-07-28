@@ -100,14 +100,24 @@ export function getActorDataValue(actor, item) {
   try {
     if (item.dataPath === "name") {
       textValue = actor.name;
-    } else if (item.dataPath === "hp") {
-      const currentHP = foundry.utils.getProperty(actor, 'system.attributes.hp.value');
-      const maxHP = foundry.utils.getProperty(actor, 'system.attributes.hp.max');
-      textValue = `${currentHP} / ${maxHP}`;
-    } else if (item.dataPath === "custom" && item.customPath) {
+} else if (item.dataPath === "hp") {
+    let currentHP = foundry.utils.getProperty(actor, 'system.attributes.hp.value');
+    let maxHP = foundry.utils.getProperty(actor, 'system.attributes.hp.max');
+    // Support alternative path conventions
+    if (currentHP === undefined) {
+      currentHP = foundry.utils.getProperty(actor, 'system.attribs.hp.value');
+      maxHP = foundry.utils.getProperty(actor, 'system.attribs.hp.max');
+    }
+    textValue = `${currentHP} / ${maxHP}`;
+  } else if (item.dataPath === "heroPoints") {
+    const current = foundry.utils.getProperty(actor, 'system.resources.heroPoints.value');
+    const max = foundry.utils.getProperty(actor, 'system.resources.heroPoints.max');
+    textValue = `${current} / ${max}`;
+  } else if (item.dataPath === "custom" && item.customPath) {
       const path = sanitizeDataPath(item.customPath);
       if (path) {
         textValue = foundry.utils.getProperty(actor, path);
+        
         
         // Convert objects to readable format
         if (textValue && typeof textValue === 'object') {
@@ -162,14 +172,74 @@ export function getDataPathLabel(dataPath, customPath = "") {
     "hp": "HP",
     "system.attributes.ac.value": "AC",
     "system.details.level": "Level",
-    "system.details.class": "Class",
+    "system.details.level.value": "Level",
     "system.details.race": "Race",
+    "system.details.xp.value": "XP",
+    "system.details.xp.max": "Max XP",
     "system.abilities.str.value": "STR",
     "system.abilities.dex.value": "DEX",
     "system.abilities.con.value": "CON",
     "system.abilities.int.value": "INT",
     "system.abilities.wis.value": "WIS",
     "system.abilities.cha.value": "CHA",
+    "system.attributes.perception.value": "Perception",
+    "system.saves.fortitude.value": "Fortitude",
+    "system.saves.reflex.value": "Reflex",
+    "system.saves.will.value": "Will",
+    "system.attributes.prof": "Proficiency",
+    "system.resources.heroPoints.value": "Hero Points",
+    "system.resources.heroPoints.max": "Max Hero Points",
+    "heroPoints": "Hero Points",
+    "system.attribs.hp.value": "HP",
+    "system.attribs.hp.max": "Max HP",
+    "system.attribs.mp.value": "MP",
+    "system.attribs.san.value": "Sanity",
+    "system.attribs.san.max": "Max Sanity",
+    "system.attribs.lck.value": "Luck",
+    "system.attribs.mov.value": "Movement",
+    "system.attribs.db.value": "Damage Bonus",
+    "system.infos.occupation": "Occupation",
+    "system.infos.age": "Age",
+    "system.infos.residence": "Residence",
+    "data.details.species.name": "Species",
+    "data.bennies.max": "Bennies",
+    "data.attributes.agility.die.sides": "Agility Die",
+    "data.attributes.agility.modifier": "Agility Mod",
+    "data.attributes.smarts.die.sides": "Smarts Die",
+    "data.attributes.smarts.modifier": "Smarts Mod",
+    "data.attributes.might.die.sides": "Might Die",
+    "data.attributes.might.modifier": "Might Mod",
+    "data.attributes.spirit.die.sides": "Spirit Die",
+    "data.attributes.spirit.modifier": "Spirit Mod",
+    "data.attributes.vigor.die.sides": "Vigor Die",
+    "data.attributes.vigor.modifier": "Vigor Mod",
+    "data.stats.speed.adjusted": "Speed",
+    "data.stats.parry.value": "Parry",
+    "data.stats.toughness.value": "Toughness",
+    "data.stats.toughness.armor": "Armor",
+    "system.header.health.value": "HP",
+    "system.header.health.max": "Max HP",
+    "system.header.stress.value": "Stress",
+    "system.attributes.agl.value": "AGL",
+    "system.attributes.emp.value": "EMP",
+    "system.attributes.str.value": "STR",
+    "system.attributes.wit.value": "WIT",
+    "system.general.career.value": "Career",
+    "system.general.cash.value": "Cash",
+    "system.consumables.air.value": "Air",
+    "system.consumables.food.value": "Food",
+    "system.consumables.water.value": "Water",
+    "system.consumables.power.value": "Power",
+    "system.skills.closeCbt.value": "Close Combat",
+    "system.skills.rangedCbt.value": "Ranged Combat",
+    "system.skills.medicalAid.value": "Medical Aid",
+    "system.skills.perception.total": "Perception Skill",
+    "system.attributes.hp.temp": "Temp HP",
+    "system.attributes.prof": "Proficiency",
+    "system.details.subclass": "Subclass",
+    "system.resources.heroPoints.value": "Hero Points",
+    "system.resources.heroPoints.max": "Max Hero Points",
+    "heroPoints": "Hero Points",
     "custom": customPath || "Custom"
   };
   

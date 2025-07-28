@@ -1,6 +1,6 @@
 // Settings registration for Foundry Stream Overlay - FIXED NO GLOBAL ACTIVE LAYOUT
 import { MODULE_ID } from './constants.js';
-import { validateActivationKey } from '../premium/validation.js';
+import { validateActivationKey, isPremiumActive } from '../premium/validation.js';
 
 /**
  * Safely registers a setting, handling cases where user lacks permission
@@ -624,8 +624,9 @@ export function registerMenus() {
   // =================================
 
   // Premium status and activation
+  const premiumIndicator = isPremiumActive() ? "✅" : "❌";
   game.settings.registerMenu(MODULE_ID, "premiumStatus", {
-    name: "💎 Premium Features",
+    name: `💎 Premium Features ${premiumIndicator}`,
     label: "Premium",
     hint: "Unlock advanced features with premium activation",
     icon: "fas fa-gem",

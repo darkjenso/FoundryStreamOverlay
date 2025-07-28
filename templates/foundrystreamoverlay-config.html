@@ -28,6 +28,31 @@
       <button type="button" class="fso-secondary-btn" id="manage-scenes-btn" {{#unless isPremium}}disabled{{/unless}}>
         Manage Scenes
       </button>
+      <button type="button" class="fso-secondary-btn fso-toggle-preview-btn" id="toggle-preview-mode">
+        <i class="fas fa-mouse-pointer"></i> Enable Visual Positioning
+      </button>
+    </div>
+  </div>
+
+  <!-- Visual Positioning Mode -->
+  <div class="fso-visual-positioning-section">
+    
+    <div class="fso-preview-container" style="display: none;">
+      <div class="fso-preview-controls">
+        <span class="fso-preview-label">Preview:</span>
+        <button type="button" class="fso-preview-zoom" data-zoom="50">50%</button>
+        <button type="button" class="fso-preview-zoom active" data-zoom="100">100%</button>
+        <label class="fso-grid-toggle">
+          <input type="checkbox" id="preview-grid"> Snap to Grid
+          <input type="number" id="grid-size" class="fso-grid-size-input" value="10" min="1" step="1">
+        </label>
+        <span class="fso-position-display">Position: <span id="position-coords">-</span></span>
+      </div>
+      <div class="fso-preview-wrapper">
+        <div class="fso-preview-canvas">
+          <!-- Items will be rendered here -->
+        </div>
+      </div>
     </div>
   </div>
 
@@ -92,7 +117,7 @@
                   <span class="fso-item-title">{{#if this.content}}"{{this.content}}"{{else}}Empty text{{/if}}</span>
                 {{else ifEquals this.type "dice"}}
                   <span class="fso-item-title">{{this.diceType}} Roll Display</span>
-                  <span class="fso-item-subtitle">{{#if this.alwaysVisible}}Always visible{{else}}Show on roll{{/if}}</span>
+                  <span class="fso-item-subtitle">{{this.targetUserNames}} - {{#if this.alwaysVisible}}Always visible{{else}}Show on roll{{/if}}</span>
                 {{else ifEquals this.type "hpBar"}}
                   <span class="fso-item-title">HP Bar</span>
                   {{#if this.actorId}}
@@ -156,6 +181,149 @@
                         <option value="system.attributes.ac.value" {{#ifEquals dataPath "system.attributes.ac.value"}}selected{{/ifEquals}}>Armor Class</option>
                         <option value="system.details.level" {{#ifEquals dataPath "system.details.level"}}selected{{/ifEquals}}>Level</option>
                       </optgroup>
+                      {{#ifEquals ../gameSystem 'dnd5e'}}
+                      <optgroup label="D&D 5E">
+                        <option value="system.details.class" {{#ifEquals dataPath "system.details.class"}}selected{{/ifEquals}}>Class</option>
+                        <option value="system.details.subclass" {{#ifEquals dataPath "system.details.subclass"}}selected{{/ifEquals}}>Subclass</option>
+                        <option value="system.details.race" {{#ifEquals dataPath "system.details.race"}}selected{{/ifEquals}}>Race</option>
+                        <option value="system.attributes.prof" {{#ifEquals dataPath "system.attributes.prof"}}selected{{/ifEquals}}>Proficiency Bonus</option>
+                        <option value="system.abilities.str.value" {{#ifEquals dataPath "system.abilities.str.value"}}selected{{/ifEquals}}>STR</option>
+                        <option value="system.abilities.dex.value" {{#ifEquals dataPath "system.abilities.dex.value"}}selected{{/ifEquals}}>DEX</option>
+                        <option value="system.abilities.con.value" {{#ifEquals dataPath "system.abilities.con.value"}}selected{{/ifEquals}}>CON</option>
+                        <option value="system.abilities.int.value" {{#ifEquals dataPath "system.abilities.int.value"}}selected{{/ifEquals}}>INT</option>
+                        <option value="system.abilities.wis.value" {{#ifEquals dataPath "system.abilities.wis.value"}}selected{{/ifEquals}}>WIS</option>
+                        <option value="system.abilities.cha.value" {{#ifEquals dataPath "system.abilities.cha.value"}}selected{{/ifEquals}}>CHA</option>
+                      </optgroup>
+                      {{/ifEquals}}
+                      {{#ifEquals ../gameSystem 'pf2e'}}
+                      <optgroup label="Pathfinder 2E">
+
+                        <option value="system.attributes.hp.value" {{#ifEquals dataPath "system.attributes.hp.value"}}selected{{/ifEquals}}>Current HP</option>
+                        <option value="system.attributes.hp.max" {{#ifEquals dataPath "system.attributes.hp.max"}}selected{{/ifEquals}}>Max HP</option>
+                        <option value="system.attributes.hp.temp" {{#ifEquals dataPath "system.attributes.hp.temp"}}selected{{/ifEquals}}>Temp HP</option>
+                        <option value="system.attributes.ac.value" {{#ifEquals dataPath "system.attributes.ac.value"}}selected{{/ifEquals}}>AC</option>
+                        <option value="system.attributes.perception.value" {{#ifEquals dataPath "system.attributes.perception.value"}}selected{{/ifEquals}}>Perception</option>
+                        <option value="system.details.level.value" {{#ifEquals dataPath "system.details.level.value"}}selected{{/ifEquals}}>Level</option>
+                        <option value="system.details.xp.value" {{#ifEquals dataPath "system.details.xp.value"}}selected{{/ifEquals}}>XP</option>
+                        <option value="system.details.xp.max" {{#ifEquals dataPath "system.details.xp.max"}}selected{{/ifEquals}}>Max XP</option>
+                        <option value="system.resources.heroPoints.value" {{#ifEquals dataPath "system.resources.heroPoints.value"}}selected{{/ifEquals}}>Hero Points</option>
+                        <option value="heroPoints" {{#ifEquals dataPath "heroPoints"}}selected{{/ifEquals}}>Hero Points / Max</option>
+                        <option value="system.resources.heroPoints.max" {{#ifEquals dataPath "system.resources.heroPoints.max"}}selected{{/ifEquals}}>Max Hero Points</option>
+                        <option value="system.resources.focus.value" {{#ifEquals dataPath "system.resources.focus.value"}}selected{{/ifEquals}}>Focus Points</option>
+                        <option value="system.attributes.speed.value" {{#ifEquals dataPath "system.attributes.speed.value"}}selected{{/ifEquals}}>Speed</option>
+                        <option value="system.abilities.str.value" {{#ifEquals dataPath "system.abilities.str.value"}}selected{{/ifEquals}}>STR</option>
+                        <option value="system.abilities.dex.value" {{#ifEquals dataPath "system.abilities.dex.value"}}selected{{/ifEquals}}>DEX</option>
+                        <option value="system.abilities.con.value" {{#ifEquals dataPath "system.abilities.con.value"}}selected{{/ifEquals}}>CON</option>
+                        <option value="system.abilities.int.value" {{#ifEquals dataPath "system.abilities.int.value"}}selected{{/ifEquals}}>INT</option>
+                        <option value="system.abilities.wis.value" {{#ifEquals dataPath "system.abilities.wis.value"}}selected{{/ifEquals}}>WIS</option>
+                        <option value="system.abilities.cha.value" {{#ifEquals dataPath "system.abilities.cha.value"}}selected{{/ifEquals}}>CHA</option>
+                        <option value="system.saves.fortitude.value" {{#ifEquals dataPath "system.saves.fortitude.value"}}selected{{/ifEquals}}>Fortitude Save</option>
+                        <option value="system.saves.reflex.value" {{#ifEquals dataPath "system.saves.reflex.value"}}selected{{/ifEquals}}>Reflex Save</option>
+                        <option value="system.saves.will.value" {{#ifEquals dataPath "system.saves.will.value"}}selected{{/ifEquals}}>Will Save</option>
+                      </optgroup>
+                      {{/ifEquals}}
+                      {{#ifEquals ../gameSystem 'pf1'}}
+                      <optgroup label="Pathfinder 1E">
+                        <option value="system.attributes.hp.value" {{#ifEquals dataPath "system.attributes.hp.value"}}selected{{/ifEquals}}>Current HP</option>
+                        <option value="system.attributes.hp.max" {{#ifEquals dataPath "system.attributes.hp.max"}}selected{{/ifEquals}}>Max HP</option>
+                        <option value="system.attributes.ac.value" {{#ifEquals dataPath "system.attributes.ac.value"}}selected{{/ifEquals}}>AC</option>
+                        <option value="system.details.level" {{#ifEquals dataPath "system.details.level"}}selected{{/ifEquals}}>Level</option>
+                        <option value="system.abilities.str.value" {{#ifEquals dataPath "system.abilities.str.value"}}selected{{/ifEquals}}>STR</option>
+                        <option value="system.abilities.dex.value" {{#ifEquals dataPath "system.abilities.dex.value"}}selected{{/ifEquals}}>DEX</option>
+                        <option value="system.abilities.con.value" {{#ifEquals dataPath "system.abilities.con.value"}}selected{{/ifEquals}}>CON</option>
+                        <option value="system.abilities.int.value" {{#ifEquals dataPath "system.abilities.int.value"}}selected{{/ifEquals}}>INT</option>
+                        <option value="system.abilities.wis.value" {{#ifEquals dataPath "system.abilities.wis.value"}}selected{{/ifEquals}}>WIS</option>
+                        <option value="system.abilities.cha.value" {{#ifEquals dataPath "system.abilities.cha.value"}}selected{{/ifEquals}}>CHA</option>
+                        <option value="system.skills.per.total" {{#ifEquals dataPath "system.skills.per.total"}}selected{{/ifEquals}}>Perception Skill</option>
+                      </optgroup>
+                      {{/ifEquals}}
+                      {{#ifEquals ../gameSystem 'coc7'}}
+                      <optgroup label="Call of Cthulhu 7E">
+                        <option value="name" {{#ifEquals dataPath "name"}}selected{{/ifEquals}}>Name</option>
+                        <option value="system.characteristics.strength.value" {{#ifEquals dataPath "system.characteristics.strength.value"}}selected{{/ifEquals}}>STR</option>
+                        <option value="system.characteristics.constitution.value" {{#ifEquals dataPath "system.characteristics.constitution.value"}}selected{{/ifEquals}}>CON</option>
+                        <option value="system.characteristics.dexterity.value" {{#ifEquals dataPath "system.characteristics.dexterity.value"}}selected{{/ifEquals}}>DEX</option>
+                        <option value="system.characteristics.size.value" {{#ifEquals dataPath "system.characteristics.size.value"}}selected{{/ifEquals}}>SIZ</option>
+                        <option value="system.characteristics.intelligence.value" {{#ifEquals dataPath "system.characteristics.intelligence.value"}}selected{{/ifEquals}}>INT</option>
+                        <option value="system.characteristics.power.value" {{#ifEquals dataPath "system.characteristics.power.value"}}selected{{/ifEquals}}>POW</option>
+                        <option value="system.characteristics.appearance.value" {{#ifEquals dataPath "system.characteristics.appearance.value"}}selected{{/ifEquals}}>APP</option>
+                        <option value="system.characteristics.education.value" {{#ifEquals dataPath "system.characteristics.education.value"}}selected{{/ifEquals}}>EDU</option>
+                        <option value="system.attribs.hp.value" {{#ifEquals dataPath "system.attribs.hp.value"}}selected{{/ifEquals}}>HP</option>
+                        <option value="system.attribs.hp.max" {{#ifEquals dataPath "system.attribs.hp.max"}}selected{{/ifEquals}}>Max HP</option>
+                        <option value="system.attribs.mp.value" {{#ifEquals dataPath "system.attribs.mp.value"}}selected{{/ifEquals}}>MP</option>
+                        <option value="system.attribs.san.value" {{#ifEquals dataPath "system.attribs.san.value"}}selected{{/ifEquals}}>Sanity</option>
+                        <option value="system.attribs.san.max" {{#ifEquals dataPath "system.attribs.san.max"}}selected{{/ifEquals}}>Max Sanity</option>
+                        <option value="system.attribs.lck.value" {{#ifEquals dataPath "system.attribs.lck.value"}}selected{{/ifEquals}}>Luck</option>
+                        <option value="system.attribs.mov.value" {{#ifEquals dataPath "system.attribs.mov.value"}}selected{{/ifEquals}}>Movement</option>
+                        <option value="system.attribs.db.value" {{#ifEquals dataPath "system.attribs.db.value"}}selected{{/ifEquals}}>Damage Bonus</option>
+                        <option value="system.infos.occupation" {{#ifEquals dataPath "system.infos.occupation"}}selected{{/ifEquals}}>Occupation</option>
+                        <option value="system.infos.age" {{#ifEquals dataPath "system.infos.age"}}selected{{/ifEquals}}>Age</option>
+                        <option value="system.infos.residence" {{#ifEquals dataPath "system.infos.residence"}}selected{{/ifEquals}}>Residence</option>
+                      </optgroup>
+                      {{/ifEquals}}
+                      {{#ifEquals ../gameSystem 'swade'}}
+                      <optgroup label="SWADE">
+                        <option value="name" {{#ifEquals dataPath "name"}}selected{{/ifEquals}}>Name</option>
+                        <option value="data.details.species.name" {{#ifEquals dataPath "data.details.species.name"}}selected{{/ifEquals}}>Species</option>
+                        <option value="data.bennies.max" {{#ifEquals dataPath "data.bennies.max"}}selected{{/ifEquals}}>Bennies</option>
+                        <option value="data.attributes.agility.die.sides" {{#ifEquals dataPath "data.attributes.agility.die.sides"}}selected{{/ifEquals}}>Agility Die</option>
+                        <option value="data.attributes.agility.modifier" {{#ifEquals dataPath "data.attributes.agility.modifier"}}selected{{/ifEquals}}>Agility Mod</option>
+                        <option value="data.attributes.smarts.die.sides" {{#ifEquals dataPath "data.attributes.smarts.die.sides"}}selected{{/ifEquals}}>Smarts Die</option>
+                        <option value="data.attributes.smarts.modifier" {{#ifEquals dataPath "data.attributes.smarts.modifier"}}selected{{/ifEquals}}>Smarts Mod</option>
+                        <option value="data.attributes.might.die.sides" {{#ifEquals dataPath "data.attributes.might.die.sides"}}selected{{/ifEquals}}>Might Die</option>
+                        <option value="data.attributes.might.modifier" {{#ifEquals dataPath "data.attributes.might.modifier"}}selected{{/ifEquals}}>Might Mod</option>
+                        <option value="data.attributes.spirit.die.sides" {{#ifEquals dataPath "data.attributes.spirit.die.sides"}}selected{{/ifEquals}}>Spirit Die</option>
+                        <option value="data.attributes.spirit.modifier" {{#ifEquals dataPath "data.attributes.spirit.modifier"}}selected{{/ifEquals}}>Spirit Mod</option>
+                        <option value="data.attributes.vigor.die.sides" {{#ifEquals dataPath "data.attributes.vigor.die.sides"}}selected{{/ifEquals}}>Vigor Die</option>
+                        <option value="data.attributes.vigor.modifier" {{#ifEquals dataPath "data.attributes.vigor.modifier"}}selected{{/ifEquals}}>Vigor Mod</option>
+                        <option value="data.stats.speed.adjusted" {{#ifEquals dataPath "data.stats.speed.adjusted"}}selected{{/ifEquals}}>Speed</option>
+                        <option value="data.stats.parry.value" {{#ifEquals dataPath "data.stats.parry.value"}}selected{{/ifEquals}}>Parry</option>
+                        <option value="data.stats.toughness.value" {{#ifEquals dataPath "data.stats.toughness.value"}}selected{{/ifEquals}}>Toughness</option>
+                        <option value="data.stats.toughness.armor" {{#ifEquals dataPath "data.stats.toughness.armor"}}selected{{/ifEquals}}>Armor</option>
+                      </optgroup>
+                      {{/ifEquals}}
+                      {{#ifEquals ../gameSystem 'sfrpg'}}
+                      <optgroup label="Starfinder 1E">
+                        <option value="name" {{#ifEquals dataPath "name"}}selected{{/ifEquals}}>Name</option>
+                        <option value="system.attributes.hp.value" {{#ifEquals dataPath "system.attributes.hp.value"}}selected{{/ifEquals}}>Current HP</option>
+                        <option value="system.attributes.hp.max" {{#ifEquals dataPath "system.attributes.hp.max"}}selected{{/ifEquals}}>Max HP</option>
+                        <option value="system.details.level" {{#ifEquals dataPath "system.details.level"}}selected{{/ifEquals}}>Level</option>
+                        <option value="system.abilities.str.value" {{#ifEquals dataPath "system.abilities.str.value"}}selected{{/ifEquals}}>STR</option>
+                        <option value="system.abilities.dex.value" {{#ifEquals dataPath "system.abilities.dex.value"}}selected{{/ifEquals}}>DEX</option>
+                        <option value="system.abilities.con.value" {{#ifEquals dataPath "system.abilities.con.value"}}selected{{/ifEquals}}>CON</option>
+                        <option value="system.abilities.int.value" {{#ifEquals dataPath "system.abilities.int.value"}}selected{{/ifEquals}}>INT</option>
+                        <option value="system.abilities.wis.value" {{#ifEquals dataPath "system.abilities.wis.value"}}selected{{/ifEquals}}>WIS</option>
+                        <option value="system.abilities.cha.value" {{#ifEquals dataPath "system.abilities.cha.value"}}selected{{/ifEquals}}>CHA</option>
+                        <option value="system.skills.perception.total" {{#ifEquals dataPath "system.skills.perception.total"}}selected{{/ifEquals}}>Perception Skill</option>
+                      </optgroup>
+                      {{/ifEquals}}
+                      {{#ifEquals ../gameSystem 'alienrpg'}}
+                      <optgroup label="Alien RPG">
+                        <option value="name" {{#ifEquals dataPath "name"}}selected{{/ifEquals}}>Name</option>
+                        <option value="system.header.health.value" {{#ifEquals dataPath "system.header.health.value"}}selected{{/ifEquals}}>Current HP</option>
+                        <option value="system.header.health.max" {{#ifEquals dataPath "system.header.health.max"}}selected{{/ifEquals}}>Max HP</option>
+                        <option value="system.header.stress.value" {{#ifEquals dataPath "system.header.stress.value"}}selected{{/ifEquals}}>Stress</option>
+                        <option value="system.attributes.agl.value" {{#ifEquals dataPath "system.attributes.agl.value"}}selected{{/ifEquals}}>AGL</option>
+                        <option value="system.attributes.emp.value" {{#ifEquals dataPath "system.attributes.emp.value"}}selected{{/ifEquals}}>EMP</option>
+                        <option value="system.attributes.str.value" {{#ifEquals dataPath "system.attributes.str.value"}}selected{{/ifEquals}}>STR</option>
+                        <option value="system.attributes.wit.value" {{#ifEquals dataPath "system.attributes.wit.value"}}selected{{/ifEquals}}>WIT</option>
+                        <option value="system.general.career.value" {{#ifEquals dataPath "system.general.career.value"}}selected{{/ifEquals}}>Career</option>
+                        <option value="system.general.cash.value" {{#ifEquals dataPath "system.general.cash.value"}}selected{{/ifEquals}}>Cash</option>
+                        <option value="system.consumables.air.value" {{#ifEquals dataPath "system.consumables.air.value"}}selected{{/ifEquals}}>Air</option>
+                        <option value="system.consumables.food.value" {{#ifEquals dataPath "system.consumables.food.value"}}selected{{/ifEquals}}>Food</option>
+                        <option value="system.consumables.water.value" {{#ifEquals dataPath "system.consumables.water.value"}}selected{{/ifEquals}}>Water</option>
+                        <option value="system.consumables.power.value" {{#ifEquals dataPath "system.consumables.power.value"}}selected{{/ifEquals}}>Power</option>
+                        <option value="system.skills.closeCbt.value" {{#ifEquals dataPath "system.skills.closeCbt.value"}}selected{{/ifEquals}}>Close Combat</option>
+                        <option value="system.skills.rangedCbt.value" {{#ifEquals dataPath "system.skills.rangedCbt.value"}}selected{{/ifEquals}}>Ranged Combat</option>
+                        <option value="system.skills.medicalAid.value" {{#ifEquals dataPath "system.skills.medicalAid.value"}}selected{{/ifEquals}}>Medical Aid</option>
+                        <option value="system.abilities.str.mod" {{#ifEquals dataPath "system.abilities.str.mod"}}selected{{/ifEquals}}>STR</option>
+                        <option value="system.abilities.dex.mod" {{#ifEquals dataPath "system.abilities.dex.mod"}}selected{{/ifEquals}}>DEX</option>
+                        <option value="system.abilities.con.mod" {{#ifEquals dataPath "system.abilities.con.mod"}}selected{{/ifEquals}}>CON</option>
+                        <option value="system.abilities.int.mod" {{#ifEquals dataPath "system.abilities.int.mod"}}selected{{/ifEquals}}>INT</option>
+                        <option value="system.abilities.wis.mod" {{#ifEquals dataPath "system.abilities.wis.mod"}}selected{{/ifEquals}}>WIS</option>
+                        <option value="system.abilities.cha.mod" {{#ifEquals dataPath "system.abilities.cha.mod"}}selected{{/ifEquals}}>CHA</option>
+                      </optgroup>
+                      {{/ifEquals}}
                       <optgroup label="Advanced">
                         <option value="custom" {{#ifEquals dataPath "custom"}}selected{{/ifEquals}}>Custom Data Path...</option>
                       </optgroup>
@@ -222,15 +390,24 @@
                   
                   <div class="fso-config-row">
                     <label>Target Users:</label>
-                    <select name="targetUsers-{{this.idx}}" multiple style="height: 80px;">
-                      <option value="">All Users</option>
-                      {{#each ../allUsers}}
-                        <option value="{{this.id}}" {{#if (lookup ../this.targetUsers this.id)}}selected{{/if}}>
-                          {{this.name}}
-                        </option>
-                      {{/each}}
-                    </select>
-                    <small class="fso-help-text">Leave empty to show rolls from all users</small>
+                    <div class="fso-target-users-container" data-index="{{this.idx}}">
+                      <div class="fso-target-users-select">
+                        <select name="addUser-{{this.idx}}" class="fso-target-user-dropdown">
+                          <option value="">Select User</option>
+                          {{#each ../allUsers}}
+                            <option value="{{this.id}}">{{this.name}}</option>
+                          {{/each}}
+                        </select>
+                        <button type="button" class="fso-add-target-user" data-index="{{this.idx}}">Add</button>
+                      </div>
+                      <select name="targetUsers-{{this.idx}}" multiple class="fso-hidden-target-users" style="display:none;">
+                        {{#each ../allUsers}}
+                          <option value="{{this.id}}" {{#if (lookup ../this.targetUsers this.id)}}selected{{/if}}>{{this.name}}</option>
+                        {{/each}}
+                      </select>
+                      <div class="fso-selected-users" data-index="{{this.idx}}"></div>
+                      <small class="fso-help-text">Leave empty to show rolls from all users</small>
+                    </div>
                   </div>
                 </div>
                               {{else ifEquals this.type "hpBar"}}
@@ -321,10 +498,68 @@
                   </div>
                   <div class="fso-config-row">
                     <label>Size:</label>
-                    <div class="fso-input-group">
+                  <div class="fso-input-group">
                       <input type="number" name="imageSize-{{this.idx}}" value="{{this.imageSize}}" min="10" max="500">
                       <span class="fso-input-suffix">px</span>
                     </div>
+                  </div>
+                  <div class="fso-config-row">
+                    <label class="fso-checkbox-label">
+                      <input type="checkbox" name="dynamicImage-{{this.idx}}" {{#if this.dynamicImage}}checked{{/if}}>
+                      Dynamic Image
+                    </label>
+                  </div>
+                  <div class="fso-dynamic-image" data-index="{{this.idx}}" {{#unless this.dynamicImage}}style="display:none;"{{/unless}}>
+                    <table class="fso-scenes-table">
+                      <thead>
+                        <tr><th>Actor</th><th>Data</th><th>Cond</th><th>Value</th><th>Mode</th><th>Image</th><th></th></tr>
+                      </thead>
+                      <tbody>
+                        {{#each this.dynamicRules}}
+                        <tr data-rule-index="{{@index}}">
+                          <td>
+                            <select name="dynActor-{{../this.idx}}-{{@index}}">
+                              <option value="">--</option>
+                              {{#each ../../allActors}}
+                                <option value="{{this.id}}" {{#ifEquals this.id ../this.actorId}}selected{{/ifEquals}}>{{this.name}}</option>
+                              {{/each}}
+                            </select>
+                          </td>
+                          <td>
+                            <select name="dynDataPath-{{../this.idx}}-{{@index}}">
+                              {{#each ../../dataPaths}}
+                                <option value="{{this.path}}" {{#ifEquals this.path ../this.dataPath}}selected{{/ifEquals}}>{{this.label}}</option>
+                              {{/each}}
+                            </select>
+                          </td>
+                          <td>
+                            <select name="dynComp-{{../this.idx}}-{{@index}}">
+                              <option value="lt" {{#ifEquals this.comp 'lt'}}selected{{/ifEquals}}>&lt;</option>
+                              <option value="lte" {{#ifEquals this.comp 'lte'}}selected{{/ifEquals}}>≤</option>
+                              <option value="eq" {{#ifEquals this.comp 'eq'}}selected{{/ifEquals}}>=</option>
+                              <option value="gte" {{#ifEquals this.comp 'gte'}}selected{{/ifEquals}}>≥</option>
+                              <option value="gt" {{#ifEquals this.comp 'gt'}}selected{{/ifEquals}}>&gt;</option>
+                            </select>
+                          </td>
+                          <td><input type="number" name="dynValue-{{../this.idx}}-{{@index}}" value="{{this.value}}" style="width:60px"></td>
+                          <td>
+                            <select name="dynMode-{{../this.idx}}-{{@index}}">
+                              <option value="value" {{#ifEquals this.mode 'value'}}selected{{/ifEquals}}>Value</option>
+                              <option value="percent" {{#ifEquals this.mode 'percent'}}selected{{/ifEquals}}>%</option>
+                            </select>
+                          </td>
+                          <td>
+                            <div class="fso-file-input-group">
+                              <input type="text" name="dynImage-{{../this.idx}}-{{@index}}" value="{{this.image}}" readonly>
+                              <button type="button" class="fso-dyn-file-picker fso-compact-btn" data-index="{{../this.idx}}" data-rule="{{@index}}">Choose</button>
+                            </div>
+                          </td>
+                          <td><button type="button" class="fso-remove-rule" data-index="{{../this.idx}}" data-rule="{{@index}}">&times;</button></td>
+                        </tr>
+                        {{/each}}
+                      </tbody>
+                    </table>
+                    <button type="button" class="fso-add-rule" data-index="{{this.idx}}">Add Rule</button>
                   </div>
                 </div>
               {{/ifEquals}}
