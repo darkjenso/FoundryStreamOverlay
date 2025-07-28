@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 All notable changes to **Foundry Stream Overlay** will be documented here.  
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.0] – 28 July 2025
+
+### New Feature
+- Visual Positioning
+ - Activate Visual positioning through a button at the top of the Scene Editor, allows for drag and drop movement of elements.
+ - toggleable grid snapping can be activated though a checkbox, users can also define how big they want the grid to be and is displayed over the preview without actually displaying
+ - Useful tooltips while mousing over elements so you know what is what.
+- Dynamic Images (premium)
+ - Users can now add conditional statements that when a value (default HP) goes to a user set condition the image changes to another image. Could be useful for creating visual depictions of characters getting hurt?
+
+### Added, Changes and Fixes
+- Added more default data fields for the most popular game systems.
+- brought the slideshow UI to the new standard
+- Changed the user selection for dice rolls from a multiselect menu to its own "add" node. Previously adding new items to the list caused the dice roller to clear who it was supposed to be fore
+- Numerous fixes to various bugs, cleaned up several UI issues in the verification window
+
+## [4.1.0] – 25 July 2025
+
+- Added v2 authentication mode
+- Several UI fixes and bug fixes
+
 ## [4.0.0] – 24 July 2025
 
 ###  Breaking
