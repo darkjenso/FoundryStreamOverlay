@@ -809,7 +809,7 @@ export class OverlayConfig extends FormApplication {
     const table = this.element.find(`.fso-dynamic-image[data-index="${index}"] tbody`);
     const newIndex = table.children('tr').length;
     const actorOptions = this.element.find('select[name="actorId-0"] option').map((i,o)=>`<option value="${$(o).val()}">${$(o).text()}</option>`).get().join('');
-    const dataOptions = DATA_PATHS.map(p=>`<option value="${p.path}">${p.label}</option>`).join('');
+    const dataOptions = DATA_PATHS.map(p=>`<option value="${p.path}" ${p.path==='system.attributes.hp.value'?'selected':''}>${p.label}</option>`).join('');
     const row = $(
       `<tr data-rule-index="${newIndex}">
         <td><select name="dynActor-${index}-${newIndex}">${actorOptions}</select></td>
