@@ -509,58 +509,6 @@
                       Dynamic Image
                     </label>
                   </div>
-                  <div class="fso-dynamic-image" data-index="{{this.idx}}" {{#unless this.dynamicImage}}style="display:none;"{{/unless}}>
-                    <table class="fso-scenes-table">
-                      <thead>
-                        <tr><th>Actor</th><th>Data</th><th>Cond</th><th>Value</th><th>Mode</th><th>Image</th><th></th></tr>
-                      </thead>
-                      <tbody>
-                        {{#each this.dynamicRules}}
-                        <tr data-rule-index="{{@index}}">
-                          <td>
-                            <select name="dynActor-{{../this.idx}}-{{@index}}">
-                              <option value="">--</option>
-                              {{#each ../../allActors}}
-                                <option value="{{this.id}}" {{#ifEquals this.id ../this.actorId}}selected{{/ifEquals}}>{{this.name}}</option>
-                              {{/each}}
-                            </select>
-                          </td>
-                          <td>
-                            <select name="dynDataPath-{{../this.idx}}-{{@index}}">
-                              {{#each ../../dataPaths}}
-                                <option value="{{this.path}}" {{#ifEquals this.path ../this.dataPath}}selected{{/ifEquals}}>{{this.label}}</option>
-                              {{/each}}
-                            </select>
-                          </td>
-                          <td>
-                            <select name="dynComp-{{../this.idx}}-{{@index}}">
-                              <option value="lt" {{#ifEquals this.comp 'lt'}}selected{{/ifEquals}}>&lt;</option>
-                              <option value="lte" {{#ifEquals this.comp 'lte'}}selected{{/ifEquals}}>≤</option>
-                              <option value="eq" {{#ifEquals this.comp 'eq'}}selected{{/ifEquals}}>=</option>
-                              <option value="gte" {{#ifEquals this.comp 'gte'}}selected{{/ifEquals}}>≥</option>
-                              <option value="gt" {{#ifEquals this.comp 'gt'}}selected{{/ifEquals}}>&gt;</option>
-                            </select>
-                          </td>
-                          <td><input type="number" name="dynValue-{{../this.idx}}-{{@index}}" value="{{this.value}}" style="width:60px"></td>
-                          <td>
-                            <select name="dynMode-{{../this.idx}}-{{@index}}">
-                              <option value="value" {{#ifEquals this.mode 'value'}}selected{{/ifEquals}}>Value</option>
-                              <option value="percent" {{#ifEquals this.mode 'percent'}}selected{{/ifEquals}}>%</option>
-                            </select>
-                          </td>
-                          <td>
-                            <div class="fso-file-input-group">
-                              <input type="text" name="dynImage-{{../this.idx}}-{{@index}}" value="{{this.image}}" readonly>
-                              <button type="button" class="fso-dyn-file-picker fso-compact-btn" data-index="{{../this.idx}}" data-rule="{{@index}}">Choose</button>
-                            </div>
-                          </td>
-                          <td><button type="button" class="fso-remove-rule" data-index="{{../this.idx}}" data-rule="{{@index}}">&times;</button></td>
-                        </tr>
-                        {{/each}}
-                      </tbody>
-                    </table>
-                    <button type="button" class="fso-add-rule" data-index="{{this.idx}}">Add Rule</button>
-                  </div>
                 </div>
               {{/ifEquals}}
             </div>
@@ -676,6 +624,58 @@
                 </div>
               </details>
             </div>
+          </div>
+          <div class="fso-dynamic-image" data-index="{{this.idx}}" {{#unless this.dynamicImage}}style="display:none;"{{/unless}}>
+            <table class="fso-scenes-table">
+              <thead>
+                <tr><th>Actor</th><th>Data</th><th>Cond</th><th>Value</th><th>Mode</th><th>Image</th><th></th></tr>
+              </thead>
+              <tbody>
+                {{#each this.dynamicRules}}
+                <tr data-rule-index="{{@index}}">
+                  <td>
+                    <select name="dynActor-{{../this.idx}}-{{@index}}">
+                      <option value="">--</option>
+                      {{#each ../../allActors}}
+                        <option value="{{this.id}}" {{#ifEquals this.id ../this.actorId}}selected{{/ifEquals}}>{{this.name}}</option>
+                      {{/each}}
+                    </select>
+                  </td>
+                  <td>
+                    <select name="dynDataPath-{{../this.idx}}-{{@index}}">
+                      {{#each ../../dataPaths}}
+                        <option value="{{this.path}}" {{#ifEquals this.path ../this.dataPath}}selected{{/ifEquals}}>{{this.label}}</option>
+                      {{/each}}
+                    </select>
+                  </td>
+                  <td>
+                    <select name="dynComp-{{../this.idx}}-{{@index}}">
+                      <option value="lt" {{#ifEquals this.comp 'lt'}}selected{{/ifEquals}}>&lt;</option>
+                      <option value="lte" {{#ifEquals this.comp 'lte'}}selected{{/ifEquals}}>≤</option>
+                      <option value="eq" {{#ifEquals this.comp 'eq'}}selected{{/ifEquals}}>=</option>
+                      <option value="gte" {{#ifEquals this.comp 'gte'}}selected{{/ifEquals}}>≥</option>
+                      <option value="gt" {{#ifEquals this.comp 'gt'}}selected{{/ifEquals}}>&gt;</option>
+                    </select>
+                  </td>
+                  <td><input type="number" name="dynValue-{{../this.idx}}-{{@index}}" value="{{this.value}}" style="width:60px"></td>
+                  <td>
+                    <select name="dynMode-{{../this.idx}}-{{@index}}">
+                      <option value="value" {{#ifEquals this.mode 'value'}}selected{{/ifEquals}}>Value</option>
+                      <option value="percent" {{#ifEquals this.mode 'percent'}}selected{{/ifEquals}}>%</option>
+                    </select>
+                  </td>
+                  <td>
+                    <div class="fso-file-input-group">
+                      <input type="text" name="dynImage-{{../this.idx}}-{{@index}}" value="{{this.image}}" readonly>
+                      <button type="button" class="fso-dyn-file-picker fso-compact-btn" data-index="{{../this.idx}}" data-rule="{{@index}}">Choose</button>
+                    </div>
+                  </td>
+                  <td><button type="button" class="fso-remove-rule" data-index="{{../this.idx}}" data-rule="{{@index}}">&times;</button></td>
+                </tr>
+                {{/each}}
+              </tbody>
+            </table>
+            <button type="button" class="fso-add-rule" data-index="{{this.idx}}">Add Rule</button>
           </div>
         </div>
         </div>
