@@ -74,11 +74,108 @@ export function openOverlayWindow(windowId = "main") {
 }
 
 /**
+ * Renders overlay items into a container element.
+ * Works in any document context (popup window OR an in-page element such as obs-overlay.html).
+ *
+ * @param {HTMLElement} container     - The #overlay-container element to render into
+ * @param {string}      windowId      - Which overlay window config to use (defaults to "main")
+ * @param {Document}    [targetDoc]   - The owning document for element creation (defaults to the container's ownerDocument)
+ */
+export function renderOverlayContent(container, windowId = "main", targetDoc) {
+  const ownerDoc = targetDoc || container.ownerDocument || document;
+
+  // Get window configuration and layout
+  const windows = OverlayData.getOverlayWindows();
+  const windowConfig = windows[windowId] || windows.main;
+  const layouts = OverlayData.getLayouts();
+  const activeLayout = windowConfig?.activeLayout || "Default";
+  const layoutItems = layouts[activeLayout] || [];
+
+  // Clear any existing animated elements registry
+  if (window.overlayAnimatedElements) {
+    window.overlayAnimatedElements = {};
+  }
+
+  // Preserve any dice elements that are currently animating
+  const animatingDice = Array.from(container.querySelectorAll('.dice-item.animating'));
+  const preserveSet = new Set(animatingDice);
+
+  // Remove all non-animating children
+  Array.from(container.children).forEach(el => {
+    if (!preserveSet.has(el)) {
+      container.removeChild(el);
+    }
+  });
+
+  // Get premium status
+  const isPremium = isPremiumActive();
+
+  // Process and render each item
+  const processedItems = [];
+  const totalItems = layoutItems.length;
+
+  // Build a minimal window-like context for element creation helpers
+  const winContext = ownerDoc.defaultView || window;
+
+  layoutItems.forEach((item, index) => {
+    let processedItem = null;
+    try {
+      switch (item.type) {
+        case "data":   processedItem = processDataItem(item, isPremium);   break;
+        case "static": processedItem = processStaticItem(item, isPremium); break;
+        case "image":  processedItem = processImageItem(item, isPremium);  break;
+        case "dice":   processedItem = processDiceItem(item, isPremium);   break;
+        case "hpBar":  processedItem = processHpBarItem(item, isPremium);  break;
+        default:
+          console.warn(`${MODULE_ID} | Unknown item type: ${item.type}`);
+          return;
+      }
+      if (processedItem && !processedItem.hide) {
+        processedItem.itemIndex = index;
+        processedItem.renderOrder = totalItems - index - 1;
+        processedItems.push(processedItem);
+      }
+    } catch (error) {
+      console.error(`${MODULE_ID} | Error processing item ${index}:`, error, item);
+    }
+  });
+
+  // Sort by render order
+  processedItems.sort((a, b) => (a.renderOrder || 0) - (b.renderOrder || 0));
+
+  // Create DOM elements
+  processedItems.forEach(item => {
+    try {
+      let element;
+      if (item.type === "image") {
+        element = createImageElement(item, winContext);
+      } else if (item.type === "dice") {
+        const exists = container.querySelector(`.dice-item.animating[data-index='${item.itemIndex}']`);
+        if (exists) return;
+        element = createDiceElement(item, winContext);
+      } else if (item.type === "hpBar") {
+        element = createHpBarElement(item, winContext);
+      } else {
+        element = createTextElement(item, winContext);
+      }
+      if (element) container.appendChild(element);
+    } catch (error) {
+      console.error(`${MODULE_ID} | Error creating element:`, error, item);
+    }
+  });
+
+  // Add promotional footer for non-premium users
+  if (!isPremium) {
+    addPromoFooter(container, winContext);
+  }
+}
+
+/**
  * Updates the content of an overlay window
  * @param {string} windowId - The ID of the window to update (defaults to "main")
  */
 export function updateOverlayWindow(windowId = "main") {
-  
+
   try {
     // Get the window reference
     let overlayWindow;
@@ -96,9 +193,6 @@ export function updateOverlayWindow(windowId = "main") {
     // Get window configuration and layout
     const windows = OverlayData.getOverlayWindows();
     const windowConfig = windows[windowId] || windows.main;
-    const layouts = OverlayData.getLayouts();
-    const activeLayout = windowConfig.activeLayout || "Default";
-    const layoutItems = layouts[activeLayout] || [];
 
     // Ensure window background color reflects configuration
     const bgColor = windowConfig.backgroundColor ||
@@ -107,118 +201,19 @@ export function updateOverlayWindow(windowId = "main") {
       overlayWindow.document.body.style.backgroundColor = bgColor;
     }
 
+    // Clear dice elements registry
+    if (overlayWindow.diceElements) {
+      overlayWindow.diceElements = [];
+    }
 
-    // Clear existing content
+    // Get the container and delegate to renderOverlayContent
     const container = overlayWindow.document.getElementById("overlay-container");
     if (!container) {
       console.error(`${MODULE_ID} | Overlay container not found in window ${windowId}`);
       return;
     }
 
-    // Clear any existing animated elements registry for this window
-    if (window.overlayAnimatedElements) {
-      window.overlayAnimatedElements = {};
-    }
-
-    // Clear dice elements registry
-    if (overlayWindow.diceElements) {
-      overlayWindow.diceElements = [];
-    }
-
-    // Preserve any dice elements that are currently animating
-    const animatingDice = Array.from(container.querySelectorAll('.dice-item.animating'));
-    const preserveSet = new Set(animatingDice);
-
-    // Remove all non-animating children
-    Array.from(container.children).forEach(el => {
-      if (!preserveSet.has(el)) {
-        container.removeChild(el);
-      }
-    });
-
-
-    // Get premium status
-    const isPremium = isPremiumActive();
-
-    // Process and render each item
-    const processedItems = [];
-    
-    const totalItems = layoutItems.length;
-
-    layoutItems.forEach((item, index) => {
-      let processedItem = null;
-
-      try {
-        // Process item based on type
-        switch (item.type) {
-          case "data":
-            processedItem = processDataItem(item, isPremium);
-            break;
-          case "static":
-            processedItem = processStaticItem(item, isPremium);
-            break;
-          case "image":
-            processedItem = processImageItem(item, isPremium);
-            break;
-          case "dice":
-            processedItem = processDiceItem(item, isPremium);
-            break;
-          case "hpBar":
-            processedItem = processHpBarItem(item, isPremium);
-            break;
-          default:
-            console.warn(`${MODULE_ID} | Unknown item type: ${item.type}`);
-            return;
-        }
-
-        if (processedItem && !processedItem.hide) {
-          // Preserve the item's original index for DOM matching
-          processedItem.itemIndex = index;
-          // Higher renderOrder means item appears in front
-          processedItem.renderOrder = totalItems - index - 1;
-          processedItems.push(processedItem);
-        }
-      } catch (error) {
-        console.error(`${MODULE_ID} | Error processing item ${index}:`, error, item);
-      }
-    });
-
-    // Sort by render order
-    processedItems.sort((a, b) => (a.renderOrder || 0) - (b.renderOrder || 0));
-
-    // Create DOM elements for each item
-    processedItems.forEach(item => {
-      try {
-        let element;
-
-        if (item.type === "image") {
-          element = createImageElement(item, overlayWindow);
-        } else if (item.type === "dice") {
-          // Skip creating a new element if one is already animating for this item
-          const exists = container.querySelector(`.dice-item.animating[data-index='${item.itemIndex}']`);
-          if (exists) {
-            return;
-          }
-          element = createDiceElement(item, overlayWindow);
-                  } else if (item.type === "hpBar") {
-          element = createHpBarElement(item, overlayWindow);
-        } else {
-          element = createTextElement(item, overlayWindow);
-        }
-
-        if (element) {
-          container.appendChild(element);
-        }
-      } catch (error) {
-        console.error(`${MODULE_ID} | Error creating element:`, error, item);
-      }
-    });
-
-    // Add promotional footer for non-premium users
-    if (!isPremium) {
-      addPromoFooter(container, overlayWindow);
-    }
-
+    renderOverlayContent(container, windowId, overlayWindow.document);
 
     // Trigger live sync if enabled
     if (game.settings.get(MODULE_ID, "autoSyncStandalone")) {

@@ -10,7 +10,7 @@ Create stunning, dynamic green‑screen overlays from your Foundry VTT game and
   - **Simple roll animation**: brief animation before the final number appears.  
   - **BG3 style**: incremental bonus values crash into and build up the displayed result.  
 - **Fully customisable HP bars**: Tailor size, colour, segments—and soon extend with image overlays and rich graphics.  
-- **Standalone companion app (coming soon)**: local server enabling true transparent overlays (no green screen). Development ongoing for a 4.x patch.
+- **Standalone companion app**: local server enabling true transparent overlays (no green screen). Launch it from the Standalone App setting.
 
 ## Installation
 
@@ -39,9 +39,9 @@ Create stunning, dynamic green‑screen overlays from your Foundry VTT game and
 - Responsive Design across resolutions  
 - Import/Export & Reset  
 
-## Standalone Companion App (Coming Soon)
+## Standalone Companion App
 
-A separate app will spin up a local server and render true transparent overlays (alpha channel), removing the need for chroma key or window capture. First release will require an **active monthly Patreon subscription**.
+A separate app runs a local server and renders true transparent overlays (alpha channel), removing the need for chroma key or window capture. Launch the app via the **Standalone App** setting. The initial release requires an **active monthly Patreon subscription**.
 
 ## Premium vs Free
 

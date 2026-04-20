@@ -2,10 +2,11 @@
 import { MODULE_ID } from '../core/constants.js';
 import { validateActivationKey, getPremiumStatusDetails } from '../premium/validation.js';
 import OverlayData from '../../data-storage.js';
+import { getBaseApplication } from '../utils/app-compat.js';
 
-export class PremiumStatusDialog extends FormApplication {
+export class PremiumStatusDialog extends getBaseApplication() {
   static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
+    return foundry.utils.mergeObject(super.defaultOptions ?? {}, {
       title: "Premium Status",
       id: "foundrystreamoverlay-premium-status",
       template: `modules/${MODULE_ID}/templates/premium-status.html`,
@@ -15,6 +16,18 @@ export class PremiumStatusDialog extends FormApplication {
       resizable: true
     });
   }
+
+  static DEFAULT_OPTIONS = {
+    id: "foundrystreamoverlay-premium-status",
+    window: { title: "Premium Status", resizable: true },
+    position: { width: 450 }
+  };
+
+  static get PARTS() {
+    return { main: { template: `modules/${MODULE_ID}/templates/premium-status.html` } };
+  }
+
+  async _prepareContext() { return this.getData(); }
 
   async getData() {
     const isPremium = OverlayData.getSetting("isPremium") || false;
@@ -42,7 +55,7 @@ export class PremiumStatusDialog extends FormApplication {
   }
 
   activateListeners(html) {
-    super.activateListeners(html);
+    super.activateListeners?.(html);
 
     // NEW: Toggle password visibility
     html.find("#toggle-key-visibility").click((event) => {
@@ -202,6 +215,10 @@ export class PremiumStatusDialog extends FormApplication {
       }
       $(this).val(value);
     });
+  }
+
+  _onRender(context, options) {
+    this.activateListeners($(this.element));
   }
 
   async _updateObject(event, formData) {

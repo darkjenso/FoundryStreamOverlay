@@ -5,10 +5,11 @@ import { generateUniqueId } from '../utils/helpers.js';
 import { openOverlayWindow } from '../overlay/window-management.js';
 import { OverlayWindowConfig } from './window-config.js';
 import OverlayData from '../../data-storage.js';
+import { getBaseApplication } from '../utils/app-compat.js';
 
-export class OverlayWindowManager extends FormApplication {
+export class OverlayWindowManager extends getBaseApplication() {
   static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
+    return foundry.utils.mergeObject(super.defaultOptions ?? {}, {
       title: "Manage Overlay Windows",
       id: "foundrystreamoverlay-window-manager",
       template: `modules/${MODULE_ID}/templates/window-manager.html`,
@@ -17,32 +18,49 @@ export class OverlayWindowManager extends FormApplication {
       closeOnSubmit: false
     });
   }
-  
+
+  static DEFAULT_OPTIONS = {
+    id: "foundrystreamoverlay-window-manager",
+    window: { title: "Manage Overlay Windows" },
+    position: { width: 600 }
+  };
+
+  static get PARTS() {
+    return { main: { template: `modules/${MODULE_ID}/templates/window-manager.html` } };
+  }
+
   getData() {
     // Always get fresh data from OverlayData
     const windows = OverlayData.getOverlayWindows() || {
-      "main": { 
-        id: "main", 
+      "main": {
+        id: "main",
         name: "Main Overlay",
-        activeLayout: "Default" 
+        activeLayout: "Default"
       }
     };
-    
+
     // Get premium status
     const isPremium = isPremiumActive();
-    
-    return { 
+
+    return {
       windows,
       isPremium
     };
   }
-  
+
+  async _prepareContext() { return this.getData(); }
+
   activateListeners(html) {
-    super.activateListeners(html);
+    super.activateListeners?.(html);
     html.find(".create-new-window").click(this._onCreateWindow.bind(this));
     html.find(".open-window").click(this._onOpenWindow.bind(this));
     html.find(".configure-window").click(this._onConfigureWindow.bind(this));
     html.find(".remove-window").click(this._onRemoveWindow.bind(this));
+    html.find(".copy-obs-url").click(this._onCopyObsUrl.bind(this));
+  }
+
+  _onRender(context, options) {
+    this.activateListeners($(this.element));
   }
   
   async _onCreateWindow(event) {
@@ -131,6 +149,18 @@ export class OverlayWindowManager extends FormApplication {
     }
   }
   
+  _onCopyObsUrl(event) {
+    event.preventDefault();
+    const windowId = event.currentTarget.dataset.window;
+    const port = location.port || (location.protocol === "https:" ? "443" : "80");
+    const url = `${location.protocol}//${location.hostname}:${port}/modules/${MODULE_ID}/obs-overlay.html?windowId=${windowId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      ui.notifications.info(`OBS URL copied! In OBS: Browser Source → paste URL → enable "Allow transparency"`);
+    }).catch(() => {
+      ui.notifications.warn(`OBS URL: ${url}`);
+    });
+  }
+
   async _onRemoveWindow(event) {
     event.preventDefault();
     const windowId = event.currentTarget.dataset.window;

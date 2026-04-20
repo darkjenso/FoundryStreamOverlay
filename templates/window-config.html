@@ -87,7 +87,7 @@
           <input type="color" name="backgroundColor" value="{{windowConfig.backgroundColor}}" id="background-color">
           <input type="text" value="{{windowConfig.backgroundColor}}" readonly class="fso-color-text">
         </div>
-        <small class="fso-help-text">Use green (#00ff00) for chroma key in OBS</small>
+        <small class="fso-help-text">Use green (#00ff00) for chroma key, or choose "Transparent" below for the OBS Browser Source URL (no chroma key needed)</small>
       </div>
 
       <div class="fso-config-row">
@@ -123,6 +123,13 @@
         <button type="button" class="fso-secondary-btn" id="refresh-layouts">
           <i class="fas fa-sync"></i> Refresh Scenes
         </button>
+      </div>
+
+      <div class="fso-config-row" style="margin-top:12px;">
+        <button type="button" class="fso-secondary-btn copy-obs-url" title="Copy a direct OBS Browser Source URL — transparent background, no chroma key required">
+          <i class="fas fa-broadcast-tower"></i> Copy OBS Browser Source URL
+        </button>
+        <small class="fso-help-text">In OBS: <strong>Sources → Browser Source → paste URL → enable "Allow transparency"</strong>. No green screen needed.</small>
       </div>
     </div>
 

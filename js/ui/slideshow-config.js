@@ -2,10 +2,11 @@
 import { MODULE_ID, LAYOUT_TRANSITIONS } from '../core/constants.js';
 import { isPremiumActive, showPremiumRequiredDialog } from '../premium/validation.js';
 import OverlayData from '../../data-storage.js';
+import { getBaseApplication } from '../utils/app-compat.js';
 
-export class SlideshowConfig extends FormApplication {
+export class SlideshowConfig extends getBaseApplication() {
   static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
+    return foundry.utils.mergeObject(super.defaultOptions ?? {}, {
       title: "Slideshow Settings",
       id: "foundrystreamoverlay-slideshow",
       template: `modules/${MODULE_ID}/templates/foundrystreamoverlay-slideshow.html`,
@@ -14,6 +15,18 @@ export class SlideshowConfig extends FormApplication {
       closeOnSubmit: false
     });
   }
+
+  static DEFAULT_OPTIONS = {
+    id: "foundrystreamoverlay-slideshow",
+    window: { title: "Slideshow Settings" },
+    position: { width: 600 }
+  };
+
+  static get PARTS() {
+    return { main: { template: `modules/${MODULE_ID}/templates/foundrystreamoverlay-slideshow.html` } };
+  }
+
+  async _prepareContext() { return this.getData(); }
 
   getData() {
     const slideshow = OverlayData.getSlideshow();
@@ -39,13 +52,17 @@ export class SlideshowConfig extends FormApplication {
   }
 
   activateListeners(html) {
-    super.activateListeners(html);
+    super.activateListeners?.(html);
     html.find(".add-selected-item").click(this._onAddSelectedItem.bind(this));
     html.find(".remove-item").click(this._onRemoveItem.bind(this));
     html.find(".move-up").click(this._onMoveUp.bind(this));
     html.find(".move-down").click(this._onMoveDown.bind(this));
     html.find(".start-slideshow").click(this._onStartSlideshow.bind(this));
     html.find(".stop-slideshow").click(this._onStopSlideshow.bind(this));
+  }
+
+  _onRender(context, options) {
+    this.activateListeners($(this.element));
   }
 
   async _onAddSelectedItem(event) {

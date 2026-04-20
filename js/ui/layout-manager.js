@@ -3,10 +3,11 @@ import { MODULE_ID } from '../core/constants.js';
 import { canCreateLayout, isPremiumActive, showPremiumRequiredDialog } from '../premium/validation.js';
 import { validateLayoutName, isValidJSON, downloadAsFile } from '../utils/helpers.js';
 import OverlayData from '../../data-storage.js';
+import { getBaseApplication } from '../utils/app-compat.js';
 
-export class ManageLayouts extends FormApplication {
+export class ManageLayouts extends getBaseApplication() {
   static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
+    return foundry.utils.mergeObject(super.defaultOptions ?? {}, {
       title: "Manage Scenes",
       id: "foundrystreamoverlay-manage-layouts",
       template: `modules/${MODULE_ID}/templates/foundrystreamoverlay-layouts.html`,
@@ -15,6 +16,18 @@ export class ManageLayouts extends FormApplication {
       closeOnSubmit: true
     });
   }
+
+  static DEFAULT_OPTIONS = {
+    id: "foundrystreamoverlay-manage-layouts",
+    window: { title: "Manage Scenes" },
+    position: { width: 700 }
+  };
+
+  static get PARTS() {
+    return { main: { template: `modules/${MODULE_ID}/templates/foundrystreamoverlay-layouts.html` } };
+  }
+
+  async _prepareContext() { return this.getData(); }
 
   getData() {
     const layouts = OverlayData.getLayouts();
@@ -53,7 +66,7 @@ export class ManageLayouts extends FormApplication {
   }
 
   activateListeners(html) {
-    super.activateListeners(html);
+    super.activateListeners?.(html);
     html.find(".create-new-layout").click(this._onCreateNewLayout.bind(this));
     html.find(".fso-edit-btn").click(this._onEditLayout.bind(this));
     html.find(".rename-layout").click(this._onRename.bind(this));
@@ -62,6 +75,10 @@ export class ManageLayouts extends FormApplication {
     html.find(".export-layout").click(this._onExport.bind(this));
     html.find(".import-layout").click(this._onImport.bind(this));
     html.find(".assign-to-window").click(this._onAssignToWindow.bind(this));
+  }
+
+  _onRender(context, options) {
+    this.activateListeners($(this.element));
   }
 
   async _onCreateNewLayout(event) {

@@ -1,7 +1,7 @@
-2025/07/26-07:23:45.394 b618 Recovering log #161
-2025/07/26-07:23:45.408 b618 Delete type=0 #161
-2025/07/26-07:23:45.410 b618 Delete type=3 #159
-2025/07/26-09:20:33.891 d640 Level-0 table #166: started
-2025/07/26-09:20:33.891 d640 Level-0 table #166: 0 bytes OK
-2025/07/26-09:20:33.897 d640 Delete type=0 #164
-2025/07/26-09:20:33.919 d640 Manual compaction at level-0 from 'undefined' @ 72057594037927935 : 1 .. 'undefined' @ 0 : 0; will stop at (end)
+2026/04/21-00:10:16.970 4f60 Recovering log #214
+2026/04/21-00:10:16.983 4f60 Delete type=0 #214
+2026/04/21-00:10:16.983 4f60 Delete type=3 #212
+2026/04/21-00:11:21.379 1418 Level-0 table #219: started
+2026/04/21-00:11:21.379 1418 Level-0 table #219: 0 bytes OK
+2026/04/21-00:11:21.383 1418 Delete type=0 #217
+2026/04/21-00:11:21.387 1418 Manual compaction at level-0 from 'undefined' @ 72057594037927935 : 1 .. 'undefined' @ 0 : 0; will stop at (end)

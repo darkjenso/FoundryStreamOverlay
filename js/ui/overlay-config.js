@@ -25,9 +25,11 @@ function lerpColor(start, end, t) {
   return rgbToHex(r, g, b);
 }
 
-export class OverlayConfig extends FormApplication {
+import { getBaseApplication, closeExistingById } from '../utils/app-compat.js';
+
+export class OverlayConfig extends getBaseApplication() {
   static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
+    return foundry.utils.mergeObject(super.defaultOptions ?? {}, {
       title: "Edit Overlay Scene",
       id: "foundrystreamoverlay-config",
       template: `modules/${MODULE_ID}/templates/foundrystreamoverlay-config.html`,
@@ -38,10 +40,24 @@ export class OverlayConfig extends FormApplication {
     });
   }
 
+  static DEFAULT_OPTIONS = {
+    id: "foundrystreamoverlay-config",
+    window: { title: "Edit Overlay Scene", resizable: true },
+    position: { width: 900 }
+  };
+
+  static get PARTS() {
+    return { main: { template: `modules/${MODULE_ID}/templates/foundrystreamoverlay-config.html` } };
+  }
+
+  async _prepareContext() { return this.getData(); }
+
+  get _$el() { return $(this.element); }
+
   constructor(options = {}) {
     super();
     this.options = foundry.utils.mergeObject(this.options, options);
-    
+
     // FIXED: Clear separation between window context and editing context
     this.windowId = options.windowId || "main";
     this.editingLayout = options.editingLayout || null; // What scene we're editing
@@ -61,7 +77,7 @@ export class OverlayConfig extends FormApplication {
   async _render(force, options) {
     await super._render(force, options);
     this._injectOptimizedStyles();
-    
+
     // Store initial form state after render
     setTimeout(() => {
       this._captureFormState();
@@ -350,7 +366,7 @@ export class OverlayConfig extends FormApplication {
   }
   
   activateListeners(html) {
-    super.activateListeners(html);
+    super.activateListeners?.(html);
     
     // Initialize template helper events
     initializeTemplateHelperEvents(html);
@@ -602,7 +618,7 @@ export class OverlayConfig extends FormApplication {
   _captureFormState() {
     if (!this.element) return;
     try {
-      const form = this.element.find('form')[0];
+      const form = this._$el.find('form')[0];
       if (form) {
         this._lastSavedFormData = new FormDataExtended(form).object;
       }
@@ -615,7 +631,7 @@ export class OverlayConfig extends FormApplication {
     if (!this.element || !this._lastSavedFormData) return false;
     
     try {
-      const form = this.element.find('form')[0];
+      const form = this._$el.find('form')[0];
       if (!form) return false;
       
       const currentFormData = new FormDataExtended(form).object;
@@ -735,7 +751,7 @@ export class OverlayConfig extends FormApplication {
   // Update the dice item header subtitle with selected users and visibility
   _updateDiceItemHeader(index) {
     if (!this.element) return;
-    const card = this.element.find(`.fso-item-card[data-index="${index}"]`);
+    const card = this._$el.find(`.fso-item-card[data-index="${index}"]`);
     if (!card.length) return;
 
     const select = card.find(`select[name="targetUsers-${index}"]`);
@@ -754,7 +770,7 @@ export class OverlayConfig extends FormApplication {
 
   _renderSelectedUsers(index) {
     if (!this.element) return;
-    const card = this.element.find(`.fso-item-card[data-index="${index}"]`);
+    const card = this._$el.find(`.fso-item-card[data-index="${index}"]`);
     if (!card.length) return;
 
     const select = card.find(`select[name="targetUsers-${index}"]`);
@@ -779,11 +795,11 @@ export class OverlayConfig extends FormApplication {
   _onAddTargetUser(event) {
     event.preventDefault();
     const index = event.currentTarget.dataset.index;
-    const dropdown = this.element.find(`select[name="addUser-${index}"]`);
+    const dropdown = this._$el.find(`select[name="addUser-${index}"]`);
     const userId = dropdown.val();
     if (!userId) return;
 
-    const select = this.element.find(`select[name="targetUsers-${index}"]`);
+    const select = this._$el.find(`select[name="targetUsers-${index}"]`);
     let current = select.val() || [];
     if (!Array.isArray(current)) current = [current];
 
@@ -798,7 +814,7 @@ export class OverlayConfig extends FormApplication {
     event.preventDefault();
     const index = event.currentTarget.dataset.index;
     const userId = event.currentTarget.dataset.id;
-    const select = this.element.find(`select[name="targetUsers-${index}"]`);
+    const select = this._$el.find(`select[name="targetUsers-${index}"]`);
     select.find(`option[value="${userId}"]`).prop('selected', false);
     select.trigger('change');
   }
@@ -806,10 +822,10 @@ export class OverlayConfig extends FormApplication {
   _onAddDynamicRule(event) {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
-    const table = this.element.find(`.fso-dynamic-image[data-index="${index}"] tbody`);
+    const table = this._$el.find(`.fso-dynamic-image[data-index="${index}"] tbody`);
     const newIndex = table.children('tr').length;
-    const actorOptions = this.element.find('select[name="actorId-0"] option').map((i,o)=>`<option value="${$(o).val()}">${$(o).text()}</option>`).get().join('');
-    const dataOptions = DATA_PATHS.map(p=>`<option value="${p.path}" ${p.path==='system.attributes.hp.value'?'selected':''}>${p.label}</option>`).join('');
+    const actorOptions = this._$el.find('select[name="actorId-0"] option').map((i,o)=>`<option value="${$(o).val()}">${$(o).text()}</option>`).get().join('');
+    const dataOptions = DATA_PATHS.map(p=>`<option value="${p.path}">${p.label}</option>`).join('');
     const row = $(
       `<tr data-rule-index="${newIndex}">
         <td><select name="dynActor-${index}-${newIndex}">${actorOptions}</select></td>
@@ -828,7 +844,7 @@ export class OverlayConfig extends FormApplication {
     event.preventDefault();
     const index = Number(event.currentTarget.dataset.index);
     const rule = Number(event.currentTarget.dataset.rule);
-    const row = this.element.find(`.fso-dynamic-image[data-index="${index}"] tr[data-rule-index="${rule}"]`);
+    const row = this._$el.find(`.fso-dynamic-image[data-index="${index}"] tr[data-rule-index="${rule}"]`);
     row.remove();
   }
 
@@ -838,7 +854,7 @@ export class OverlayConfig extends FormApplication {
 
     // Save any current form changes before adding a new item
     try {
-      const form = this.element.find('form')[0];
+      const form = this._$el.find('form')[0];
       if (form) {
         const formData = new FormDataExtended(form).object;
         await this._updateObject(event, formData);
@@ -987,8 +1003,8 @@ export class OverlayConfig extends FormApplication {
 
   _togglePreviewMode(event) {
   this._previewMode = !this._previewMode;
-  const container = this.element.find('.fso-preview-container');
-  const button = this.element.find('#toggle-preview-mode');
+  const container = this._$el.find('.fso-preview-container');
+  const button = this._$el.find('#toggle-preview-mode');
   
   if (this._previewMode) {
     container.slideDown(200);
@@ -1005,14 +1021,14 @@ _handleZoom(event) {
   this._previewScale = parseInt(zoom) / 100;
   
   // Update button states
-  this.element.find('.fso-preview-zoom').removeClass('active');
+  this._$el.find('.fso-preview-zoom').removeClass('active');
   $(event.currentTarget).addClass('active');
   
   this._renderPreview();
 }
 
 async _renderPreview() {
-  const canvas = this.element.find('.fso-preview-canvas');
+  const canvas = this._$el.find('.fso-preview-canvas');
   canvas.empty();
   
   // Get window dimensions
@@ -1035,18 +1051,18 @@ async _renderPreview() {
   });
 
   // Set grid size variable
-  const gridSize = parseInt(this.element.find('#grid-size').val()) || 10;
+  const gridSize = parseInt(this._$el.find('#grid-size').val()) || 10;
   canvas.css('--grid-size', gridSize + 'px');
   
   // Add grid class if enabled
-  if (this.element.find('#preview-grid').is(':checked')) {
+  if (this._$el.find('#preview-grid').is(':checked')) {
     canvas.addClass('show-grid');
   } else {
     canvas.removeClass('show-grid');
   }
   
   // Get current items from form
-  const formData = new FormDataExtended(this.element.find('form')[0]).object;
+  const formData = new FormDataExtended(this._$el.find('form')[0]).object;
   const items = this._parseFormDataToItems(formData);
   
   // Render each item
@@ -1265,7 +1281,7 @@ _createPreviewElement(item, index) {
 }
 
 _initializeDraggable() {
-  const canvas = this.element.find('.fso-preview-canvas');
+  const canvas = this._$el.find('.fso-preview-canvas');
   const previewItems = canvas.find('.preview-item');
   
   previewItems.on('mousedown', (e) => {
@@ -1304,7 +1320,7 @@ _initializeDraggable() {
 _handleDrag(e) {
   if (!this._draggedItem) return;
   
-  const canvas = this.element.find('.fso-preview-canvas');
+  const canvas = this._$el.find('.fso-preview-canvas');
   const canvasRect = canvas[0].getBoundingClientRect();
   
   // Calculate new position
@@ -1312,8 +1328,8 @@ _handleDrag(e) {
   let newY = (e.clientY - canvasRect.top - this._dragOffset.y) / this._previewScale;
   
   // Grid snapping
-  if (this.element.find('#preview-grid').is(':checked')) {
-    const gridSize = parseInt(this.element.find('#grid-size').val()) || 10;
+  if (this._$el.find('#preview-grid').is(':checked')) {
+    const gridSize = parseInt(this._$el.find('#grid-size').val()) || 10;
     newX = Math.round(newX / gridSize) * gridSize;
     newY = Math.round(newY / gridSize) * gridSize;
   }
@@ -1330,7 +1346,7 @@ _handleDrag(e) {
   });
   
   // Update position display
-  this.element.find('#position-coords').text(`X: ${Math.round(newX)}, Y: ${Math.round(newY)}`);
+  this._$el.find('#position-coords').text(`X: ${Math.round(newX)}, Y: ${Math.round(newY)}`);
   
   // Update form fields
   this._updateFormPosition(this._draggedItem.index, newX, newY);
@@ -1346,24 +1362,24 @@ _handleDragEnd(e) {
   this._draggedItem.element.removeClass('dragging');
   
   // Trigger auto-save
-  const topInput = this.element.find(`input[name="top-${this._draggedItem.index}"]`);
+  const topInput = this._$el.find(`input[name="top-${this._draggedItem.index}"]`);
   topInput.trigger('change');
   
   this._draggedItem = null;
-  this.element.find('#position-coords').text('-');
+  this._$el.find('#position-coords').text('-');
 }
 
 _updateFormPosition(index, x, y) {
-  this.element.find(`input[name="left-${index}"]`).val(Math.round(x));
-  this.element.find(`input[name="top-${index}"]`).val(Math.round(y));
+  this._$el.find(`input[name="left-${index}"]`).val(Math.round(x));
+  this._$el.find(`input[name="top-${index}"]`).val(Math.round(y));
 }
 
 _updateFormImageSize(index, size) {
-  this.element.find(`input[name="imageSize-${index}"]`).val(Math.round(size));
+  this._$el.find(`input[name="imageSize-${index}"]`).val(Math.round(size));
 }
 
 _initializeResizable() {
-  const canvas = this.element.find('.fso-preview-canvas');
+  const canvas = this._$el.find('.fso-preview-canvas');
   const handles = canvas.find('.resize-handle');
 
   handles.on('mousedown', (e) => {
@@ -1395,13 +1411,13 @@ _handleResizeMove(e) {
   newSize = Math.max(10, Math.min(newSize, 500));
 
   // Snap to grid if enabled
-  if (this.element.find('#preview-grid').is(':checked')) {
-    const gridSize = parseInt(this.element.find('#grid-size').val()) || 10;
+  if (this._$el.find('#preview-grid').is(':checked')) {
+    const gridSize = parseInt(this._$el.find('#grid-size').val()) || 10;
     newSize = Math.round(newSize / gridSize) * gridSize;
   }
 
   this._resizeData.img.css('width', newSize + 'px');
-  this.element.find('#position-coords').text(`Size: ${Math.round(newSize)}px`);
+  this._$el.find('#position-coords').text(`Size: ${Math.round(newSize)}px`);
   this._currentResizeSize = newSize;
 }
 
@@ -1414,19 +1430,19 @@ _handleResizeEnd(e) {
   let finalSize = this._currentResizeSize || this._resizeData.startSize;
 
   // Snap final size to grid if enabled
-  if (this.element.find('#preview-grid').is(':checked')) {
-    const gridSize = parseInt(this.element.find('#grid-size').val()) || 10;
+  if (this._$el.find('#preview-grid').is(':checked')) {
+    const gridSize = parseInt(this._$el.find('#grid-size').val()) || 10;
     finalSize = Math.round(finalSize / gridSize) * gridSize;
     this._resizeData.img.css('width', finalSize + 'px');
   }
 
   this._updateFormImageSize(this._resizeData.index, finalSize);
-  const sizeInput = this.element.find(`input[name="imageSize-${this._resizeData.index}"]`);
+  const sizeInput = this._$el.find(`input[name="imageSize-${this._resizeData.index}"]`);
   sizeInput.trigger('change');
 
   this._resizeData = null;
   this._currentResizeSize = null;
-  this.element.find('#position-coords').text('-');
+  this._$el.find('#position-coords').text('-');
 }
   
   async _updateObject(event, formData) {
@@ -1585,13 +1601,7 @@ _handleResizeEnd(e) {
    * Static method to open overlay config for editing a specific scene
    */
   static openForWindow(windowId = "main", editingLayout = null) {
-    // Close any existing config dialogs
-    for (const app of Object.values(ui.windows)) {
-      if (app.constructor.name === 'OverlayConfig') {
-        app.close();
-      }
-    }
-    
+    closeExistingById("foundrystreamoverlay-config");
     const config = new OverlayConfig({ windowId, editingLayout });
     return config.render(true);
   }

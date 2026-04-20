@@ -1,0 +1,94 @@
+/* ============================================================
+   Foundry Stream Overlay — /stream page styles
+   Targets both body.fso-stream-active (set by the module) and
+   body.stream (set by Foundry itself on the /stream route).
+   ============================================================ */
+
+/* ── Overlay container ──────────────────────────────────────── */
+/* Inline styles are also applied by JS, so this is a fallback. */
+
+#fso-stream-overlay {
+  display: block !important;
+  visibility: visible !important;
+}
+
+body.fso-stream-active #fso-stream-overlay,
+body.stream #fso-stream-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  pointer-events: none !important;
+  z-index: 2147483647 !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+/* ── Ensure overlay items inside the stream container render ─── */
+
+#fso-stream-overlay .overlay-item {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* ── Transparent background ─────────────────────────────────── */
+/*    OBS: Browser Source → tick "Allow transparency"           */
+
+body.fso-stream-active,
+body.stream,
+html:has(body.fso-stream-active),
+html:has(body.stream) {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* ── Hide game canvas (use OBS Game/Window Capture instead) ─── */
+
+body.fso-stream-active #board,
+body.fso-stream-active canvas,
+body.fso-stream-active #canvas,
+body.stream #board,
+body.stream canvas,
+body.stream #canvas {
+  display: none !important;
+}
+
+/* ── Hide remaining Foundry chrome ──────────────────────────── */
+
+body.fso-stream-active #navigation,
+body.fso-stream-active #controls,
+body.fso-stream-active #players,
+body.fso-stream-active #hotbar,
+body.fso-stream-active #fps,
+body.fso-stream-active #pause,
+body.fso-stream-active #chat-bubbles,
+body.stream #navigation,
+body.stream #controls,
+body.stream #players,
+body.stream #hotbar,
+body.stream #fps,
+body.stream #pause,
+body.stream #chat-bubbles {
+  display: none !important;
+}
+
+body.fso-stream-active #loading,
+body.stream #loading {
+  display: none !important;
+}
+
+/* ── Hide sidebar (when setting enabled) ────────────────────── */
+
+body.fso-stream-hide-sidebar #sidebar,
+body.stream.fso-stream-hide-sidebar #sidebar {
+  display: none !important;
+}
+
+/* ── Hide chat cards (when setting enabled) ─────────────────── */
+
+body.fso-stream-hide-chat #chat-log .chat-message,
+body.fso-stream-hide-chat #chat-form {
+  display: none !important;
+}

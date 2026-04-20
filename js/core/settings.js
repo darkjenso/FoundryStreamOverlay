@@ -1,6 +1,7 @@
 // Settings registration for Foundry Stream Overlay - FIXED NO GLOBAL ACTIVE LAYOUT
 import { MODULE_ID } from './constants.js';
-import { validateActivationKey, isPremiumActive } from '../premium/validation.js';
+import { isPremiumActive, showPremiumRequiredDialog } from '../premium/validation.js';
+import { getBaseApplication } from '../utils/app-compat.js';
 
 /**
  * Safely registers a setting, handling cases where user lacks permission
@@ -19,15 +20,27 @@ function safeRegisterSetting(moduleId, key, options) {
 }
 
 // Define StandaloneAppConfig class separately to avoid scoping issues
-class StandaloneAppConfig extends FormApplication {
+class StandaloneAppConfig extends getBaseApplication() {
   static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
+    return foundry.utils.mergeObject(super.defaultOptions ?? {}, {
       title: "Standalone App Connection",
       template: `modules/${MODULE_ID}/templates/standalone-connection.html`,
       width: 500,
       height: "auto"
     });
   }
+
+  static DEFAULT_OPTIONS = {
+    id: "foundrystreamoverlay-standalone-config",
+    window: { title: "Standalone App Connection" },
+    position: { width: 500 }
+  };
+
+  static get PARTS() {
+    return { main: { template: `modules/${MODULE_ID}/templates/standalone-connection.html` } };
+  }
+
+  async _prepareContext() { return this.getData(); }
   
   async render(force = false, options = {}) {
     try {
@@ -67,8 +80,8 @@ class StandaloneAppConfig extends FormApplication {
   }
   
   activateListeners(html) {
-    super.activateListeners(html);
-    
+    super.activateListeners?.(html);
+
     html.find("#test-connection").click(async (event) => {
       event.preventDefault();
       const url = html.find("#server-url").val();
@@ -97,7 +110,11 @@ class StandaloneAppConfig extends FormApplication {
       }
     });
   }
-  
+
+  _onRender(context, options) {
+    this.activateListeners($(this.element));
+  }
+
   async _updateObject(event, formData) {
     await game.settings.set(MODULE_ID, "standaloneServerUrl", formData.serverUrl);
     await game.settings.set(MODULE_ID, "autoSyncStandalone", formData.autoSync);
@@ -196,6 +213,69 @@ export function registerSettings() {
     }
   });
 
+  // ── Stream page settings ─────────────────────────────────────────────────
+
+  safeRegisterSetting(MODULE_ID, "streamOverlayEnabled", {
+    name: "Show Overlay on /stream",
+    hint: "Render the overlay directly on the built-in Foundry /stream page — no popup window or OBS Browser Source required. Just point OBS at [your-foundry-url]/stream.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+
+  // Build a dropdown from whichever overlay windows are already stored.
+  // Falls back to just "main" on a fresh install.
+  let _streamWindowChoices = { "main": "Main Overlay (main)" };
+  try {
+    const _existingWindows = game.settings.get(MODULE_ID, "overlayWindows") || {};
+    if (Object.keys(_existingWindows).length > 0) {
+      _streamWindowChoices = {};
+      for (const [_id, _cfg] of Object.entries(_existingWindows)) {
+        _streamWindowChoices[_id] = `${_cfg.name || _id} (${_id})`;
+      }
+    }
+  } catch (_e) { /* use default */ }
+
+  safeRegisterSetting(MODULE_ID, "streamWindowId", {
+    name: "Overlay Window on /stream",
+    hint: "Which overlay window's items to display on the /stream page. If you add more windows later, reload Foundry to refresh this list.",
+    scope: "world",
+    config: true,
+    type: String,
+    choices: _streamWindowChoices,
+    default: Object.keys(_streamWindowChoices)[0] || "main"
+  });
+
+  safeRegisterSetting(MODULE_ID, "streamHideChat", {
+    name: "Hide Chat Cards on /stream",
+    hint: "Hide the chat message cards on the /stream page so only the overlay and game canvas are visible.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+
+  safeRegisterSetting(MODULE_ID, "streamHideSidebar", {
+    name: "Hide Entire Sidebar on /stream",
+    hint: "Hide the full sidebar panel on /stream (chat, combat tracker, etc.) for a completely clean canvas view.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // One-time announcement flag (client-scoped so each user sees it once)
+  safeRegisterSetting(MODULE_ID, "splitAnnouncementSeen", {
+    name: "Split Announcement Seen",
+    scope: "client",
+    config: false,
+    type: Boolean,
+    default: false
+  });
+
   // Triggered animations setting
   safeRegisterSetting(MODULE_ID, "enableTriggeredAnimations", {
     name: "Enable Triggered Animations",
@@ -248,37 +328,6 @@ export function registerSettings() {
     }
   });
 
-  // Premium activation key
-  safeRegisterSetting(MODULE_ID, "activationKey", {
-    name: "Premium Activation Key",
-    hint: "Enter your key from Patreon to unlock premium features.",
-    scope: "client",
-    config: false,
-    type: String,
-    default: "",
-    onChange: async value => {
-      const OverlayData = (await import('../../data-storage.js')).default;
-      if (OverlayData && OverlayData.initialized) {
-        await OverlayData.setSetting("activationKey", value);
-      }
-      validateActivationKey(value);
-    }
-  });
-
-  // Premium status
-  safeRegisterSetting(MODULE_ID, "isPremium", {
-    name: "Premium Status",
-    scope: "client",
-    config: false,
-    type: Boolean,
-    default: false,
-    onChange: async value => {
-      const OverlayData = (await import('../../data-storage.js')).default;
-      if (OverlayData && OverlayData.initialized) {
-        await OverlayData.setSetting("isPremium", value);
-      }
-    }
-  });
 
   // Layouts storage - WORLD SCOPED (scenes)
   safeRegisterSetting(MODULE_ID, "layouts", {
@@ -375,19 +424,24 @@ export function registerMenus() {
     icon: "fas fa-external-link-alt",
     type: class extends FormApplication {
       static get defaultOptions() {
-        return foundry.utils.mergeObject(super.defaultOptions, {
+        return foundry.utils.mergeObject(super.defaultOptions ?? {}, {
+          id: "foundrystreamoverlay-open-overlay-stub",
           title: "Open Overlay",
           template: `modules/${MODULE_ID}/templates/open-overlay-window.html`,
           width: 400
         });
       }
-      
-      async render(force = false, options = {}) {
-        const { OverlayWindowOpener } = await import('../ui/window-opener.js');
-        const openerInstance = new OverlayWindowOpener();
-        return openerInstance.render(true);
+      render(force = false, options = {}) {
+        import('../ui/window-opener.js')
+          .then(({ OverlayWindowOpener }) => {
+            const existing = Object.values(ui.windows || {})
+              .find(w => w.options?.id === "foundrystreamoverlay-window-opener");
+            if (existing) { existing.bringToTop?.(); }
+            else { new OverlayWindowOpener().render(true); }
+          })
+          .catch(err => { console.error(`${MODULE_ID} | Failed to open Overlay:`, err); });
+        return this;
       }
-      
       getData() { return {}; }
       activateListeners() {}
       async _updateObject() {}
@@ -407,7 +461,8 @@ export function registerMenus() {
     icon: "fas fa-edit",
     type: class extends FormApplication {
       static get defaultOptions() {
-        return foundry.utils.mergeObject(super.defaultOptions, {
+        return foundry.utils.mergeObject(super.defaultOptions ?? {}, {
+          id: "foundrystreamoverlay-edit-scene-stub",
           title: "Edit Scene",
           template: `modules/${MODULE_ID}/templates/foundrystreamoverlay-config.html`,
           width: 800,
@@ -415,14 +470,25 @@ export function registerMenus() {
           closeOnSubmit: false
         });
       }
-      
-      async render(force = false, options = {}) {
-        const { OverlayConfig } = await import('../ui/overlay-config.js');
-        // FIXED: Open for main window by default
-        const configInstance = new OverlayConfig({ windowId: "main" });
-        return configInstance.render(true);
+
+      render(force = false, options = {}) {
+        import('../ui/overlay-config.js')
+          .then(({ OverlayConfig }) => {
+            const existing = Object.values(ui.windows || {})
+              .find(w => w.options?.id === "foundrystreamoverlay-config");
+            if (existing) {
+              existing.bringToTop?.();
+            } else {
+              new OverlayConfig({ windowId: "main" }).render(true);
+            }
+          })
+          .catch(err => {
+            console.error(`${MODULE_ID} | Failed to open Edit Scene:`, err);
+            ui.notifications?.error("Failed to open Edit Scene — check the browser console for details.");
+          });
+        return this;
       }
-      
+
       getData() { return {}; }
       activateListeners() {}
       async _updateObject() {}
@@ -438,19 +504,37 @@ export function registerMenus() {
     icon: "fas fa-layer-group",
     type: class extends FormApplication {
       static get defaultOptions() {
-        return foundry.utils.mergeObject(super.defaultOptions, {
+        // Use ?? {} so this is safe on both v13 (FormApplication.defaultOptions
+        // exists) and v14 (deprecated, may return undefined).
+        return foundry.utils.mergeObject(super.defaultOptions ?? {}, {
+          id: "foundrystreamoverlay-manage-scenes-stub",
           title: "Manage Scenes",
           template: `modules/${MODULE_ID}/templates/foundrystreamoverlay-layouts.html`,
           width: 600
         });
       }
-      
-      async render(force = false, options = {}) {
-        const { ManageLayouts } = await import('../ui/layout-manager.js');
-        const managerInstance = new ManageLayouts();
-        return managerInstance.render(true);
+
+      // Synchronous render — kick off the async import in the background and
+      // return `this` immediately so Foundry doesn't choke on a Promise.
+      render(force = false, options = {}) {
+        import('../ui/layout-manager.js')
+          .then(({ ManageLayouts }) => {
+            // Bring existing window to front if already open
+            const existing = Object.values(ui.windows || {})
+              .find(w => w.options?.id === "foundrystreamoverlay-manage-layouts");
+            if (existing) {
+              existing.bringToTop?.();
+            } else {
+              new ManageLayouts().render(true);
+            }
+          })
+          .catch(err => {
+            console.error(`${MODULE_ID} | Failed to open Manage Scenes:`, err);
+            ui.notifications?.error("Failed to open Manage Scenes — check the browser console for details.");
+          });
+        return this;
       }
-      
+
       getData() { return {}; }
       activateListeners() {}
       async _updateObject() {}
@@ -464,25 +548,36 @@ export function registerMenus() {
 
   // Multiple displays (Premium feature)
   game.settings.registerMenu(MODULE_ID, "multipleDisplays", {
-    name: "🔧 Multiple Displays",
+    name: isPremiumActive() ? "🔧 Multiple Displays" : "🔧 Multiple Displays [Pro]",
     label: "Multiple Displays",
-    hint: "Create and manage multiple overlay windows (Premium)",
+    hint: isPremiumActive()
+      ? "Create and manage multiple overlay windows"
+      : "Create and manage multiple overlay windows — Pro feature",
     icon: "fas fa-desktop",
     type: class extends FormApplication {
       static get defaultOptions() {
-        return foundry.utils.mergeObject(super.defaultOptions, {
+        return foundry.utils.mergeObject(super.defaultOptions ?? {}, {
+          id: "foundrystreamoverlay-multiple-displays-stub",
           title: "Multiple Displays",
           template: `modules/${MODULE_ID}/templates/window-manager.html`,
           width: 600
         });
       }
-      
-      async render(force = false, options = {}) {
-        const { OverlayWindowManager } = await import('../ui/window-manager.js');
-        const managerInstance = new OverlayWindowManager();
-        return managerInstance.render(true);
+      render(force = false, options = {}) {
+        if (!isPremiumActive()) {
+          showPremiumRequiredDialog("Multiple Displays");
+          return this;
+        }
+        import('../ui/window-manager.js')
+          .then(({ OverlayWindowManager }) => {
+            const existing = Object.values(ui.windows || {})
+              .find(w => w.options?.id === "foundrystreamoverlay-window-manager");
+            if (existing) { existing.bringToTop?.(); }
+            else { new OverlayWindowManager().render(true); }
+          })
+          .catch(err => { console.error(`${MODULE_ID} | Failed to open Multiple Displays:`, err); });
+        return this;
       }
-      
       getData() { return {}; }
       activateListeners() {}
       async _updateObject() {}
@@ -492,25 +587,36 @@ export function registerMenus() {
 
   // Slideshow (Premium feature)
   game.settings.registerMenu(MODULE_ID, "slideshow", {
-    name: "🎠 Slideshow",
+    name: isPremiumActive() ? "🎠 Slideshow" : "🎠 Slideshow [Pro]",
     label: "Slideshow",
-    hint: "Auto-rotate through scenes with transitions (Premium)",
+    hint: isPremiumActive()
+      ? "Auto-rotate through scenes with transitions"
+      : "Auto-rotate through scenes with transitions — Pro feature",
     icon: "fas fa-play",
     type: class extends FormApplication {
       static get defaultOptions() {
-        return foundry.utils.mergeObject(super.defaultOptions, {
+        return foundry.utils.mergeObject(super.defaultOptions ?? {}, {
+          id: "foundrystreamoverlay-slideshow-stub",
           title: "Slideshow",
           template: `modules/${MODULE_ID}/templates/foundrystreamoverlay-slideshow.html`,
           width: 600
         });
       }
-      
-      async render(force = false, options = {}) {
-        const { SlideshowConfig } = await import('../ui/slideshow-config.js');
-        const configInstance = new SlideshowConfig();
-        return configInstance.render(true);
+      render(force = false, options = {}) {
+        if (!isPremiumActive()) {
+          showPremiumRequiredDialog("Slideshow");
+          return this;
+        }
+        import('../ui/slideshow-config.js')
+          .then(({ SlideshowConfig }) => {
+            const existing = Object.values(ui.windows || {})
+              .find(w => w.options?.id === "foundrystreamoverlay-slideshow");
+            if (existing) { existing.bringToTop?.(); }
+            else { new SlideshowConfig().render(true); }
+          })
+          .catch(err => { console.error(`${MODULE_ID} | Failed to open Slideshow:`, err); });
+        return this;
       }
-      
       getData() { return {}; }
       activateListeners() {}
       async _updateObject() {}
@@ -528,137 +634,52 @@ export function registerMenus() {
     restricted: false
   });
 
-  // Standalone app (coming soon)
+  // Standalone app
   game.settings.registerMenu(MODULE_ID, "standaloneApp", {
     name: "🔗 Standalone App",
     label: "Standalone App",
-    hint: "Connect to standalone overlay application (Coming Soon)",
+    hint: "Connect to standalone overlay application",
     icon: "fas fa-server",
-    type: class StandaloneAppDialog extends FormApplication {
-      static get defaultOptions() {
-        return foundry.utils.mergeObject(super.defaultOptions, {
-          title: "Standalone App Connection",
-          id: "standalone-app-dialog",
-          width: 500,
-          height: "auto",
-          closeOnSubmit: false,
-          resizable: true,
-          classes: ["foundry-stream-overlay"]
-        });
-      }
-      
-      get template() {
-        return null;
-      }
-      
-      async _renderInner(data) {
-        return $(`
-          <form style="padding: 0;">
-            <div class="coming-soon-container" style="text-align: center; padding: 40px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
-              <div style="font-size: 64px; margin-bottom: 20px; opacity: 0.3;">
-                🚧
-              </div>
-              <h2 style="color: #1e293b; margin-bottom: 15px; font-size: 24px;">Standalone App - Coming Soon!</h2>
-              <p style="color: #64748b; margin-bottom: 25px; font-size: 16px; line-height: 1.5;">
-                We're working hard on an exciting standalone overlay application that will provide enhanced features and better performance.
-              </p>
-              
-              <div style="background: white; border-radius: 12px; padding: 24px; margin: 24px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: left;">
-                <h3 style="color: #1e293b; margin-bottom: 15px; text-align: center;">🚀 Planned Features</h3>
-                <ul style="color: #475569; margin: 0; padding-left: 20px; line-height: 1.8;">
-                  <li><strong>Enhanced Performance:</strong> Dedicated app for smoother overlay rendering</li>
-                  <li><strong>Live Sync:</strong> Real-time updates between Foundry and your streaming software</li>
-                  <li><strong>Advanced Customization:</strong> More themes, effects, and layout options</li>
-                  <li><strong>Multi-Stream Support:</strong> Manage multiple overlay windows simultaneously</li>
-                  <li><strong>Browser Source Integration:</strong> Easy setup with OBS and other streaming tools</li>
-                  <li><strong>Offline Mode:</strong> Continue using overlays even when Foundry is closed</li>
-                </ul>
-              </div>
-              
-              <div style="background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%); border-radius: 8px; padding: 16px; margin: 20px 0;">
-                <h4 style="color: #0369a1; margin-bottom: 8px;">💡 In the meantime...</h4>
-                <p style="color: #0369a1; margin: 0; font-size: 14px;">
-                  Continue using the current overlay system which already supports animations, multiple layouts, and slideshow functionality!
-                </p>
-              </div>
-              
-              <div style="margin-top: 30px;">
-                <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">
-                  Want to be notified when it's ready?
-                </p>
-                <a href="https://www.patreon.com/c/jenzelta" target="_blank" 
-                   style="display: inline-block; background: linear-gradient(135deg, #FF424D 0%, #C53030 100%); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; box-shadow: 0 4px 12px rgba(255,66,77,0.3); transition: transform 0.2s;">
-                  <i class="fab fa-patreon"></i> Follow Development on Patreon
-                </a>
-              </div>
-              
-              <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-                <p style="color: #94a3b8; font-size: 12px; font-style: italic;">
-                  Expected release: Q2 2025 • Premium feature for supporters
-                </p>
-              </div>
-            </div>
-          </form>
-        `);
-      }
-      
-      async getData() {
-        return {};
-      }
-      
-      activateListeners(html) {
-        super.activateListeners(html);
-        html.find('a[href*="patreon"]').click((event) => {
-          event.preventDefault();
+    type: StandaloneAppConfig,
+    restricted: false
+  });
+
+  // ── "Get Pro" banner — only shown in the free version ────────────────────
+  if (!isPremiumActive()) {
+    game.settings.registerMenu(MODULE_ID, "getPro", {
+      name: "🚀 Upgrade to Foundry Stream Overlay Pro",
+      label: "Get Pro",
+      hint: "Unlock unlimited scenes, advanced animations, slideshow, multiple windows, and no watermark. Available on Patreon.",
+      icon: "fab fa-patreon",
+      type: class extends FormApplication {
+        static get defaultOptions() {
+          return foundry.utils.mergeObject(super.defaultOptions ?? {}, {
+            id: "foundrystreamoverlay-get-pro-stub",
+            title: "Get Pro",
+            template: `modules/${MODULE_ID}/templates/open-overlay-window.html`,
+            width: 300
+          });
+        }
+        render() {
           window.open("https://www.patreon.com/c/jenzelta", "_blank");
-        });
-      }
-      
-      async _updateObject(event, formData) {}
-    },
-    restricted: false
-  });
+          return this;
+        }
+        getData() { return {}; }
+        activateListeners() {}
+        async _updateObject() {}
+      },
+      restricted: false
+    });
+  }
 
-  // =================================
-  // 💎 PREMIUM SECTION
-  // =================================
-
-  // Premium status and activation
-  const premiumIndicator = isPremiumActive() ? "✅" : "❌";
-  game.settings.registerMenu(MODULE_ID, "premiumStatus", {
-    name: `💎 Premium Features ${premiumIndicator}`,
-    label: "Premium",
-    hint: "Unlock advanced features with premium activation",
-    icon: "fas fa-gem",
-    type: class extends FormApplication {
-      static get defaultOptions() {
-        return foundry.utils.mergeObject(super.defaultOptions, {
-          title: "Premium Features",
-          template: `modules/${MODULE_ID}/templates/premium-status.html`,
-          width: 400
-        });
-      }
-      
-      async render(force = false, options = {}) {
-        const { PremiumStatusDialog } = await import('../ui/premium-status.js');
-        const dialogInstance = new PremiumStatusDialog();
-        return dialogInstance.render(true);
-      }
-      
-      getData() { return {}; }
-      activateListeners() {}
-      async _updateObject() {}
-    },
-    restricted: false
-  });
 }
 
 /**
  * Data Management Dialog class
  */
-class DataManagementDialog extends FormApplication {
+class DataManagementDialog extends getBaseApplication() {
   static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
+    return foundry.utils.mergeObject(super.defaultOptions ?? {}, {
       title: "Data Backup & Restore",
       id: "foundrystreamoverlay-data-management",
       template: `modules/${MODULE_ID}/templates/data-management.html`,
@@ -667,6 +688,18 @@ class DataManagementDialog extends FormApplication {
       closeOnSubmit: false
     });
   }
+
+  static DEFAULT_OPTIONS = {
+    id: "foundrystreamoverlay-data-management",
+    window: { title: "Data Backup & Restore" },
+    position: { width: 500 }
+  };
+
+  static get PARTS() {
+    return { main: { template: `modules/${MODULE_ID}/templates/data-management.html` } };
+  }
+
+  async _prepareContext() { return this.getData(); }
   
   getData() {
     return {
@@ -676,8 +709,8 @@ class DataManagementDialog extends FormApplication {
   }
   
   activateListeners(html) {
-    super.activateListeners(html);
-    
+    super.activateListeners?.(html);
+
     html.find("#export-data").click(async () => {
       const OverlayData = (await import('../../data-storage.js')).default;
       OverlayData.exportToFile();
@@ -716,6 +749,10 @@ class DataManagementDialog extends FormApplication {
     });
   }
   
+  _onRender(context, options) {
+    this.activateListeners($(this.element));
+  }
+
   async _updateObject() {
     // Form doesn't submit anything
   }

@@ -355,12 +355,12 @@ Hooks.on("renderSettingsConfig", (app, html, data) => {
     // Add any custom styling or modifications to module settings here
     console.log(`${MODULE_ID} | Settings rendered`);
     
-    // Example: Add coming soon styling to standalone app setting
+    // Add link to standalone app download page in the settings menu
     const standaloneAppSetting = $html.find(`[data-setting-id="${MODULE_ID}.standaloneApp"]`);
     if (standaloneAppSetting.length > 0) {
-      // Add coming soon styling
-      standaloneAppSetting.find('button').prop('disabled', true);
-      standaloneAppSetting.find('label').append(' <em style="color: #666;">(Coming Soon)</em>');
+      const link =
+        ' <a href="https://cool-puffpuff-4ee93b.netlify.app/v2/" target="_blank" style="color:#0369a1;">Get App</a>';
+      standaloneAppSetting.find('label').append(link);
     }
   }
 });

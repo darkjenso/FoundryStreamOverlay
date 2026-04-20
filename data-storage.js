@@ -23,8 +23,6 @@ class OverlayDataStorage {
         targetWindow: "main"
       },
       settings: {
-        isPremium: false,
-        activationKey: "",
         backgroundColour: "#00ff00",
         enableTriggeredAnimations: true
       }
@@ -95,8 +93,6 @@ class OverlayDataStorage {
       this.data.slideshow = slideshow;
 
       // Load user-specific settings
-      this.data.settings.isPremium = game.settings.get(MODULE_ID, "isPremium") || false;
-      this.data.settings.activationKey = game.settings.get(MODULE_ID, "activationKey") || "";
       this.data.settings.backgroundColour = game.settings.get(MODULE_ID, "backgroundColour") || "#00ff00";
       this.data.settings.enableTriggeredAnimations = game.settings.get(MODULE_ID, "enableTriggeredAnimations") || true;
       
@@ -438,7 +434,7 @@ class OverlayDataStorage {
       layoutCount: Object.keys(this.data.layouts).length,
       windowCount: Object.keys(this.data.overlayWindows).length,
       slideshowItemCount: this.data.slideshow.list.length,
-      settings: { ...this.data.settings, activationKey: "***" }, // Hide sensitive data
+      settings: { ...this.data.settings },
       layouts: Object.keys(this.data.layouts),
       windows: Object.entries(this.data.overlayWindows).map(([id, config]) => ({
         id,

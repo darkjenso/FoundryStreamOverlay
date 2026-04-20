@@ -1,31 +1,52 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to this project will be documented in this file.
 
 All notable changes to **Foundry Stream Overlay** will be documented here.  
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [4.2.0] – 28 July 2025
+## [5.0.0] - 18 April 2026
 
-### New Feature
-- Visual Positioning
- - Activate Visual positioning through a button at the top of the Scene Editor, allows for drag and drop movement of elements.
- - toggleable grid snapping can be activated though a checkbox, users can also define how big they want the grid to be and is displayed over the preview without actually displaying
- - Useful tooltips while mousing over elements so you know what is what.
-- Dynamic Images (premium)
- - Users can now add conditional statements that when a value (default HP) goes to a user set condition the image changes to another image. Could be useful for creating visual depictions of characters getting hurt?
+### Breaking
 
-### Added, Changes and Fixes
-- Added more default data fields for the most popular game systems.
-- brought the slideshow UI to the new standard
-- Changed the user selection for dice rolls from a multiselect menu to its own "add" node. Previously adding new items to the list caused the dice roller to clear who it was supposed to be fore
-- Numerous fixes to various bugs, cleaned up several UI issues in the verification window
+- **Free / Pro split** - Foundry Stream Overlay is now distributed as two separate modules:
+  - **Foundry Stream Overlay Free** (`foundrystreamoverlay`) - one scene, basic animations, all core streaming features.
+  - **Foundry Stream Overlay Pro** (`foundrystreamoverlaypro`) - everything in Free plus unlimited scenes, advanced animations, slideshow, multiple overlay windows, and no watermark. Distributed exclusively to Patreon subscribers.
+  - If you were using Pro features in v4.x, download the Pro zip from Patreon and install it in place of the Free module. **All your scenes and settings are preserved** - both versions share the same data storage namespace.
+- **Activation key system removed** - There is no longer an activation key, no server validation, and no Premium Status dialog. Pro features are unlocked simply by running the Pro module. The `activationKey` and `isPremium` settings have been removed.
 
-## [4.1.0] – 25 July 2025
+### Added
 
-- Added v2 authentication mode
-- Several UI fixes and bug fixes
+- **True OBS transparency on /stream** - The /stream page now renders with a fully transparent background. Add it as an OBS Browser Source (tick Allow transparency) and your overlay elements float over your stream with no green screen or chroma key required.
+- **/stream overlay rendering** - Overlay items from the configured window are now correctly injected and rendered on the /stream page using inline style overrides and a high-z-index container, guaranteeing they appear above all Foundry UI.
+- **MutationObserver on /stream** - Foundry UI elements (canvas, navigation, hotbar, chat bubbles, etc.) that are dynamically added after page load are automatically hidden, keeping the overlay clean.
+- **Get Pro button in Free settings** - An Upgrade to Foundry Stream Overlay Pro button appears in module settings when running the Free version, linking directly to the Patreon page.
+- **One-time split announcement** - The first time a GM loads the Free version after upgrading from v4.x, a dialog explains the Free/Pro split and how to obtain the Pro version. Shown once, never again.
+- **Conflict detection (Pro)** - If both the Free and Pro modules are active simultaneously, the Pro version detects this on load and shows a dialog prompting the GM to disable the Free version, preventing duplicate hooks and settings conflicts.
+- **Overlay window on /stream is now a dropdown** - The plain text field has been replaced with a dropdown list of all configured overlay windows, defaulting to the first available window. The choices are refreshed from live data after OverlayData initialises.
+- **PACKAGING.md** - Developer reference documenting the two-file packaging process (which files to swap, build commands, zip naming, and the user upgrade path).
 
+### Changed
+
+- **Foundry v14 verified** - module.json compatibility.verified updated to 14. Minimum remains 12.
+- **Watermark rebranded** - The free-tier promotional footer now reads Foundry Stream Overlay FREE - Upgrade to Pro with the Patreon link, replacing the generic previous text.
+- **/stream canvas hidden via JavaScript** - The WebGL canvas (#board, #canvas) is hidden directly via element.style.setProperty rather than CSS alone, since WebGL pixels cannot be made transparent through CSS.
+- **/stream styles use both body.fso-stream-active and body.stream** - Stream CSS now targets both classes so transparency and UI hiding apply regardless of which class Foundry sets first.
+- **Module data storage unchanged** - Both Free and Pro continue to store all data under MODULE_ID = foundrystreamoverlay, so upgrading between versions is lossless.
+
+### Removed
+
+- **Activation key verification** - activationKey setting, isPremium setting, Premium Status dialog, V2 API key validation, expiration check scheduling, and the V2 upgrade notification on load.
+- **activationKey / isPremium from data-storage.js** - These fields are no longer read from or written to Foundry settings.
+
+### Fixed
+
+- **All settings menu buttons broken** - Manage Scenes, Edit Scene, Open Overlay, Window Manager, and Slideshow buttons in the module settings menu all silently failed to open in v4.x. Root cause: async render() in the anonymous menu stub classes returned a Promise that Foundry discarded, swallowing all errors. Fixed by making render() synchronous (returns this) with .then()/.catch() for the async import.
+- **super.defaultOptions crash on v14** - All FormApplication subclasses now use super.defaultOptions ?? {} to guard against undefined being returned, which could crash mergeObject on Foundry v14.
+- **Overlay items not rendering on /stream** - Container positioning, overflow, and z-index are now set via inline style.cssText rather than CSS class rules, bypassing any Foundry stylesheet overrides.
+- **Chat bubbles visible on /stream** - #chat-bubbles is now explicitly targeted for hiding alongside the other Foundry UI elements on the stream page.
+
+---
 ## [4.0.0] – 24 July 2025
 
 ###  Breaking
@@ -45,7 +66,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Sem
 - **Premium validation layer** (`js/premium/validation.js`) centralised and surfaced in relevant UIs with clearer notices.  
 - **New macros pack structure** (LMDB based) to ship example macros more reliably.  
 - **Media metadata** (icon/cover) and author fields added to `module.json` for nicer display.  
-- **Standalone companion app (alpha/coming soon)**: local server provides true transparent overlays (no green screen/window capture).
+- **Standalone companion app**: local server provides true transparent overlays (no green screen/window capture).
 
 ### Changed
 - **Module initialisation** moved to `js/core/module-init.js`; all hooks consolidated in `js/core/hooks.js`.  

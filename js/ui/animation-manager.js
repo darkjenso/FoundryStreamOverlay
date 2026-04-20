@@ -2,10 +2,11 @@
 import { MODULE_ID, ANIMATION_TYPES } from '../core/constants.js';
 import { isPremiumActive, showPremiumRequiredDialog } from '../premium/validation.js';
 import OverlayData from '../../data-storage.js';
+import { getBaseApplication } from '../utils/app-compat.js';
 
-export class AnimationManager extends FormApplication {
+export class AnimationManager extends getBaseApplication() {
   static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
+    return foundry.utils.mergeObject(super.defaultOptions ?? {}, {
       title: "Animation Manager",
       id: "foundrystreamoverlay-animation-manager",
       template: `modules/${MODULE_ID}/templates/animation-manager.html`,
@@ -14,6 +15,18 @@ export class AnimationManager extends FormApplication {
       tabs: [{navSelector: ".tabs", contentSelector: ".content", initial: "continuous"}]
     });
   }
+
+  static DEFAULT_OPTIONS = {
+    id: "foundrystreamoverlay-animation-manager",
+    window: { title: "Animation Manager" },
+    position: { width: 700 }
+  };
+
+  static get PARTS() {
+    return { main: { template: `modules/${MODULE_ID}/templates/animation-manager.html` } };
+  }
+
+  async _prepareContext() { return this.getData(); }
 
   constructor(item, itemIndex, parentConfig, layoutName) {
     super();
@@ -57,7 +70,7 @@ export class AnimationManager extends FormApplication {
   }
 
   activateListeners(html) {
-    super.activateListeners(html);
+    super.activateListeners?.(html);
 
     console.log(`${MODULE_ID} | Animation Manager activating listeners for layout: ${this.layoutName}`);
     
@@ -66,10 +79,14 @@ export class AnimationManager extends FormApplication {
 
     html.find('.tabs .item').click(ev => {
       const tab = $(ev.currentTarget).data('tab');
-      this._tabs[0].activate(tab);
+      this._tabs?.[0]?.activate(tab);
     });
   }
-  
+
+  _onRender(context, options) {
+    this.activateListeners($(this.element));
+  }
+
   async _onAddAnimation(event) {
     event.preventDefault();
     

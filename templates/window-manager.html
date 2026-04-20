@@ -22,6 +22,7 @@
             <div class="fso-action-buttons-grid">
               <button type="button" class="fso-action-btn open-window" data-window="{{this.id}}">Open</button>
               <button type="button" class="fso-action-btn configure-window" data-window="{{this.id}}">Configure</button>
+              <button type="button" class="fso-action-btn copy-obs-url" data-window="{{this.id}}" title="Copy OBS Browser Source URL (transparent, no chroma key)">OBS URL</button>
               {{#if (ne this.id "main")}}
                 <button type="button" class="fso-action-btn fso-delete-btn remove-window" data-window="{{this.id}}">Remove</button>
               {{/if}}
@@ -35,7 +36,15 @@
 
   <div class="fso-scene-actions-section">
     <div class="fso-primary-actions">
-      <button type="button" class="fso-primary-btn create-new-window">Create New Window</button>
+      {{#if isPremium}}
+      <button type="button" class="fso-primary-btn create-new-window">
+        <i class="fas fa-plus"></i> Create New Window
+      </button>
+      {{else}}
+      <button type="button" class="fso-primary-btn" disabled title="Multiple overlay windows require Pro">
+        <i class="fas fa-lock"></i> Create New Window
+      </button>
+      {{/if}}
     </div>
 
     {{#unless isPremium}}
@@ -43,8 +52,8 @@
       <div class="fso-premium-notice">
         <div class="fso-premium-content">
           <i class="fso-premium-icon fas fa-gem"></i>
-          <div class="fso-premium-text">Multiple overlay windows are a premium feature</div>
-          <a href="https://www.patreon.com/c/jenzelta" target="_blank" class="fso-premium-link">Support on Patreon</a>
+          <div class="fso-premium-text">Multiple overlay windows require <strong>Foundry Stream Overlay Pro</strong></div>
+          <a href="https://www.patreon.com/c/jenzelta" target="_blank" class="fso-premium-link">Get Pro on Patreon</a>
         </div>
       </div>
     </div>

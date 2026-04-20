@@ -2,10 +2,11 @@
 import { MODULE_ID } from '../core/constants.js';
 import { isPremiumActive } from '../premium/validation.js';
 import OverlayData from '../../data-storage.js';
+import { getBaseApplication, closeExistingById } from '../utils/app-compat.js';
 
-export class OverlayWindowConfig extends FormApplication {
+export class OverlayWindowConfig extends getBaseApplication() {
   static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
+    return foundry.utils.mergeObject(super.defaultOptions ?? {}, {
       title: "Configure Overlay Window",
       id: "foundrystreamoverlay-window-config",
       template: `modules/${MODULE_ID}/templates/window-config.html`,
@@ -16,6 +17,20 @@ export class OverlayWindowConfig extends FormApplication {
       tabs: [{ navSelector: ".tabs", contentSelector: ".content", initial: "basic" }]
     });
   }
+
+  static DEFAULT_OPTIONS = {
+    id: "foundrystreamoverlay-window-config",
+    window: { title: "Configure Overlay Window", resizable: true },
+    position: { width: 600 }
+  };
+
+  static get PARTS() {
+    return { main: { template: `modules/${MODULE_ID}/templates/window-config.html` } };
+  }
+
+  async _prepareContext() { return this.getData(); }
+
+  get _$el() { return $(this.element); }
 
   constructor(windowId, options = {}) {
     super();
@@ -176,7 +191,7 @@ export class OverlayWindowConfig extends FormApplication {
   }
 
   activateListeners(html) {
-    super.activateListeners(html);
+    super.activateListeners?.(html);
 
     // Basic controls
     html.find("#save-current-size").click(this._onSaveCurrentSize.bind(this));
@@ -212,6 +227,24 @@ export class OverlayWindowConfig extends FormApplication {
 
     // Real-time preview toggle
     html.find('#live-preview-toggle').change(this._onLivePreviewToggle.bind(this));
+
+    // Copy OBS URL
+    html.find('.copy-obs-url').click(this._onCopyObsUrl.bind(this));
+  }
+
+  _onRender(context, options) {
+    this.activateListeners($(this.element));
+  }
+
+  _onCopyObsUrl(event) {
+    event.preventDefault();
+    const port = location.port || (location.protocol === "https:" ? "443" : "80");
+    const url = `${location.protocol}//${location.hostname}:${port}/modules/${MODULE_ID}/obs-overlay.html?windowId=${this.windowId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      ui.notifications.info(`OBS URL copied! In OBS: Browser Source → paste URL → enable "Allow transparency"`);
+    }).catch(() => {
+      ui.notifications.warn(`OBS URL: ${url}`);
+    });
   }
 
   // FIXED: Handle layout changes for this specific window
@@ -325,7 +358,7 @@ export class OverlayWindowConfig extends FormApplication {
     event.preventDefault();
     
     // Temporarily apply current form settings to test
-    const formData = new FormDataExtended(this.element.find('form')[0]).object;
+    const formData = new FormDataExtended(this._$el.find('form')[0]).object;
     await this._applyTemporarySettings(formData);
   }
 
@@ -412,7 +445,7 @@ export class OverlayWindowConfig extends FormApplication {
     this._updateSaveButton();
     
     // If live preview is enabled, apply changes immediately
-    if (this._previewMode && this.element.find('#live-preview-toggle').is(':checked')) {
+    if (this._previewMode && this._$el.find('#live-preview-toggle').is(':checked')) {
       clearTimeout(this._previewTimeout);
       this._previewTimeout = setTimeout(() => {
         this._applyLivePreview();
@@ -456,7 +489,7 @@ export class OverlayWindowConfig extends FormApplication {
   async _onSave(event) {
     event.preventDefault();
     
-    const formData = new FormDataExtended(this.element.find('form')[0]).object;
+    const formData = new FormDataExtended(this._$el.find('form')[0]).object;
     const success = await this._updateObject(event, formData);
     
     if (success) {
@@ -495,7 +528,7 @@ export class OverlayWindowConfig extends FormApplication {
   }
 
   _updateSaveButton() {
-    const saveButton = this.element.find('.save-config');
+    const saveButton = this._$el.find('.save-config');
     if (this._hasUnsavedChanges) {
       saveButton.text('Save Changes*').addClass('modified');
     } else {
@@ -504,7 +537,7 @@ export class OverlayWindowConfig extends FormApplication {
   }
 
   _getCurrentFormData() {
-    return new FormDataExtended(this.element.find('form')[0]).object;
+    return new FormDataExtended(this._$el.find('form')[0]).object;
   }
 
   async _applyTemporarySettings(formData) {
@@ -639,13 +672,7 @@ export class OverlayWindowConfig extends FormApplication {
 
   static async openForWindow(windowId) {
     try {
-      // Close any existing window config dialogs
-      for (const app of Object.values(ui.windows)) {
-        if (app.constructor.name === 'OverlayWindowConfig') {
-          app.close();
-        }
-      }
-      
+      closeExistingById("foundrystreamoverlay-window-config");
       const config = new OverlayWindowConfig(windowId);
       return config.render(true);
     } catch (error) {

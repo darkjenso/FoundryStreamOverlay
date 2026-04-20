@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:foundryvtt.wiki)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:foundryvtt.com)",
+      "WebFetch(domain:gist.github.com)",
+      "Bash(powershell -Command ':*)",
+      "Bash(powershell -Command \"Get-Content 'C:\\\\Users\\\\info\\\\AppData\\\\Local\\\\FoundryVTT\\\\Data\\\\modules\\\\foundrystreamoverlay\\\\CHANGELOG.md' -Encoding UTF8 | Select-Object -Index 7 | Format-Hex\")",
+      "Bash(powershell -File -)",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\info\\\\AppData\\\\Local\\\\Temp\\\\strip-bom.ps1\")",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\info\\\\AppData\\\\Local\\\\Temp\\\\rebuild-zips.ps1\")"
+    ]
+  }
+}

@@ -580,13 +580,20 @@ export function addPromoFooter(container, overlayWindow) {
   const promoFooter = overlayWindow.document.createElement("div");
   promoFooter.style.cssText = `
     position: absolute;
-    bottom: 5px;
+    bottom: 6px;
     right: 10px;
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.65);
     font-family: Arial, sans-serif;
     z-index: 9999;
+    pointer-events: auto;
+    user-select: none;
   `;
-  promoFooter.innerHTML = `Made by Jen. <a href="https://www.patreon.com/c/jenzelta" target="_blank" style="color:#FF424D;">Support on Patreon for premium features</a>`;
+  promoFooter.innerHTML = `
+    <span style="opacity:0.8;">Foundry Stream Overlay</span>
+    <strong style="color:#FF424D; margin: 0 4px;">FREE</strong>
+    <a href="https://www.patreon.com/c/jenzelta" target="_blank"
+       style="color:#FF6B6B; text-decoration:underline;">— Upgrade to Pro</a>
+  `;
   container.appendChild(promoFooter);
 }
